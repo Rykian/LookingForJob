@@ -1,7 +1,7 @@
 module Sourcing
   class AnalyzeStep
     def call(input)
-      raise NotImplementedError, "Sourcing::AnalyzeStep must be implemented"
+      raise NotImplementedError, "Sourcing::AnalyzeStep is a contract"
     end
   end
 end

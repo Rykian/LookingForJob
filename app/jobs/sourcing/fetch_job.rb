@@ -6,7 +6,8 @@ module Sourcing
       offer = JobOffer.find_by(url_hash: url_hash)
       return unless offer
 
-      html_content = FetchStep.new.call(
+      provider = Sourcing::Providers.registry.fetch(offer.source)
+      html_content = provider.fetch_step.call(
         source: offer.source,
         url: offer.url,
         url_hash: offer.url_hash

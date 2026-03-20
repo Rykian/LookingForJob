@@ -15,7 +15,8 @@ module Sourcing
       offer = JobOffer.find_by(url_hash: url_hash)
       return unless offer&.html_content
 
-      enrichment = EnrichStep.new.call(
+      provider = Sourcing::Providers.registry.fetch(offer.source)
+      enrichment = provider.enrich_step.call(
         source: offer.source,
         url: offer.url,
         url_hash: offer.url_hash,

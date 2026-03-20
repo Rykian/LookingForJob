@@ -5,7 +5,8 @@ module Sourcing
     queue_as :sourcing_discovery
 
     def perform(source:, keyword:, work_mode:, page:)
-      result = DiscoveryStep.new.call(
+      provider = Sourcing::Providers.registry.fetch(source)
+      result = provider.discovery_step.call(
         source: source,
         keyword: keyword,
         work_mode: work_mode,
