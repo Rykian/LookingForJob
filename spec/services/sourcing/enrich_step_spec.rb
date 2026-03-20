@@ -1,6 +1,16 @@
 require "rails_helper"
 
 RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
+  let(:llm_config) do
+    Sourcing::LlmConfig.new(
+      provider: :openai,
+      model: "gpt-test-model",
+      api_key: "test-key",
+      request_timeout: 30,
+      max_retries: 3
+    )
+  end
+
   let(:generator) do
     lambda do |_input|
       {
@@ -14,7 +24,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     end
   end
 
-  subject(:step) { described_class.new(generator: generator) }
+  subject(:step) { described_class.new(llm_config: llm_config, generator: generator) }
 
   it "maps structured llm output into enrichment fields" do
     extracted = {
@@ -46,5 +56,26 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     )
 
     expect(result[:hybrid_remote_days_min_per_week]).to be_nil
+  end
+
+  it "forwards configured model and provider to the llm generator" do
+    captured = nil
+    passthrough_generator = lambda do |input|
+      captured = input
+      {
+        hybrid_remote_days_min_per_week: nil,
+        primary_technologies: [],
+        secondary_technologies: [],
+        offer_language: nil,
+        normalized_seniority: nil,
+        english_level_required: nil
+      }
+    end
+
+    step = described_class.new(llm_config: llm_config, generator: passthrough_generator)
+    step.call(extracted: { title: "Backend Engineer", remote: "yes", description_html: "<p>Text</p>" })
+
+    expect(captured[:model]).to eq("gpt-test-model")
+    expect(captured[:provider]).to eq(:openai)
   end
 end
