@@ -1,0 +1,50 @@
+require "rails_helper"
+
+RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
+  let(:generator) do
+    lambda do |_input|
+      {
+        hybrid_remote_days_min_per_week: 3,
+        primary_technologies: ["Ruby on Rails", "PostgreSQL"],
+        secondary_technologies: ["Redis"],
+        offer_language: "en",
+        normalized_seniority: "senior",
+        english_level_required: "fluent"
+      }
+    end
+  end
+
+  subject(:step) { described_class.new(generator: generator) }
+
+  it "maps structured llm output into enrichment fields" do
+    extracted = {
+      title: "Senior Ruby on Rails Engineer",
+      remote: "hybrid",
+      description_html: <<~HTML
+        <p>3 days remote per week.</p>
+        <p>Stack: Ruby on Rails, PostgreSQL, Redis, Sidekiq.</p>
+        <p>Fluent English required.</p>
+      HTML
+    }
+
+    result = step.call(extracted: extracted)
+
+    expect(result[:hybrid_remote_days_min_per_week]).to eq(3)
+    expect(result[:primary_technologies]).to include("Ruby on Rails", "PostgreSQL")
+    expect(result[:offer_language]).to eq("en")
+    expect(result[:normalized_seniority]).to eq("senior")
+    expect(result[:english_level_required]).to eq("fluent")
+  end
+
+  it "forces hybrid days to nil when offer is not hybrid" do
+    result = step.call(
+      extracted: {
+        title: "Backend Engineer",
+        remote: "yes",
+        description_html: "<p>2 days remote per week</p>"
+      }
+    )
+
+    expect(result[:hybrid_remote_days_min_per_week]).to be_nil
+  end
+end

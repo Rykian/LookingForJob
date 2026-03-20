@@ -3,6 +3,23 @@ require "rails_helper"
 RSpec.describe Sourcing::AnalyzeJob, type: :job do
   include ActiveJob::TestHelper
 
+  let(:analyze_step) { instance_double(Sourcing::AnalyzeStep) }
+  let(:registry) { Sourcing::ProviderRegistry.new }
+
+  before do
+    registry.register(
+      "linkedin",
+      Sourcing::Provider.new(
+        discovery_step: nil,
+        fetch_step: nil,
+        analyze_step: analyze_step,
+        enrich_step: nil
+      )
+    )
+
+    allow(Sourcing::Providers).to receive(:registry).and_return(registry)
+  end
+
   around do |example|
     previous_adapter = ActiveJob::Base.queue_adapter
     ActiveJob::Base.queue_adapter = :test
@@ -39,7 +56,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       posted_at: Time.zone.parse("2026-03-20 09:00:00")
     }
 
-    allow_any_instance_of(Sourcing::AnalyzeStep).to receive(:call).and_return(extracted)
+    allow(analyze_step).to receive(:call).and_return(extracted)
 
     described_class.perform_now(url_hash: offer.url_hash)
 

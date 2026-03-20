@@ -1,6 +1,23 @@
 require "rails_helper"
 
 RSpec.describe Sourcing::EnrichJob, type: :job do
+  let(:enrich_step) { instance_double(Sourcing::EnrichStep) }
+  let(:registry) { Sourcing::ProviderRegistry.new }
+
+  before do
+    registry.register(
+      "linkedin",
+      Sourcing::Provider.new(
+        discovery_step: nil,
+        fetch_step: nil,
+        analyze_step: nil,
+        enrich_step: enrich_step
+      )
+    )
+
+    allow(Sourcing::Providers).to receive(:registry).and_return(registry)
+  end
+
   it "stores enrichment fields and enriched_at" do
     offer = JobOffer.create!(
       source: "linkedin",
@@ -25,7 +42,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
       english_level_required: "professional"
     }
 
-    allow_any_instance_of(Sourcing::EnrichStep).to receive(:call).and_return(enrichment)
+    allow(enrich_step).to receive(:call).and_return(enrichment)
 
     described_class.perform_now(url_hash: offer.url_hash)
 

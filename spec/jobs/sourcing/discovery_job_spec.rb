@@ -3,6 +3,23 @@ require "rails_helper"
 RSpec.describe Sourcing::DiscoveryJob, type: :job do
   include ActiveJob::TestHelper
 
+  let(:discovery_step) { instance_double(Sourcing::DiscoveryStep) }
+  let(:registry) { Sourcing::ProviderRegistry.new }
+
+  before do
+    registry.register(
+      "linkedin",
+      Sourcing::Provider.new(
+        discovery_step: discovery_step,
+        fetch_step: nil,
+        analyze_step: nil,
+        enrich_step: nil
+      )
+    )
+
+    allow(Sourcing::Providers).to receive(:registry).and_return(registry)
+  end
+
   around do |example|
     previous_adapter = ActiveJob::Base.queue_adapter
     ActiveJob::Base.queue_adapter = :test
@@ -21,7 +38,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
       has_next_page: false
     }
 
-    allow_any_instance_of(Sourcing::DiscoveryStep).to receive(:call).and_return(result)
+    allow(discovery_step).to receive(:call).and_return(result)
 
     expect do
       described_class.perform_now(
@@ -48,7 +65,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
       has_next_page: true
     }
 
-    allow_any_instance_of(Sourcing::DiscoveryStep).to receive(:call).and_return(result)
+    allow(discovery_step).to receive(:call).and_return(result)
 
     described_class.perform_now(
       source: "linkedin",
