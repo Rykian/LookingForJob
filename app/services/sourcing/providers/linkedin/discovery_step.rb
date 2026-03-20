@@ -23,10 +23,13 @@ module Sourcing
             page: page
           )
 
+          discovered_urls = Array(crawled[:discovered_urls]).uniq
+          has_next_page = discovered_urls.size >= PAGE_SIZE
+
           {
-            discovered_urls: Array(crawled[:discovered_urls]).uniq,
-            has_next_page: !!crawled[:has_next_page],
-            next_job_data: crawled[:has_next_page] ? {
+            discovered_urls: discovered_urls,
+            has_next_page: has_next_page,
+            next_job_data: has_next_page ? {
               source: source,
               keyword: keyword,
               work_mode: work_mode,
@@ -58,7 +61,6 @@ module Sourcing
             )
 
             result[:discovered_urls] = Array(hrefs).uniq
-            result[:has_next_page] = !result[:discovered_urls].empty?
 
             context.close
             browser.close
