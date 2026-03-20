@@ -34,8 +34,6 @@ RSpec.describe Sourcing::FetchJob, type: :job do
   it "fetches html and stores it on the offer" do
     offer = JobOffer.create!(
       source: "linkedin",
-      keyword: "ruby",
-      work_mode: "remote",
       url: "https://example.com/jobs/123",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
       first_seen_at: Time.zone.parse("2026-03-20 10:00:00"),

@@ -36,8 +36,6 @@ RSpec.describe JobOffer, type: :model do
 
       expect(attributes).to include(
         :source,
-        :keyword,
-        :work_mode,
         :url,
         :url_hash,
         :first_seen_at,

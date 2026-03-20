@@ -34,8 +34,6 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
   it "stores extracted fields and enqueues enrich job" do
     offer = JobOffer.create!(
       source: "linkedin",
-      keyword: "ruby",
-      work_mode: "remote",
       url: "https://example.com/jobs/123",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
       first_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
@@ -74,8 +72,6 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
     offer = JobOffer.create!(
       source: "linkedin",
-      keyword: "ruby",
-      work_mode: "remote",
       url: "https://example.com/jobs/no-html",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/no-html"),
       first_seen_at: Time.zone.parse("2026-03-20 10:00:00"),

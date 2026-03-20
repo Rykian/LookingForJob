@@ -14,13 +14,7 @@ module Sourcing
       discovered_at = Time.current
 
       result.fetch(:discovered_urls).each do |url|
-        offer = upsert_offer_url(
-          source: source,
-          keyword: keyword,
-          work_mode: work_mode,
-          url: url,
-          now: discovered_at
-        )
+        offer = upsert_offer_url(source: source, url: url, now: discovered_at)
 
         FetchJob.perform_later(url_hash: offer.url_hash)
       end
@@ -32,13 +26,11 @@ module Sourcing
 
     private
 
-    def upsert_offer_url(source:, keyword:, work_mode:, url:, now:)
+    def upsert_offer_url(source:, url:, now:)
       url_hash = Digest::SHA256.hexdigest(url)
       offer = JobOffer.find_or_initialize_by(url_hash: url_hash)
 
       offer.source = source
-      offer.keyword = keyword
-      offer.work_mode = work_mode
       offer.url = url
       offer.first_seen_at ||= now
       offer.last_seen_at = now

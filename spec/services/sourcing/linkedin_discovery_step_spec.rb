@@ -8,13 +8,13 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
   end
 
   it "deduplicates URLs in the result" do
-    crawler = ->(_input) { { discovered_urls: ["https://example.com/jobs/1", "https://example.com/jobs/1"] } }
+    crawler = ->(_input) { { discovered_urls: [ "https://example.com/jobs/1", "https://example.com/jobs/1" ] } }
 
     result = described_class.new(crawler: crawler).call(
       source: "linkedin", keyword: "ruby", work_mode: "remote", page: 1
     )
 
-    expect(result[:discovered_urls]).to eq(["https://example.com/jobs/1"])
+    expect(result[:discovered_urls]).to eq([ "https://example.com/jobs/1" ])
   end
 
   it "sets has_next_page and next_job_data when a full page is returned" do

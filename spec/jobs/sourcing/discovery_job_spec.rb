@@ -33,7 +33,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "upserts discovered urls and enqueues fetch jobs" do
     result = {
-      discovered_urls: ["https://example.com/jobs/1", "https://example.com/jobs/2"],
+      discovered_urls: [ "https://example.com/jobs/1", "https://example.com/jobs/2" ],
       next_job_data: nil,
       has_next_page: false
     }
@@ -55,11 +55,9 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "enqueues next discovery job when next page is available" do
     result = {
-      discovered_urls: ["https://example.com/jobs/1"],
+      discovered_urls: [ "https://example.com/jobs/1" ],
       next_job_data: {
         source: "linkedin",
-        keyword: "ruby",
-        work_mode: "remote",
         page: 2
       },
       has_next_page: true
