@@ -55,15 +55,16 @@ module Sourcing
           strict: true
         }.freeze
 
-        def initialize(model: ENV.fetch("OPENAI_MODEL", "gpt-4.1-mini"), generator: nil)
-          @model = model
+        def initialize(llm_config: Sourcing::LlmConfig.from_env, generator: nil)
+          @llm_config = llm_config
           @generator = generator || method(:generate_with_ruby_llm)
         end
 
         def call(input)
           extracted = input.fetch(:extracted)
           payload = @generator.call(
-            model: @model,
+            model: @llm_config.model,
+            provider: @llm_config.provider,
             schema: RESPONSE_SCHEMA,
             system: SYSTEM_PROMPT,
             prompt: build_user_prompt(extracted)
@@ -74,13 +75,11 @@ module Sourcing
 
         private
 
-        def generate_with_ruby_llm(model:, schema:, system:, prompt:)
-          RubyLLM.configure do |config|
-            config.openai_api_key = ENV.fetch("OPENAI_API_KEY")
-          end
+        def generate_with_ruby_llm(model:, provider:, schema:, system:, prompt:)
+          @llm_config.configure!
 
           response = RubyLLM
-                     .chat(model: model, provider: :openai)
+                     .chat(model: model, provider: provider)
                      .with_schema(schema)
                      .ask("#{system}\n\n#{prompt}")
 
