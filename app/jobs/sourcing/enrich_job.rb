@@ -1,7 +1,5 @@
 module Sourcing
   class EnrichJob < ApplicationJob
-    queue_as :sourcing_enrich
-
     ENRICHED_ATTRIBUTES = %i[
       hybrid_remote_days_min_per_week
       primary_technologies

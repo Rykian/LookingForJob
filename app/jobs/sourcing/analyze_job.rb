@@ -1,7 +1,5 @@
 module Sourcing
   class AnalyzeJob < ApplicationJob
-    queue_as :sourcing_analyze
-
     ANALYZED_ATTRIBUTES = %i[
       title
       company

@@ -2,8 +2,6 @@ require "digest"
 
 module Sourcing
   class DiscoveryJob < ApplicationJob
-    queue_as :sourcing_discovery
-
     def perform(source:, keyword:, work_mode:, page:)
       provider = Sourcing::Providers.registry.fetch(source)
       result = provider.discovery_step.call(
