@@ -16,6 +16,8 @@ module Sourcing
         html_content: html_content,
         fetched_at: Time.current
       )
+
+      AnalyzeJob.perform_later(url_hash: offer.url_hash)
     end
   end
 end
