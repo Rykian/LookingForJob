@@ -48,9 +48,11 @@ module Sourcing
 
           result = { discovered_urls: [], has_next_page: false }
 
+          session = Sourcing::Providers::Linkedin::SessionManager.load
+
           Playwright.create(playwright_cli_executable_path: "npx playwright") do |playwright|
             browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-            context = browser.new_context
+            context = browser.new_context(storageState: session)
             page_obj = context.new_page
             page_obj.goto(url, waitUntil: "domcontentloaded")
             page_obj.wait_for_timeout(1200)
@@ -67,6 +69,8 @@ module Sourcing
           end
 
           result
+        rescue Sourcing::Providers::Linkedin::SessionNotFoundError
+          raise
         rescue StandardError => e
           raise "LinkedIn discovery failed for source=#{source} work_mode=#{work_mode} page=#{page}: #{e.message}"
         end

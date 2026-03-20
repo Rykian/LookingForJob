@@ -18,9 +18,11 @@ module Sourcing
 
           html = nil
 
+          session = Sourcing::Providers::Linkedin::SessionManager.load
+
           Playwright.create(playwright_cli_executable_path: "npx playwright") do |playwright|
             browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-            context = browser.new_context
+            context = browser.new_context(storageState: session)
             page_obj = context.new_page
             page_obj.goto(url, waitUntil: "domcontentloaded")
             page_obj.wait_for_timeout(1000)
