@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: looking_for_job_postgres
+    environment:
+      POSTGRES_USER: looking_for_job
+      POSTGRES_PASSWORD: looking_for_job
+      POSTGRES_DB: looking_for_job_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U looking_for_job -d looking_for_job_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

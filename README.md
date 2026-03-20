@@ -1,24 +1,34 @@
-# README
+# LookingForJob
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Backend API Rails for the LookingForJob rebuild.
 
-Things you may want to cover:
+## Prerequisites
 
-* Ruby version
+- Ruby 4.0+
+- Bundler
+- Docker + Docker Compose
 
-* System dependencies
+## Start PostgreSQL with Docker Compose
 
-* Configuration
+```bash
+docker compose up -d postgres
+```
 
-* Database creation
+## Setup the app
 
-* Database initialization
+```bash
+bundle install
+bin/rails db:create db:migrate
+```
 
-* How to run the test suite
+## Run tests
 
-* Services (job queues, cache servers, search engines, etc.)
+```bash
+bundle exec rspec
+```
 
-* Deployment instructions
+## Stop PostgreSQL
 
-* ...
+```bash
+docker compose down
+```
