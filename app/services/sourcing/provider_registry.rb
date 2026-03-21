@@ -10,6 +10,10 @@ module Sourcing
       @providers[source.to_s] = provider
     end
 
+    def sources
+      @providers.keys
+    end
+
     def fetch(source)
       @providers.fetch(source.to_s) do
         raise KeyError, "No sourcing provider registered for source=#{source.inspect}"
