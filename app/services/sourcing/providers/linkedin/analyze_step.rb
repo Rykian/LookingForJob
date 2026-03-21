@@ -63,7 +63,8 @@ module Sourcing
             salary_min_minor: salary[:salary_min_minor],
             salary_max_minor: salary[:salary_max_minor],
             salary_currency: salary[:salary_currency],
-            posted_at: extract_posted_at(doc, job_posting, page_text)
+            posted_at: extract_posted_at(doc, job_posting, page_text),
+            city: extract_city(doc, page_text)
           }
         end
 
@@ -75,6 +76,21 @@ module Sourcing
             return text if text && !text.empty?
           end
           nil
+        end
+
+        def extract_city(doc, page_text)
+          # Prefer node-level extraction to avoid capturing neighboring phrases.
+          node = doc.at_xpath("//*[contains(normalize-space(text()), 'Location:')]")
+          if node
+            node_text = normalize_whitespace(node.text)
+            value = node_text.split("Location:", 2).last
+            city = blank_to_nil(normalize_whitespace(value))
+            return city unless city.nil?
+          end
+
+          # Fallback for text-only pages.
+          match = page_text.match(/Location:\s*([A-Za-z\- ]+?)(?:\s{2,}|$|,|\.|;)/i)
+          match ? match[1].strip : nil
         end
 
         def extract_title(doc, job_posting)

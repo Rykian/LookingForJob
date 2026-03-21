@@ -51,7 +51,8 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       salary_min_minor: 60000,
       salary_max_minor: 80000,
       salary_currency: "EUR",
-      posted_at: Time.zone.parse("2026-03-20 09:00:00")
+      posted_at: Time.zone.parse("2026-03-20 09:00:00"),
+      city: "Nantes"
     }
 
     allow(analyze_step).to receive(:call).and_return(extracted)
@@ -60,6 +61,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
     offer.reload
     expect(offer.title).to eq("Backend Engineer")
+    expect(offer.city).to eq("Nantes")
     expect(offer.employment_type).to eq("permanent")
     expect(offer.employment_type_before_type_cast).to eq("PERMANENT")
 

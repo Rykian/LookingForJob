@@ -1,0 +1,14 @@
+{
+  "technology": {
+    "primary": ["ruby", "react", "nodejs"],
+    "secondary": ["postgresql", "sidekiq"]
+  },
+  "remote_hybrid": {
+    "importance": "high",
+    "preferred_modes": ["yes", "hybrid"],
+    "hybrid": {
+      "allowed_cities": ["Nantes", "Rennes", "Laval", "Angers"],
+      "hybrid_remote_days_min_per_week": 3
+    }
+  }
+}

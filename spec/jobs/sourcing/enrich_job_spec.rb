@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Sourcing::EnrichJob, type: :job do
+  include ActiveJob::TestHelper
+
   let(:enrich_step) { instance_double(Sourcing::EnrichStep) }
   let(:registry) { Sourcing::ProviderRegistry.new }
 
@@ -16,6 +18,17 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     )
 
     allow(Sourcing::Providers).to receive(:registry).and_return(registry)
+  end
+
+  around do |example|
+    previous_adapter = ActiveJob::Base.queue_adapter
+    ActiveJob::Base.queue_adapter = :test
+    clear_enqueued_jobs
+    clear_performed_jobs
+    example.run
+    clear_enqueued_jobs
+    clear_performed_jobs
+    ActiveJob::Base.queue_adapter = previous_adapter
   end
 
   it "stores enrichment fields and enriched_at" do
@@ -49,6 +62,9 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect(offer.primary_technologies).to eq([ "Ruby on Rails" ])
     expect(offer.normalized_seniority).to eq("senior")
     expect(offer.enriched_at).not_to be_nil
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::ScoringJob }
+    expect(queued.size).to eq(1)
   end
 
   it "returns when offer is missing or has no html" do

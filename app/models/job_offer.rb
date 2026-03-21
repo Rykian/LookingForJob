@@ -54,4 +54,7 @@ class JobOffer < ApplicationRecord
               less_than_or_equal_to: 5
             },
             allow_nil: true
+
+  validates :score, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }, allow_nil: true
+  validates :city, length: { maximum: 255 }, allow_nil: true
 end

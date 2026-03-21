@@ -35,6 +35,7 @@ module Sourcing
       offer.update!(
         enrichment.slice(*ENRICHED_ATTRIBUTES).merge(enriched_at: Time.current)
       )
+      Sourcing::ScoringJob.perform_later(url_hash: offer.url_hash)
     end
   end
 end

@@ -10,6 +10,7 @@ module Sourcing
       salary_max_minor
       salary_currency
       posted_at
+      city
     ].freeze
 
     def perform(url_hash:)

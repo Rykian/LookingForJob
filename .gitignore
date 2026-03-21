@@ -31,3 +31,7 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# Data directory runtime artifacts.
+/data/*.json
+!/data/scoring_profile.json
+

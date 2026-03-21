@@ -11,6 +11,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
         <body>
           <div class="job-details-jobs-unified-top-card__job-title"><h1>Backend Engineer</h1></div>
           <div class="job-details-jobs-unified-top-card__company-name"><a>Acme</a></div>
+          <div>Location: Nantes</div>
           <div data-testid="expandable-text-box"><p>CDI, hybrid, 2 days remote.</p></div>
           <time datetime="2026-03-20T09:00:00Z"></time>
         </body>
@@ -25,6 +26,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:description_html]).to include("CDI")
     expect(result[:posted_at]).to be_a(Time)
+    expect(result[:city]).to eq("Nantes")
   end
 
   it "extracts title, company, salary and posted_at from job posting json-ld" do

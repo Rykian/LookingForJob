@@ -10,11 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_20_193700) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_21_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "job_offers", force: :cascade do |t|
+    t.string "city"
     t.string "company"
     t.datetime "created_at", null: false
     t.text "description_html"
@@ -34,12 +35,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_20_193700) do
     t.string "salary_currency"
     t.integer "salary_max_minor"
     t.integer "salary_min_minor"
+    t.integer "score"
+    t.jsonb "score_breakdown"
+    t.datetime "scored_at"
     t.jsonb "secondary_technologies"
     t.string "source", null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.string "url_hash", null: false
+    t.index ["city"], name: "index_job_offers_on_city"
+    t.index ["scored_at"], name: "index_job_offers_on_scored_at"
     t.index ["url"], name: "index_job_offers_on_url", unique: true
     t.index ["url_hash"], name: "index_job_offers_on_url_hash", unique: true
   end
