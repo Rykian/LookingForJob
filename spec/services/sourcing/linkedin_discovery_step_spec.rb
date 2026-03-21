@@ -7,6 +7,17 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
     count.times.map { |i| "https://example.com/jobs/#{i}" }
   end
 
+  it "strips query params and fragments from discovered URLs" do
+    dirty_url = "https://www.linkedin.com/jobs/view/1234567/?refId=abc&trackingId=xyz&position=1#top"
+    crawler = ->(_input) { { discovered_urls: [ dirty_url ] } }
+
+    result = described_class.new(crawler: crawler).call(
+      source: "linkedin", keyword: "ruby", work_mode: "remote", page: 1
+    )
+
+    expect(result[:discovered_urls]).to eq([ "https://www.linkedin.com/jobs/view/1234567/" ])
+  end
+
   it "deduplicates URLs in the result" do
     crawler = ->(_input) { { discovered_urls: [ "https://example.com/jobs/1", "https://example.com/jobs/1" ] } }
 

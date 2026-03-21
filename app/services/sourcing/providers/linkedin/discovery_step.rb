@@ -23,7 +23,7 @@ module Sourcing
             page: page
           )
 
-          discovered_urls = Array(crawled[:discovered_urls]).uniq
+          discovered_urls = Array(crawled[:discovered_urls]).map { |u| clean_url(u) }.uniq
           has_next_page = discovered_urls.size >= PAGE_SIZE
 
           {
@@ -38,7 +38,12 @@ module Sourcing
           }
         end
 
-        private
+        def clean_url(url)
+          uri = URI.parse(url)
+          uri.query = nil
+          uri.fragment = nil
+          uri.to_s
+        end
 
         def crawl_with_playwright(source:, keyword:, work_mode:, page:)
           require "playwright"
