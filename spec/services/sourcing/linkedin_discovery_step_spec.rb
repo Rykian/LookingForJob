@@ -41,15 +41,17 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
     )
   end
 
-  it "stops pagination when a partial page is returned" do
+  it "continues pagination when a partial page is returned" do
     crawler = ->(_input) { { discovered_urls: make_urls(page_size - 1) } }
 
     result = described_class.new(crawler: crawler).call(
       source: "linkedin", keyword: "ruby", work_mode: "remote", page: 3
     )
 
-    expect(result[:has_next_page]).to be(false)
-    expect(result[:next_job_data]).to be_nil
+    expect(result[:has_next_page]).to be(true)
+    expect(result[:next_job_data]).to eq(
+      source: "linkedin", keyword: "ruby", work_mode: "remote", page: 4
+    )
   end
 
   it "stops pagination when the page is empty" do
@@ -61,5 +63,36 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
 
     expect(result[:has_next_page]).to be(false)
     expect(result[:next_job_data]).to be_nil
+  end
+
+  it "stops pagination at max pages" do
+    crawler = ->(_input) { { discovered_urls: make_urls(1) } }
+
+    result = described_class.new(crawler: crawler).call(
+      source: "linkedin", keyword: "ruby", work_mode: "remote", page: described_class::MAX_PAGES
+    )
+
+    expect(result[:has_next_page]).to be(false)
+    expect(result[:next_job_data]).to be_nil
+  end
+
+  it "builds search url with f_WT when work_mode is present" do
+    step = described_class.new(crawler: ->(_input) { { discovered_urls: [] } })
+
+    url = step.send(:build_search_url, keyword: "Ruby", work_mode: "2", page: 1)
+
+    expect(url).to include("keywords=Ruby")
+    expect(url).to include("start=0")
+    expect(url).to include("f_WT=2")
+  end
+
+  it "builds search url without f_WT when work_mode is blank" do
+    step = described_class.new(crawler: ->(_input) { { discovered_urls: [] } })
+
+    url = step.send(:build_search_url, keyword: "Ruby", work_mode: "", page: 2)
+
+    expect(url).to include("keywords=Ruby")
+    expect(url).to include("start=25")
+    expect(url).not_to include("f_WT=")
   end
 end

@@ -84,13 +84,41 @@ module Sourcing
           if node
             node_text = normalize_whitespace(node.text)
             value = node_text.split("Location:", 2).last
-            city = blank_to_nil(normalize_whitespace(value))
+            city = normalize_location(value)
             return city unless city.nil?
           end
 
-          # Fallback for text-only pages.
-          match = page_text.match(/Location:\s*([A-Za-z\- ]+?)(?:\s{2,}|$|,|\.|;)/i)
-          match ? match[1].strip : nil
+          # LinkedIn top-card location often appears as:
+          # "Paris, Ile-de-France, France · Reposted 1 day ago"
+          match = page_text.match(/([A-Za-zÀ-ÿ'\- ]+(?:,\s*[A-Za-zÀ-ÿ'\- ]+){0,2},\s*France)\s*·/i)
+          if match
+            city = normalize_location(match[1])
+            return city unless city.nil?
+          end
+
+          # Variant found in some locales/snapshots:
+          # "Paris Metropolitan Region · Reposted ..."
+          match = page_text.match(/([A-Za-zÀ-ÿ'\- ]+\s+Metropolitan Region)\s*·/i)
+          if match
+            city = normalize_location(match[1])
+            return city unless city.nil?
+          end
+
+          # Fallback for explicit location labels in text-only pages.
+          match = page_text.match(/Location:\s*([A-Za-zÀ-ÿ'\- ]+?)(?:\s{2,}|$|,|\.|;)/i)
+          normalize_location(match && match[1])
+        end
+
+        def normalize_location(raw)
+          location = blank_to_nil(normalize_whitespace(raw))
+          return nil if location.nil?
+
+          location = location.sub(/\s*·.*$/, "")
+          location = location.gsub(/\bMetropolitan Region\b/i, "et périphérie")
+          location = location.sub(/^Greater\s+/i, "")
+          location = location.sub(/^F\s+/, "")
+          location = location.sub(/^F(?=[A-ZÀ-ÿ])/, "")
+          blank_to_nil(normalize_whitespace(location))
         end
 
         def extract_title(doc, job_posting)

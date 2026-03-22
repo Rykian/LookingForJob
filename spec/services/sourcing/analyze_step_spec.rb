@@ -148,4 +148,34 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
     expect(result[:company]).to be_nil
     expect(result[:employment_type]).to be_nil
   end
+
+  it "extracts top-card location variants from page text" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Paris, Ile-de-France, France · Reposted 1 day ago · 15 people clicked apply</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:city]).to eq("Paris, Ile-de-France, France")
+  end
+
+  it "normalizes metropolitan region location labels" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Greater Paris Metropolitan Region · Reposted 2 weeks ago · 26 people clicked apply</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:city]).to eq("Paris et périphérie")
+  end
 end
