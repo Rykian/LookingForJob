@@ -32,11 +32,41 @@ module Sourcing
           ".topcard__flavor--metadata"
         ].freeze
 
+        LOCATION_SELECTORS = [
+          ".job-details-jobs-unified-top-card__primary-description-container",
+          ".jobs-unified-top-card__subtitle-primary-grouping",
+          ".topcard__flavor--bullet"
+        ].freeze
+
         CURRENCY_BY_SYMBOL = {
           "€" => "EUR",
           "$" => "USD",
           "£" => "GBP"
         }.freeze
+
+        LOCATION_NOISE_TOKENS = %w[
+          engineer
+          developer
+          software
+          backend
+          front
+          frontend
+          fullstack
+          full-stack
+          stack
+          ruby
+          rails
+          junior
+          senior
+          lead
+          principal
+          stage
+          intern
+          internship
+          alternance
+          apprentice
+          apprenticeship
+        ].freeze
 
         DESCRIPTION_SELECTORS = [
           "[data-testid='expandable-text-box']",
@@ -88,17 +118,21 @@ module Sourcing
             return city unless city.nil?
           end
 
+          city = extract_city_from_selectors(doc)
+          return city unless city.nil?
+
           # LinkedIn top-card location often appears as:
           # "Paris, Ile-de-France, France · Reposted 1 day ago"
-          match = page_text.match(/([A-Za-zÀ-ÿ'\- ]+(?:,\s*[A-Za-zÀ-ÿ'\- ]+){0,2},\s*France)\s*·/i)
-          if match
-            city = normalize_location(match[1])
+          france_location = extract_french_location_triplet(page_text)
+          if france_location
+            city = normalize_location(france_location)
             return city unless city.nil?
           end
 
           # Variant found in some locales/snapshots:
           # "Paris Metropolitan Region · Reposted ..."
-          match = page_text.match(/([A-Za-zÀ-ÿ'\- ]+\s+Metropolitan Region)\s*·/i)
+          # or "Greater Paris Metropolitan Region (On-site)"
+          match = page_text.match(/([A-Za-zÀ-ÿ'\- ]+\s+Metropolitan Region)(?:\s*·|\s*\(|\s{2,}|$)/i)
           if match
             city = normalize_location(match[1])
             return city unless city.nil?
@@ -107,6 +141,69 @@ module Sourcing
           # Fallback for explicit location labels in text-only pages.
           match = page_text.match(/Location:\s*([A-Za-zÀ-ÿ'\- ]+?)(?:\s{2,}|$|,|\.|;)/i)
           normalize_location(match && match[1])
+        end
+
+        def extract_city_from_selectors(doc)
+          LOCATION_SELECTORS.each do |selector|
+            doc.css(selector).each do |node|
+              text = normalize_whitespace(node.text)
+              next if text.empty?
+
+              city = location_candidate_from_text(text)
+              return city unless city.nil?
+            end
+          end
+
+          nil
+        end
+
+        def location_candidate_from_text(text)
+          candidate = text.split("·", 2).first
+          candidate = candidate.sub(/\((?:on\s*-?\s*site|hybrid|remote)\)/i, "")
+          candidate = normalize_location(candidate)
+          return nil if candidate.nil?
+
+          return candidate if candidate.match?(/\bFrance\b/i)
+          return candidate if candidate.match?(/\bet\s+périphérie\b/i)
+
+          nil
+        end
+
+        def extract_french_location_triplet(text)
+          matches = text.scan(/([A-Za-zÀ-ÿ'\- ]+?,\s*[A-Za-zÀ-ÿ'\- ]+,\s*France)\b/i)
+          return nil if matches.empty?
+
+          raw = matches.last[0]
+          return nil if raw.nil? || raw.empty?
+
+          parts = raw.split(",", 3).map { |part| normalize_whitespace(part) }
+          return nil unless parts.size == 3
+
+          city = sanitize_city_prefix(parts[0])
+          region = parts[1]
+          country = parts[2]
+          return nil if city.empty? || region.empty? || country.empty?
+
+          "#{city}, #{region}, #{country}"
+        end
+
+        def sanitize_city_prefix(value)
+          words = value.split(/\s+/)
+          return value if words.empty?
+
+          # LinkedIn shell text can prepend job-title/menu words before the city.
+          # Keep the tail after the last known noisy token when present.
+          indexes = words.each_index.select do |i|
+            token = words[i].downcase.gsub(/[^a-z\-]/, "")
+            LOCATION_NOISE_TOKENS.include?(token)
+          end
+
+          return value if indexes.empty?
+
+          tail = words[(indexes.max + 1)..]
+          return value if tail.nil? || tail.empty?
+
+          tail.join(" ")
         end
 
         def normalize_location(raw)

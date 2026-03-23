@@ -178,4 +178,36 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     expect(result[:city]).to eq("Paris et périphérie")
   end
+
+  it "extracts location without linkedin shell noise prefix" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>NotificationsMeFor BusinessAdvertiseTrainlineJunior Ruby Engineer Paris, Ile-de-France, France</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:city]).to eq("Paris, Ile-de-France, France")
+  end
+
+  it "extracts location from top-card subtitle node when no bullet separator exists" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div class="job-details-jobs-unified-top-card__primary-description-container">
+            Greater Paris Metropolitan Region (On-site)
+          </div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:city]).to eq("Paris et périphérie")
+  end
 end
