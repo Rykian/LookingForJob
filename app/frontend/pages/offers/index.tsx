@@ -8,8 +8,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
 
 const JOB_OFFERS_QUERY = gql`
-  query JobOffers($page: Int!, $perPage: Int!, $source: String, $remote: String, $scored: Boolean) {
-    jobOffers(page: $page, perPage: $perPage, source: $source, remote: $remote, scored: $scored) {
+  query JobOffers(
+    $page: Int!
+    $perPage: Int!
+    $source: String
+    $remote: String
+    $scored: Boolean
+    $sortBy: String
+    $sortDirection: String
+  ) {
+    jobOffers(
+      page: $page
+      perPage: $perPage
+      source: $source
+      remote: $remote
+      scored: $scored
+      sortBy: $sortBy
+      sortDirection: $sortDirection
+    ) {
       totalCount
       totalPages
       nodes {
@@ -31,10 +47,30 @@ export default function OffersPage() {
   const [source, setSource] = useState('')
   const [remote, setRemote] = useState('')
   const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
+  const [sortBy, setSortBy] = useState<'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'>('first_seen_at')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+
+  const toggleSort = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
+    setPage(1)
+    if (sortBy === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+
+    setSortBy(column)
+    setSortDirection('desc')
+  }
+
+  const sortIndicator = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
+    if (sortBy !== column) return '↕'
+    return sortDirection === 'asc' ? '↑' : '↓'
+  }
 
   const variables: JobOffersQueryVariables = {
     page,
     perPage: 25,
+    sortBy,
+    sortDirection,
     ...(source ? { source } : {}),
     ...(remote ? { remote } : {}),
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
@@ -103,6 +139,8 @@ export default function OffersPage() {
                 setSource('')
                 setRemote('')
                 setScored('any')
+                setSortBy('first_seen_at')
+                setSortDirection('desc')
               }}
             >
               Reset
@@ -128,13 +166,45 @@ export default function OffersPage() {
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Title</th>
-                  <th className="px-3 py-2 font-medium">Company</th>
+                  <th className="px-3 py-2 font-medium">
+                    <button
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => toggleSort('title')}
+                      type="button"
+                    >
+                      Title <span>{sortIndicator('title')}</span>
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 font-medium">
+                    <button
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => toggleSort('company')}
+                      type="button"
+                    >
+                      Company <span>{sortIndicator('company')}</span>
+                    </button>
+                  </th>
                   <th className="px-3 py-2 font-medium">Source</th>
                   <th className="px-3 py-2 font-medium">Location</th>
                   <th className="px-3 py-2 font-medium">Mode</th>
-                  <th className="px-3 py-2 font-medium">Score</th>
-                  <th className="px-3 py-2 font-medium">Seen</th>
+                  <th className="px-3 py-2 font-medium">
+                    <button
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => toggleSort('score')}
+                      type="button"
+                    >
+                      Score <span>{sortIndicator('score')}</span>
+                    </button>
+                  </th>
+                  <th className="px-3 py-2 font-medium">
+                    <button
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => toggleSort('first_seen_at')}
+                      type="button"
+                    >
+                      Seen <span>{sortIndicator('first_seen_at')}</span>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>

@@ -64,6 +64,51 @@ RSpec.describe "GraphQL API", type: :request do
       expect(node["remote"]).to eq("yes")
       expect(node["title"]).to eq("Backend Engineer")
     end
+
+    it "sorts offers by score in descending order" do
+      low = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/sort-low",
+        url_hash: "hash-sort-low",
+        first_seen_at: 2.days.ago,
+        last_seen_at: 2.days.ago,
+        score: 10
+      )
+
+      high = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/sort-high",
+        url_hash: "hash-sort-high",
+        first_seen_at: 1.day.ago,
+        last_seen_at: 1.day.ago,
+        score: 90
+      )
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!, $sortBy: String, $sortDirection: String) {
+          jobOffers(page: $page, perPage: $perPage, sortBy: $sortBy, sortDirection: $sortDirection) {
+            nodes {
+              id
+              score
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(
+        query: query,
+        variables: {
+          page: 1,
+          perPage: 25,
+          sortBy: "score",
+          sortDirection: "desc"
+        }
+      )
+
+      expect(result["errors"]).to be_nil
+      node_ids = result.dig("data", "jobOffers", "nodes").map { |node| node["id"] }
+      expect(node_ids.index(high.id.to_s)).to be < node_ids.index(low.id.to_s)
+    end
   end
 
   describe "query dashboardMetrics" do

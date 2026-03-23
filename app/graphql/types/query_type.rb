@@ -32,18 +32,28 @@ module Types
         description: "Filter by remote mode (yes, hybrid, no)."
       argument :scored, Boolean, required: false,
         description: "When true returns only scored offers; when false only unscored offers."
+      argument :sort_by, String, required: false, default_value: "first_seen_at",
+        description: "Sort field: first_seen_at, last_seen_at, score, company, title."
+      argument :sort_direction, String, required: false, default_value: "desc",
+        description: "Sort direction: asc or desc."
     end
 
-    def job_offers(page:, per_page:, source: nil, remote: nil, scored: nil)
+    def job_offers(page:, per_page:, source: nil, remote: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc")
       scope = JobOffer.all
       scope = scope.where(source: source) if source.present?
       scope = scope.where(remote: remote) if remote.present?
       scope = scope.where.not(scored_at: nil) if scored == true
       scope = scope.where(scored_at: nil) if scored == false
 
+      sort_column = normalize_sort_column(sort_by)
+      direction = normalize_sort_direction(sort_direction)
+
       total_count = scope.count
       total_pages = (total_count.to_f / per_page).ceil
-      nodes = scope.order(first_seen_at: :desc).offset((page - 1) * per_page).limit(per_page)
+      nodes = scope
+        .order(Arel.sql("#{sort_column} #{direction} NULLS LAST"))
+        .offset((page - 1) * per_page)
+        .limit(per_page)
 
       {
         nodes: nodes,
@@ -97,6 +107,26 @@ module Types
 
     def scoring_profile
       Sourcing::ScoringProfile.load
+    end
+
+    private
+
+    def normalize_sort_column(sort_by)
+      allowed = {
+        "first_seen_at" => "first_seen_at",
+        "last_seen_at" => "last_seen_at",
+        "score" => "score",
+        "company" => "company",
+        "title" => "title"
+      }
+
+      allowed.fetch(sort_by.to_s, "first_seen_at")
+    end
+
+    def normalize_sort_direction(sort_direction)
+      return "asc" if sort_direction.to_s.downcase == "asc"
+
+      "desc"
     end
   end
 end
