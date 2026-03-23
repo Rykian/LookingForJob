@@ -1,5 +1,6 @@
 
 web: bin/rails server -p 3000
+sidekiq: bundle exec sidekiq
 vite: bin/vite dev
 gql-types: npm run graphql:types:watch
 gql-schema: npm run graphql:schema:watch
