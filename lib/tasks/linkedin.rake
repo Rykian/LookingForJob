@@ -1,5 +1,5 @@
 namespace :linkedin do
-  desc "Log in to LinkedIn interactively via Playwright and save session to tmp/linkedin_session.json"
+  desc "Log in to LinkedIn interactively via Playwright and save session to data/linkedin_session.json"
   task login: :environment do
     require "playwright"
 

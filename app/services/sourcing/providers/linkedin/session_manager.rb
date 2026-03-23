@@ -10,7 +10,7 @@ module Sourcing
       end
 
       class SessionManager
-        SESSION_PATH = Rails.root.join("tmp", "linkedin_session.json").freeze
+        SESSION_PATH = Rails.root.join("data", "linkedin_session.json").freeze
 
         def self.exists?
           File.exist?(SESSION_PATH)
