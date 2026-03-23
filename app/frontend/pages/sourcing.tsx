@@ -1,24 +1,10 @@
-import { gql } from '@apollo/client'
 import { useMutation } from '@apollo/client/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-
-const LAUNCH_DISCOVERY = gql`
-  mutation LaunchDiscovery {
-    launchDiscovery {
-      message
-    }
-  }
-`
-
-type LaunchResponse = {
-  launchDiscovery: {
-    message: string
-  }
-}
+import { LaunchDiscoveryDocument, LaunchDiscoveryMutation } from '@/graphql/generated'
 
 export default function SourcingPage() {
-  const [launchDiscovery, { loading, error, data }] = useMutation<LaunchResponse>(LAUNCH_DISCOVERY)
+  const [launchDiscovery, { loading, error, data }] = useMutation<LaunchDiscoveryMutation>(LaunchDiscoveryDocument)
 
   return (
     <div className="space-y-6 p-8">
@@ -39,7 +25,7 @@ export default function SourcingPage() {
             {loading ? 'Launching...' : 'Launch Discovery'}
           </Button>
 
-          {data?.launchDiscovery.message ? (
+          {data?.launchDiscovery?.message ? (
             <p className="text-sm text-green-700">{data.launchDiscovery.message}</p>
           ) : null}
 

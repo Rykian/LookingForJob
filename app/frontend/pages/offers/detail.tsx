@@ -1,60 +1,12 @@
 import { useParams } from 'react-router'
-import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const OFFER_QUERY = gql`
-  query JobOffer($id: ID!) {
-    jobOffer(id: $id) {
-      id
-      title
-      company
-      source
-      url
-      city
-      remote
-      employmentType
-      normalizedSeniority
-      offerLanguage
-      englishLevelRequired
-      score
-      scoreBreakdown
-      primaryTechnologies
-      secondaryTechnologies
-      descriptionHtml
-      firstSeenAt
-      lastSeenAt
-    }
-  }
-`
-
-type OfferDetailData = {
-  jobOffer: {
-    id: string
-    title: string | null
-    company: string | null
-    source: string
-    url: string
-    city: string | null
-    remote: string | null
-    employmentType: string | null
-    normalizedSeniority: string | null
-    offerLanguage: string | null
-    englishLevelRequired: string | null
-    score: number | null
-    scoreBreakdown: Record<string, unknown> | null
-    primaryTechnologies: string[] | null
-    secondaryTechnologies: string[] | null
-    descriptionHtml: string | null
-    firstSeenAt: string
-    lastSeenAt: string
-  } | null
-}
+import { JobOfferDocument, JobOfferQuery } from '@/graphql/generated'
 
 export default function OfferDetailPage() {
   const { id } = useParams()
-  const { data, loading, error } = useQuery<OfferDetailData>(OFFER_QUERY, {
+  const { data, loading, error } = useQuery<JobOfferQuery>(JobOfferDocument, {
     variables: { id },
     skip: !id,
   })

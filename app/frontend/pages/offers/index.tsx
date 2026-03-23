@@ -1,56 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const OFFERS_QUERY = gql`
-  query JobOffers($page: Int!, $perPage: Int!, $source: String, $remote: String, $scored: Boolean) {
-    jobOffers(page: $page, perPage: $perPage, source: $source, remote: $remote, scored: $scored) {
-      totalCount
-      totalPages
-      nodes {
-        id
-        title
-        company
-        source
-        city
-        remote
-        score
-        firstSeenAt
-      }
-    }
-  }
-`
-
-type Offer = {
-  id: string
-  title: string | null
-  company: string | null
-  source: string
-  city: string | null
-  remote: string | null
-  score: number | null
-  firstSeenAt: string
-}
-
-type OffersData = {
-  jobOffers: {
-    totalCount: number
-    totalPages: number
-    nodes: Offer[]
-  }
-}
-
-type OffersVars = {
-  page: number
-  perPage: number
-  source?: string
-  remote?: string
-  scored?: boolean
-}
+import { JobOffersDocument, JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
 
 export default function OffersPage() {
   const [page, setPage] = useState(1)
@@ -58,7 +12,7 @@ export default function OffersPage() {
   const [remote, setRemote] = useState('')
   const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
 
-  const variables: OffersVars = {
+  const variables: JobOffersQueryVariables = {
     page,
     perPage: 25,
     ...(source ? { source } : {}),
@@ -66,7 +20,7 @@ export default function OffersPage() {
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
   }
 
-  const { data, loading, error } = useQuery<OffersData, OffersVars>(OFFERS_QUERY, {
+  const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(JobOffersDocument, {
     variables,
   })
 

@@ -1,33 +1,6 @@
-import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const DASHBOARD_QUERY = gql`
-  query DashboardMetrics {
-    dashboardMetrics {
-      total
-      fetched
-      enriched
-      scored
-      averageScore
-      topSources {
-        source
-        count
-      }
-    }
-  }
-`
-
-type DashboardData = {
-  dashboardMetrics: {
-    total: number
-    fetched: number
-    enriched: number
-    scored: number
-    averageScore: number | null
-    topSources: Array<{ source: string; count: number }>
-  }
-}
+import { DashboardMetricsDocument, DashboardMetricsQuery } from '@/graphql/generated'
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -43,7 +16,7 @@ function MetricCard({ label, value }: { label: string; value: string | number })
 }
 
 export default function DashboardPage() {
-  const { data, loading, error } = useQuery<DashboardData>(DASHBOARD_QUERY)
+  const { data, loading, error } = useQuery<DashboardMetricsQuery>(DashboardMetricsDocument)
 
   if (loading) {
     return <div className="p-8 text-muted-foreground">Loading dashboard...</div>

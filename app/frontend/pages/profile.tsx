@@ -1,46 +1,24 @@
 import { useEffect, useState } from 'react'
-import { gql } from '@apollo/client'
 import { useMutation, useQuery } from '@apollo/client/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const PROFILE_QUERY = gql`
-  query ScoringProfile {
-    scoringProfile
-  }
-`
-
-const UPDATE_PROFILE = gql`
-  mutation UpdateScoringProfile($profile: JSON!) {
-    updateScoringProfile(input: { profile: $profile }) {
-      profile
-    }
-  }
-`
-
-type ProfileQueryData = {
-  scoringProfile: Record<string, unknown>
-}
-
-type UpdateMutationData = {
-  updateScoringProfile: {
-    profile: Record<string, unknown>
-  }
-}
-
-type UpdateMutationVars = {
-  profile: Record<string, unknown>
-}
+import {
+  ScoringProfileDocument,
+  UpdateScoringProfileDocument,
+  ScoringProfileQuery,
+  UpdateScoringProfileMutation,
+  UpdateScoringProfileMutationVariables,
+} from '@/graphql/generated'
 
 export default function ProfilePage() {
-  const { data, loading, error } = useQuery<ProfileQueryData>(PROFILE_QUERY)
-  const [save, { loading: saving, error: saveError }] = useMutation<UpdateMutationData, UpdateMutationVars>(
-    UPDATE_PROFILE,
-    {
-      refetchQueries: [PROFILE_QUERY],
-      awaitRefetchQueries: true,
-    },
-  )
+  const { data, loading, error } = useQuery<ScoringProfileQuery>(ScoringProfileDocument)
+  const [save, { loading: saving, error: saveError }] = useMutation<
+    UpdateScoringProfileMutation,
+    UpdateScoringProfileMutationVariables
+  >(UpdateScoringProfileDocument, {
+    refetchQueries: [ScoringProfileDocument],
+    awaitRefetchQueries: true,
+  })
   const [text, setText] = useState('')
   const [parseError, setParseError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState('')

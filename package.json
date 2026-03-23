@@ -1,7 +1,15 @@
 {
   "private": true,
   "type": "module",
+  "scripts": {
+    "graphql:schema": "rtk bundle exec rails runner \"File.write('tmp/schema.graphql', ::LookingForJobSchema.to_definition)\"",
+    "graphql:types": "npm run graphql:schema && graphql-codegen --config codegen.ts"
+  },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.2.1",
+    "@graphql-codegen/typed-document-node": "^6.1.7",
+    "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-codegen/typescript-operations": "^5.0.9",
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
