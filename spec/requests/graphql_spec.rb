@@ -191,14 +191,26 @@ RSpec.describe "GraphQL API", type: :request do
       profile = {
         technology: {
           primary: ["ruby"],
-          secondary: ["postgresql"]
+          secondary: ["postgresql"],
+          weights: {
+            primary_coverage: 0.75,
+            secondary_coverage: 0.15,
+            unknown_penalty: 0.10
+          }
         },
         remote_hybrid: {
           importance: "high",
           preferred_modes: ["yes", "hybrid"],
           hybrid: {
-            allowed_cities: ["Paris"]
+            allowed_cities: ["Paris"],
+            hybrid_remote_days_min_per_week: 3,
+            days_weight: 0.35
           }
+        },
+        weights: {
+          technology: 70,
+          remote_hybrid: 20,
+          location: 10
         }
       }
 

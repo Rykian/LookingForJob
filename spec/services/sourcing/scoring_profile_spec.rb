@@ -8,14 +8,26 @@ RSpec.describe Sourcing::ScoringProfile do
         {
           "technology": {
             "primary": ["ruby"],
-            "secondary": ["postgresql"]
+            "secondary": ["postgresql"],
+            "weights": {
+              "primary_coverage": 0.75,
+              "secondary_coverage": 0.15,
+              "unknown_penalty": 0.1
+            }
           },
           "remote_hybrid": {
             "importance": "high",
             "preferred_modes": ["yes", "hybrid"],
             "hybrid": {
-              "allowed_cities": ["Nantes"]
+              "allowed_cities": ["Nantes"],
+              "hybrid_remote_days_min_per_week": 3,
+              "days_weight": 0.35
             }
+          },
+          "weights": {
+            "technology": 70,
+            "remote_hybrid": 20,
+            "location": 10
           }
         }
       JSON
@@ -24,9 +36,11 @@ RSpec.describe Sourcing::ScoringProfile do
 
       expect(profile[:technology][:primary]).to eq(["ruby"])
       expect(profile[:technology][:secondary]).to eq(["postgresql"])
+      expect(profile[:technology][:weights][:primary_coverage]).to eq(0.75)
       expect(profile[:remote_hybrid][:importance]).to eq("high")
       expect(profile[:remote_hybrid][:preferred_modes]).to eq(["yes", "hybrid"])
       expect(profile[:remote_hybrid][:hybrid][:allowed_cities]).to eq(["Nantes"])
+      expect(profile[:weights][:technology]).to eq(70)
     ensure
       File.delete(path) if File.exist?(path)
     end
@@ -57,6 +71,36 @@ RSpec.describe Sourcing::ScoringProfile do
       JSON
 
       expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing technology.secondary/)
+    ensure
+      File.delete(path) if File.exist?(path)
+    end
+
+    it "raises when v2 weight keys are missing" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_missing_v2_keys.json")
+      File.write(path, <<~JSON)
+        {
+          "technology": {
+            "primary": ["ruby"],
+            "secondary": ["postgresql"]
+          },
+          "remote_hybrid": {
+            "importance": "high",
+            "preferred_modes": ["yes", "hybrid"],
+            "hybrid": {
+              "allowed_cities": ["Nantes"],
+              "hybrid_remote_days_min_per_week": 3,
+              "days_weight": 0.35
+            }
+          },
+          "weights": {
+            "technology": 70,
+            "remote_hybrid": 20,
+            "location": 10
+          }
+        }
+      JSON
+
+      expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing technology.weights/)
     ensure
       File.delete(path) if File.exist?(path)
     end
