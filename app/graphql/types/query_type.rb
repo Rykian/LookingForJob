@@ -20,12 +20,18 @@ module Types
 
     # --- Job Offers ---
 
-    field :job_offers, Types::JobOffersResultType, null: false do
-      argument :page, Integer, required: false, default_value: 1
-      argument :per_page, Integer, required: false, default_value: 25
-      argument :source, String, required: false
-      argument :remote, String, required: false
-      argument :scored, Boolean, required: false
+    field :job_offers, Types::JobOffersResultType, null: false,
+      description: "List job offers with optional filters and pagination." do
+      argument :page, Integer, required: false, default_value: 1,
+        description: "1-based page number."
+      argument :per_page, Integer, required: false, default_value: 25,
+        description: "Items per page."
+      argument :source, String, required: false,
+        description: "Filter by offer source (for example: linkedin)."
+      argument :remote, String, required: false,
+        description: "Filter by remote mode (yes, hybrid, no)."
+      argument :scored, Boolean, required: false,
+        description: "When true returns only scored offers; when false only unscored offers."
     end
 
     def job_offers(page:, per_page:, source: nil, remote: nil, scored: nil)
@@ -46,8 +52,9 @@ module Types
       }
     end
 
-    field :job_offer, Types::JobOfferType, null: true do
-      argument :id, ID, required: true
+    field :job_offer, Types::JobOfferType, null: true,
+      description: "Find a single job offer by ID." do
+      argument :id, ID, required: true, description: "Job offer ID."
     end
 
     def job_offer(id:)
@@ -56,7 +63,8 @@ module Types
 
     # --- Dashboard ---
 
-    field :dashboard_metrics, Types::DashboardMetricsType, null: false
+    field :dashboard_metrics, Types::DashboardMetricsType, null: false,
+      description: "Aggregated pipeline metrics used by the dashboard."
 
     def dashboard_metrics
       total     = JobOffer.count
@@ -84,7 +92,8 @@ module Types
 
     # --- Scoring Profile ---
 
-    field :scoring_profile, GraphQL::Types::JSON, null: false
+    field :scoring_profile, GraphQL::Types::JSON, null: false,
+      description: "Current file-backed scoring profile JSON."
 
     def scoring_profile
       Sourcing::ScoringProfile.load

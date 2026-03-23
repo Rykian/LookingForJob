@@ -2,6 +2,47 @@
 
 Backend API Rails for the LookingForJob rebuild.
 
+## Developer workflow
+
+### Run locally
+
+Use one command to run Rails, Vite, and GraphQL schema/type generation in watch mode:
+
+```bash
+bin/dev
+```
+
+`Procfile.dev` starts:
+- `web`: Rails server on port 3000
+- `vite`: Vite dev server
+- `gql-schema`: watches Ruby GraphQL schema files and refreshes `tmp/schema.graphql`
+- `gql-types`: watches frontend TS/TSX files and regenerates `app/frontend/graphql/generated.ts`
+
+### GraphQL code generation
+
+```bash
+npm run graphql:schema
+npm run graphql:types
+```
+
+- `graphql:schema` exports SDL from `::LookingForJobSchema` into `tmp/schema.graphql`
+- `graphql:types` runs schema export then GraphQL Code Generator
+- codegen config is in `codegen.ts`
+
+### Where GraphQL operations live
+
+Frontend queries and mutations are defined inline in TSX pages, then codegen plucks those operations:
+
+- `app/frontend/pages/dashboard.tsx`
+- `app/frontend/pages/offers/index.tsx`
+- `app/frontend/pages/offers/detail.tsx`
+- `app/frontend/pages/sourcing.tsx`
+- `app/frontend/pages/profile.tsx`
+
+Generated operation/types output:
+
+- `app/frontend/graphql/generated.ts`
+
 ## Prerequisites
 
 - Ruby 4.0+
@@ -25,6 +66,12 @@ bin/rails db:create db:migrate
 
 ```bash
 bundle exec rspec
+```
+
+Run type checks:
+
+```bash
+npx tsc --noEmit
 ```
 
 ## Profile-Driven Scoring (V1)

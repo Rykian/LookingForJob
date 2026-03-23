@@ -19,13 +19,20 @@ export type Scalars = {
   JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
 };
 
+/** Top-level sourcing pipeline counters. */
 export type DashboardMetrics = {
   __typename?: 'DashboardMetrics';
+  /** Average score across scored offers. */
   averageScore?: Maybe<Scalars['Float']['output']>;
+  /** Offers enriched by LLM step. */
   enriched: Scalars['Int']['output'];
+  /** Offers with fetched HTML content. */
   fetched: Scalars['Int']['output'];
+  /** Offers scored against profile. */
   scored: Scalars['Int']['output'];
+  /** Top sources ordered by offer count. */
   topSources: Array<SourceCount>;
+  /** Total offers in database. */
   total: Scalars['Int']['output'];
 };
 
@@ -59,10 +66,14 @@ export type JobOffer = {
   url: Scalars['String']['output'];
 };
 
+/** Paginated response for job offers. */
 export type JobOffersResult = {
   __typename?: 'JobOffersResult';
+  /** Offers for the requested page. */
   nodes: Array<JobOffer>;
+  /** Total number of offers matching current filters. */
   totalCount: Scalars['Int']['output'];
+  /** Total pages with current per_page value. */
   totalPages: Scalars['Int']['output'];
 };
 
@@ -77,14 +88,15 @@ export type LaunchDiscoveryPayload = {
   __typename?: 'LaunchDiscoveryPayload';
   /** A unique identifier for the client performing the mutation. */
   clientMutationId?: Maybe<Scalars['String']['output']>;
+  /** User-facing enqueue confirmation message. */
   message: Scalars['String']['output'];
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Enqueue a full discovery run across all registered sources and keywords. */
+  /** Enqueue discovery jobs for all configured providers/keywords/modes. */
   launchDiscovery?: Maybe<LaunchDiscoveryPayload>;
-  /** Overwrite the file-backed scoring profile with the provided JSON object. */
+  /** Replace the scoring profile JSON used by scoring jobs. */
   updateScoringProfile?: Maybe<UpdateScoringProfilePayload>;
 };
 
@@ -100,9 +112,13 @@ export type MutationUpdateScoringProfileArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Aggregated pipeline metrics used by the dashboard. */
   dashboardMetrics: DashboardMetrics;
+  /** Find a single job offer by ID. */
   jobOffer?: Maybe<JobOffer>;
+  /** List job offers with optional filters and pagination. */
   jobOffers: JobOffersResult;
+  /** Current file-backed scoring profile JSON. */
   scoringProfile: Scalars['JSON']['output'];
 };
 
@@ -130,6 +146,7 @@ export type SourceCount = {
 export type UpdateScoringProfileInput = {
   /** A unique identifier for the client performing the mutation. */
   clientMutationId?: InputMaybe<Scalars['String']['input']>;
+  /** Full scoring profile JSON payload. */
   profile: Scalars['JSON']['input'];
 };
 
@@ -138,6 +155,7 @@ export type UpdateScoringProfilePayload = {
   __typename?: 'UpdateScoringProfilePayload';
   /** A unique identifier for the client performing the mutation. */
   clientMutationId?: Maybe<Scalars['String']['output']>;
+  /** The persisted profile payload after validation. */
   profile: Scalars['JSON']['output'];
 };
 

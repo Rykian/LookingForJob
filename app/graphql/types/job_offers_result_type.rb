@@ -2,8 +2,13 @@
 
 module Types
   class JobOffersResultType < Types::BaseObject
-    field :nodes, [Types::JobOfferType], null: false
-    field :total_count, Integer, null: false
-    field :total_pages, Integer, null: false
+    description "Paginated response for job offers."
+
+    field :nodes, [Types::JobOfferType], null: false,
+      description: "Offers for the requested page."
+    field :total_count, Integer, null: false,
+      description: "Total number of offers matching current filters."
+    field :total_pages, Integer, null: false,
+      description: "Total pages with current per_page value."
   end
 end
