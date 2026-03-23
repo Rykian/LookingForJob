@@ -2,13 +2,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "lint": "biome lint app/frontend",
+    "format": "biome format --write app/frontend",
+    "check": "biome check app/frontend",
     "graphql:schema": "bundle exec rails runner \"File.write('tmp/schema.graphql', ::LookingForJobSchema.to_definition)\"",
     "graphql:schema:watch": "chokidar 'app/graphql/**/*.rb' -c 'npm run graphql:schema' --initial",
     "graphql:types": "npm run graphql:schema && graphql-codegen --config codegen.ts",
     "graphql:types:watch": "chokidar 'app/frontend/**/*.{ts,tsx}' -c 'npm run graphql:types' --initial"
   },
   "devDependencies": {
-    "chokidar-cli": "^3.0.0",
+    "@biomejs/biome": "2.4.8",
     "@graphql-codegen/cli": "^6.2.1",
     "@graphql-codegen/typed-document-node": "^6.1.7",
     "@graphql-codegen/typescript": "^5.0.9",
@@ -17,6 +20,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "chokidar-cli": "^3.0.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
