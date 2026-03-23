@@ -34,7 +34,6 @@
 # Data directory runtime artifacts.
 /data/*.json
 !/data/scoring_profile.json
-/data/linkedin_session.json
 
 # Node / Vite
 node_modules/
@@ -51,3 +50,5 @@ node_modules
 # https://vitejs.dev/guide/env-and-mode.html#env-files
 *.local
 
+# Playwright MCP
+/.playwright-mcp
