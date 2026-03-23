@@ -1,10 +1,30 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { JobOffersDocument, JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
+import type { JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
+
+const JOB_OFFERS_QUERY = gql`
+  query JobOffers($page: Int!, $perPage: Int!, $source: String, $remote: String, $scored: Boolean) {
+    jobOffers(page: $page, perPage: $perPage, source: $source, remote: $remote, scored: $scored) {
+      totalCount
+      totalPages
+      nodes {
+        id
+        title
+        company
+        source
+        city
+        remote
+        score
+        firstSeenAt
+      }
+    }
+  }
+`
 
 export default function OffersPage() {
   const [page, setPage] = useState(1)
@@ -20,7 +40,7 @@ export default function OffersPage() {
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
   }
 
-  const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(JobOffersDocument, {
+  const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(JOB_OFFERS_QUERY, {
     variables,
   })
 

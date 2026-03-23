@@ -2,9 +2,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "graphql:schema": "rtk bundle exec rails runner \"File.write('tmp/schema.graphql', ::LookingForJobSchema.to_definition)\"",
+    "graphql:schema": "bundle exec rails runner \"File.write('tmp/schema.graphql', ::LookingForJobSchema.to_definition)\"",
+    "graphql:schema:watch": "chokidar 'app/graphql/**/*.rb' -c 'npm run graphql:schema' --initial",
     "graphql:types": "npm run graphql:schema && graphql-codegen --config codegen.ts",
-    "graphql:watch": "chokidar 'app/frontend/**/*.{ts,tsx}' 'tmp/schema.graphql' 'app/graphql/**/*.rb' -c 'npm run graphql:types' --initial"
+    "graphql:types:watch": "chokidar 'app/frontend/**/*.{ts,tsx}' -c 'npm run graphql:types' --initial"
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
