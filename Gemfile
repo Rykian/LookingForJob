@@ -37,6 +37,9 @@ gem "thruster", require: false
 # Vite integration for the React SPA
 gem "vite_rails"
 
+# GraphQL API
+gem "graphql", "~> 2.3"
+
 group :development, :test do
   gem "dotenv-rails"
   gem "rspec-rails"

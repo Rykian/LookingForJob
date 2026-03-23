@@ -1,8 +1,6 @@
 Rails.application.routes.draw do
+  post "/graphql", to: "graphql#execute"
   get "up" => "rails/health#show", as: :rails_health_check
-
-  # GraphQL endpoint (Phase 2)
-  # post "/graphql", to: "graphql#execute"
 
   # SPA catch-all — must be last
   root "spa#index"

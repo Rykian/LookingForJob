@@ -1,5 +1,5 @@
 class SpaController < ActionController::Base
   def index
-    render html: '', layout: 'spa'
+    render html: "", layout: "spa"
   end
 end
