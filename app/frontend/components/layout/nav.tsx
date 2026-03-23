@@ -1,10 +1,5 @@
+import { Briefcase, ExternalLink, LayoutDashboard, Search, Settings } from 'lucide-react'
 import { NavLink } from 'react-router'
-import {
-  LayoutDashboard,
-  Briefcase,
-  Search,
-  Settings,
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -13,6 +8,8 @@ const links = [
   { to: '/sourcing', label: 'Sourcing', icon: Search, end: false },
   { to: '/profile', label: 'Profile', icon: Settings, end: false },
 ]
+
+const externalLinks = [{ href: '/sidekiq', label: 'Sidekiq UI', icon: ExternalLink }]
 
 export default function Nav() {
   return (
@@ -34,6 +31,24 @@ export default function Nav() {
           <Icon className="h-4 w-4 shrink-0" />
           {label}
         </NavLink>
+      ))}
+
+      <div className="my-2 border-t border-sidebar-border" />
+
+      {externalLinks.map(({ href, label, icon: Icon }) => (
+        <a
+          key={href}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+            'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+          )}
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          {label}
+        </a>
       ))}
     </nav>
   )
