@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
 import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
+import { useState } from 'react'
+import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,7 +48,9 @@ export default function OffersPage() {
   const [source, setSource] = useState('')
   const [remote, setRemote] = useState('')
   const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
-  const [sortBy, setSortBy] = useState<'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'>('score')
+  const [sortBy, setSortBy] = useState<
+    'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'
+  >('score')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const toggleSort = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
@@ -77,9 +79,12 @@ export default function OffersPage() {
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
   }
 
-  const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(JOB_OFFERS_QUERY, {
-    variables,
-  })
+  const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(
+    JOB_OFFERS_QUERY,
+    {
+      variables,
+    },
+  )
 
   const totalPages = data?.jobOffers.totalPages ?? 1
 
@@ -216,14 +221,6 @@ export default function OffersPage() {
                         <Link className="hover:underline" to={`/offers/${offer.id}`}>
                           {offer.title || 'Untitled role'}
                         </Link>
-                        <a
-                          className="inline-block text-xs text-primary underline-offset-4 hover:underline"
-                          href={(offer as { url?: string }).url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Original offer
-                        </a>
                       </div>
                     </td>
                     <td className="px-3 py-2">{offer.company || '-'}</td>
@@ -233,7 +230,9 @@ export default function OffersPage() {
                       <Badge variant="outline">{offer.remote || 'unknown'}</Badge>
                     </td>
                     <td className="px-3 py-2">{offer.score ?? '-'}</td>
-                    <td className="px-3 py-2">{new Date(offer.firstSeenAt).toLocaleDateString()}</td>
+                    <td className="px-3 py-2">
+                      {new Date(offer.firstSeenAt).toLocaleDateString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -241,9 +240,16 @@ export default function OffersPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Page {page} of {Math.max(totalPages, 1)}</span>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {Math.max(totalPages, 1)}
+            </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
                 Previous
               </Button>
               <Button
