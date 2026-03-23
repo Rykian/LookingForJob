@@ -15,6 +15,7 @@ module Types
     field :hybrid_remote_days_min_per_week, Integer, null: true
     field :score, Integer, null: true
     field :score_breakdown, GraphQL::Types::JSON, null: true
+    field :description_html, String, null: true
     field :primary_technologies, [String], null: true
     field :secondary_technologies, [String], null: true
     field :salary_min_minor, Integer, null: true

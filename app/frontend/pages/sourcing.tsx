@@ -1,8 +1,51 @@
+import { gql } from '@apollo/client'
+import { useMutation } from '@apollo/client/react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+const LAUNCH_DISCOVERY = gql`
+  mutation LaunchDiscovery {
+    launchDiscovery {
+      message
+    }
+  }
+`
+
+type LaunchResponse = {
+  launchDiscovery: {
+    message: string
+  }
+}
+
 export default function SourcingPage() {
+  const [launchDiscovery, { loading, error, data }] = useMutation<LaunchResponse>(LAUNCH_DISCOVERY)
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold">Sourcing</h1>
-      <p className="mt-2 text-muted-foreground">Launch discovery — coming in Phase 3.</p>
+    <div className="space-y-6 p-8">
+      <div>
+        <h1 className="text-2xl font-semibold">Sourcing</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Trigger a full discovery run over configured keywords and sources.</p>
+      </div>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Launch Discovery</CardTitle>
+          <CardDescription>
+            This enqueues one discovery job per source x keyword x work mode combination.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button disabled={loading} onClick={() => launchDiscovery()}>
+            {loading ? 'Launching...' : 'Launch Discovery'}
+          </Button>
+
+          {data?.launchDiscovery.message ? (
+            <p className="text-sm text-green-700">{data.launchDiscovery.message}</p>
+          ) : null}
+
+          {error ? <p className="text-sm text-destructive">Failed to enqueue discovery job.</p> : null}
+        </CardContent>
+      </Card>
     </div>
   )
 }

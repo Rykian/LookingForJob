@@ -39,7 +39,11 @@ module Types
       total_pages = (total_count.to_f / per_page).ceil
       nodes = scope.order(first_seen_at: :desc).offset((page - 1) * per_page).limit(per_page)
 
-      OpenStruct.new(nodes: nodes, total_count: total_count, total_pages: total_pages)
+      {
+        nodes: nodes,
+        total_count: total_count,
+        total_pages: total_pages,
+      }
     end
 
     field :job_offer, Types::JobOfferType, null: true do
@@ -66,16 +70,16 @@ module Types
         .order(Arel.sql("COUNT(*) DESC"))
         .limit(5)
         .count
-        .map { |src, cnt| OpenStruct.new(source: src, count: cnt) }
+        .map { |src, cnt| { source: src, count: cnt } }
 
-      OpenStruct.new(
+      {
         total: total,
         fetched: fetched,
         enriched: enriched,
         scored: scored,
         average_score: avg_score,
         top_sources: top_sources
-      )
+      }
     end
 
     # --- Scoring Profile ---
