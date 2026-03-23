@@ -31,6 +31,7 @@ const JOB_OFFERS_QUERY = gql`
       nodes {
         id
         title
+        url
         company
         source
         city
@@ -211,9 +212,19 @@ export default function OffersPage() {
                 {(data?.jobOffers.nodes ?? []).map((offer) => (
                   <tr key={offer.id} className="border-b last:border-0">
                     <td className="px-3 py-2 font-medium">
-                      <Link className="hover:underline" to={`/offers/${offer.id}`}>
-                        {offer.title || 'Untitled role'}
-                      </Link>
+                      <div className="space-y-1">
+                        <Link className="hover:underline" to={`/offers/${offer.id}`}>
+                          {offer.title || 'Untitled role'}
+                        </Link>
+                        <a
+                          className="inline-block text-xs text-primary underline-offset-4 hover:underline"
+                          href={(offer as { url?: string }).url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Original offer
+                        </a>
+                      </div>
                     </td>
                     <td className="px-3 py-2">{offer.company || '-'}</td>
                     <td className="px-3 py-2">{offer.source}</td>
