@@ -50,3 +50,29 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+  build_frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Type-check frontend
+        run: npx tsc --noEmit
+
+      - name: Set up Ruby (for vite:build rake task)
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Build frontend assets
+        run: bundle exec rake vite:build
+
