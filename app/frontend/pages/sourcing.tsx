@@ -2,7 +2,7 @@ import { gql } from '@apollo/client'
 import { useMutation } from '@apollo/client/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { LaunchDiscoveryMutation } from '@/graphql/generated'
+import type { LaunchDiscoveryMutation, RecomputeOfferScoresMutation } from '@/graphql/generated'
 
 const LAUNCH_DISCOVERY_MUTATION = gql`
   mutation LaunchDiscovery {
@@ -12,10 +12,21 @@ const LAUNCH_DISCOVERY_MUTATION = gql`
   }
 `
 
+const RECOMPUTE_OFFER_SCORES_MUTATION = gql`
+  mutation RecomputeOfferScores {
+    recomputeOfferScores(input: {}) {
+      message
+      enqueuedCount
+    }
+  }
+`
+
 export default function SourcingPage() {
   const [launchDiscovery, { loading, error, data }] = useMutation<LaunchDiscoveryMutation>(
     LAUNCH_DISCOVERY_MUTATION,
   )
+  const [recomputeOfferScores, { loading: recomputeLoading, error: recomputeError, data: recomputeData }] =
+    useMutation<RecomputeOfferScoresMutation>(RECOMPUTE_OFFER_SCORES_MUTATION)
 
   return (
     <div className="space-y-6 p-8">
@@ -41,6 +52,26 @@ export default function SourcingPage() {
           ) : null}
 
           {error ? <p className="text-sm text-destructive">Failed to enqueue discovery job.</p> : null}
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Recompute Scores</CardTitle>
+          <CardDescription>
+            This enqueues one scoring job for each existing offer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button disabled={recomputeLoading} onClick={() => recomputeOfferScores()}>
+            {recomputeLoading ? 'Recomputing...' : 'Recompute All Scores'}
+          </Button>
+
+          {recomputeData?.recomputeOfferScores?.message ? (
+            <p className="text-sm text-green-700">{recomputeData.recomputeOfferScores.message}</p>
+          ) : null}
+
+          {recomputeError ? <p className="text-sm text-destructive">Failed to enqueue scoring jobs.</p> : null}
         </CardContent>
       </Card>
     </div>

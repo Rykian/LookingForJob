@@ -216,4 +216,44 @@ RSpec.describe "GraphQL API", type: :request do
       File.delete(path) if File.exist?(path)
     end
   end
+
+  describe "mutation recomputeOfferScores" do
+    it "enqueues one scoring job per offer" do
+      first = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/recompute-1",
+        url_hash: "hash-recompute-1",
+        first_seen_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      second = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/recompute-2",
+        url_hash: "hash-recompute-2",
+        first_seen_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      allow(Sourcing::ScoringJob).to receive(:perform_later)
+
+      mutation = <<~GRAPHQL
+        mutation RecomputeOfferScores {
+          recomputeOfferScores(input: {}) {
+            message
+            enqueuedCount
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: mutation)
+
+      expect(result["errors"]).to be_nil
+      payload = result.dig("data", "recomputeOfferScores")
+      expect(payload["enqueuedCount"]).to eq(2)
+      expect(payload["message"]).to eq("Score recomputation enqueued for 2 offers.")
+      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(url_hash: first.url_hash)
+      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(url_hash: second.url_hash)
+    end
+  end
 end
