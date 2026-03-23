@@ -47,7 +47,7 @@ export default function OffersPage() {
   const [source, setSource] = useState('')
   const [remote, setRemote] = useState('')
   const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
-  const [sortBy, setSortBy] = useState<'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'>('first_seen_at')
+  const [sortBy, setSortBy] = useState<'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'>('score')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const toggleSort = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
@@ -139,7 +139,7 @@ export default function OffersPage() {
                 setSource('')
                 setRemote('')
                 setScored('any')
-                setSortBy('first_seen_at')
+                setSortBy('score')
                 setSortDirection('desc')
               }}
             >
