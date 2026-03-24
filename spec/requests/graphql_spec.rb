@@ -12,18 +12,16 @@ RSpec.describe "GraphQL API", type: :request do
         source: "linkedin",
         url: "https://example.com/offers/1",
         url_hash: "hash-1",
-        first_seen_at: 2.days.ago,
         last_seen_at: 2.days.ago,
         remote: "yes",
-        scored_at: Time.current,
-        title: "Backend Engineer"
+        title: "Backend Engineer",
+        steps_details: { "score" => { "at" => Time.current.iso8601, "version" => 1 } }
       )
 
       JobOffer.create!(
         source: "welcome_to_the_jungle",
         url: "https://example.com/offers/2",
         url_hash: "hash-2",
-        first_seen_at: 1.day.ago,
         last_seen_at: 1.day.ago,
         remote: "hybrid",
         title: "Frontend Engineer"
@@ -70,7 +68,6 @@ RSpec.describe "GraphQL API", type: :request do
         source: "linkedin",
         url: "https://example.com/offers/sort-low",
         url_hash: "hash-sort-low",
-        first_seen_at: 2.days.ago,
         last_seen_at: 2.days.ago,
         score: 10
       )
@@ -79,7 +76,6 @@ RSpec.describe "GraphQL API", type: :request do
         source: "linkedin",
         url: "https://example.com/offers/sort-high",
         url_hash: "hash-sort-high",
-        first_seen_at: 1.day.ago,
         last_seen_at: 1.day.ago,
         score: 90
       )
@@ -117,12 +113,13 @@ RSpec.describe "GraphQL API", type: :request do
         source: "linkedin",
         url: "https://example.com/offers/3",
         url_hash: "hash-3",
-        first_seen_at: Time.current,
         last_seen_at: Time.current,
-        fetched_at: Time.current,
-        enriched_at: Time.current,
-        scored_at: Time.current,
-        score: 80
+        score: 80,
+        steps_details: {
+          "fetch"  => { "at" => Time.current.iso8601, "version" => 1 },
+          "enrich" => { "at" => Time.current.iso8601, "version" => 1 },
+          "score"  => { "at" => Time.current.iso8601, "version" => 1 }
+        }
       )
 
       query = <<~GRAPHQL
@@ -236,13 +233,47 @@ RSpec.describe "GraphQL API", type: :request do
     end
   end
 
+  describe "steps_details field" do
+    it "exposes typed step metadata on a job offer" do
+      offer = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/steps-1",
+        url_hash: "hash-steps-1",
+        last_seen_at: Time.current,
+        steps_details: {
+          "discovery" => { "at" => "2026-03-24T10:00:00Z", "version" => 1 },
+          "fetch" => { "at" => "2026-03-24T10:30:00Z", "version" => 1 }
+        }
+      )
+
+      query = <<~GRAPHQL
+        query JobOffer($id: ID!) {
+          jobOffer(id: $id) {
+            stepsDetails {
+              discovery { at version }
+              fetch { at version }
+              analyze { at version }
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: query, variables: { id: offer.id })
+
+      expect(result["errors"]).to be_nil
+      steps = result.dig("data", "jobOffer", "stepsDetails")
+      expect(steps["discovery"]).to eq("at" => "2026-03-24T10:00:00Z", "version" => 1)
+      expect(steps["fetch"]).to eq("at" => "2026-03-24T10:30:00Z", "version" => 1)
+      expect(steps["analyze"]).to be_nil
+    end
+  end
+
   describe "mutation recomputeOfferScores" do
     it "enqueues one scoring job per offer" do
       first = JobOffer.create!(
         source: "linkedin",
         url: "https://example.com/offers/recompute-1",
         url_hash: "hash-recompute-1",
-        first_seen_at: Time.current,
         last_seen_at: Time.current
       )
 
@@ -250,7 +281,6 @@ RSpec.describe "GraphQL API", type: :request do
         source: "linkedin",
         url: "https://example.com/offers/recompute-2",
         url_hash: "hash-recompute-2",
-        first_seen_at: Time.current,
         last_seen_at: Time.current
       )
 

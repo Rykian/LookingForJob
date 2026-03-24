@@ -42,8 +42,8 @@ module Types
       scope = JobOffer.all
       scope = scope.where(source: source) if source.present?
       scope = scope.where(remote: remote) if remote.present?
-      scope = scope.where.not(scored_at: nil) if scored == true
-      scope = scope.where(scored_at: nil) if scored == false
+      scope = scope.where("steps_details ? 'score'") if scored == true
+      scope = scope.where("NOT (steps_details ? 'score')") if scored == false
 
       sort_column = normalize_sort_column(sort_by)
       direction = normalize_sort_direction(sort_direction)
@@ -77,10 +77,10 @@ module Types
       description: "Aggregated pipeline metrics used by the dashboard."
 
     def dashboard_metrics
-      total     = JobOffer.count
-      fetched   = JobOffer.where.not(fetched_at: nil).count
-      enriched  = JobOffer.where.not(enriched_at: nil).count
-      scored    = JobOffer.where.not(scored_at: nil).count
+      total    = JobOffer.count
+      fetched  = JobOffer.where("steps_details ? 'fetch'").count
+      enriched = JobOffer.where("steps_details ? 'enrich'").count
+      scored   = JobOffer.where("steps_details ? 'score'").count
       avg_score = JobOffer.where.not(score: nil).average(:score)&.to_f&.round(1)
 
       top_sources = JobOffer
@@ -113,14 +113,13 @@ module Types
 
     def normalize_sort_column(sort_by)
       allowed = {
-        "first_seen_at" => "first_seen_at",
+        "first_seen_at" => "(steps_details->'discovery'->>'at')::timestamptz",
         "last_seen_at" => "last_seen_at",
         "score" => "score",
         "company" => "company",
         "title" => "title"
       }
-
-      allowed.fetch(sort_by.to_s, "first_seen_at")
+      allowed.fetch(sort_by.to_s, "(steps_details->'discovery'->>'at')::timestamptz")
     end
 
     def normalize_sort_direction(sort_direction)

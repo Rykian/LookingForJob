@@ -5,10 +5,11 @@ module Sourcing
       return unless offer
       profile = Sourcing::ScoringProfile.load
       score, breakdown = Sourcing::ScoreStep.call(offer: offer, profile: profile)
+      now = Time.current
       offer.update!(
         score: score,
         score_breakdown: breakdown,
-        scored_at: Time.current
+        steps_details: offer.steps_details.merge("score" => { "at" => now.iso8601, "version" => 1 })
       )
     rescue => e
       Rails.logger.error("ScoringJob failed for #{url_hash}: #{e.message}")

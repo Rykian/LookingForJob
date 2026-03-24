@@ -31,15 +31,13 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "stores enrichment fields and enriched_at" do
+  it "stores enrichment fields" do
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/123",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
-      first_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
       html_content: "<html>content</html>",
-      fetched_at: Time.current,
       title: "Backend Engineer",
       company: "Acme"
     )
@@ -61,7 +59,8 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect(offer.hybrid_remote_days_min_per_week).to eq(3)
     expect(offer.primary_technologies).to eq([ "Ruby on Rails" ])
     expect(offer.normalized_seniority).to eq("senior")
-    expect(offer.enriched_at).not_to be_nil
+    expect(offer.steps_details["enrich"]).to include("version" => 1)
+    expect(offer.steps_details.dig("enrich", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::ScoringJob }
     expect(queued.size).to eq(1)

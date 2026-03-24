@@ -13,12 +13,9 @@ module Sourcing
 
       provider = Sourcing::Providers.registry.fetch(source)
       discovery_step = provider.discovery_step
+      @playwright_runtime = discovery_step.initialize_playwright(input: input)
 
-      step :playwright_initialization do
-        @playwright_runtime = discovery_step.initialize_playwright(input: input)
-      end
-
-      step :crawl_every_pages do |job_step|
+      step :crawl do |job_step|
         page = Integer(job_step.cursor || input.fetch(:page, 1))
 
         loop do
@@ -36,9 +33,7 @@ module Sourcing
         end
       end
 
-      step :close_playwright do
-        discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
-      end
+      discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
     end
 
     private
@@ -58,11 +53,33 @@ module Sourcing
 
       offer.source = source
       offer.url = url
-      offer.first_seen_at ||= now
+      if offer.steps_details&.dig("discovery").nil?
+        offer.steps_details = (offer.steps_details || {}).merge(
+          "discovery" => { "at" => now.iso8601, "version" => 1 }
+        )
+      end
       offer.last_seen_at = now
       offer.save!
 
       offer
+    rescue ActiveRecord::RecordNotUnique
+      existing_offer = JobOffer.find_by!(url_hash: url_hash)
+      existing_offer.update!(last_seen_at: now) if existing_offer.last_seen_at.nil? || existing_offer.last_seen_at < now
+      existing_offer
+    rescue ActiveRecord::RecordInvalid => e
+      unless uniqueness_validation_error?(e.record)
+        raise
+      end
+
+      existing_offer = JobOffer.find_by(url_hash: url_hash) || JobOffer.find_by(url: url)
+      raise unless existing_offer
+
+      existing_offer.update!(last_seen_at: now) if existing_offer.last_seen_at.nil? || existing_offer.last_seen_at < now
+      existing_offer
+    end
+
+    def uniqueness_validation_error?(record)
+      record.errors.added?(:url, :taken) || record.errors.added?(:url_hash, :taken)
     end
   end
 end

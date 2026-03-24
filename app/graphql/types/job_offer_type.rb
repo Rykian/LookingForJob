@@ -23,10 +23,13 @@ module Types
     field :salary_max_minor, Integer, null: true
     field :salary_currency, String, null: true
     field :posted_at, GraphQL::Types::ISO8601DateTime, null: true
-    field :first_seen_at, GraphQL::Types::ISO8601DateTime, null: false
+    field :first_seen_at, GraphQL::Types::ISO8601DateTime, null: true
     field :last_seen_at, GraphQL::Types::ISO8601DateTime, null: false
-    field :fetched_at, GraphQL::Types::ISO8601DateTime, null: true
-    field :enriched_at, GraphQL::Types::ISO8601DateTime, null: true
-    field :scored_at, GraphQL::Types::ISO8601DateTime, null: true
+    field :steps_details, Types::StepsDetailsType, null: true
+
+    def first_seen_at
+      at = object.steps_details&.dig("discovery", "at")
+      DateTime.parse(at) if at
+    end
   end
 end

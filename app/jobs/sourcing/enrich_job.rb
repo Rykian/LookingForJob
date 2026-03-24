@@ -32,8 +32,11 @@ module Sourcing
         )
       )
 
+      now = Time.current
       offer.update!(
-        enrichment.slice(*ENRICHED_ATTRIBUTES).merge(enriched_at: Time.current)
+        enrichment.slice(*ENRICHED_ATTRIBUTES).merge(
+          steps_details: offer.steps_details.merge("enrich" => { "at" => now.iso8601, "version" => 1 })
+        )
       )
       Sourcing::ScoringJob.perform_later(url_hash: offer.url_hash)
     end

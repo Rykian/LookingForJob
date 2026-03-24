@@ -36,7 +36,6 @@ RSpec.describe Sourcing::FetchJob, type: :job do
       source: "linkedin",
       url: "https://example.com/jobs/123",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
-      first_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
     )
 
@@ -46,7 +45,8 @@ RSpec.describe Sourcing::FetchJob, type: :job do
 
     offer.reload
     expect(offer.html_content).to eq("<html>ok</html>")
-    expect(offer.fetched_at).not_to be_nil
+    expect(offer.steps_details["fetch"]).to include("version" => 1)
+    expect(offer.steps_details.dig("fetch", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
     expect(queued.size).to eq(1)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_21_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_24_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -21,9 +21,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_120000) do
     t.text "description_html"
     t.string "employment_type"
     t.string "english_level_required"
-    t.datetime "enriched_at"
-    t.datetime "fetched_at"
-    t.datetime "first_seen_at", null: false
     t.text "html_content"
     t.integer "hybrid_remote_days_min_per_week"
     t.datetime "last_seen_at", null: false
@@ -37,15 +34,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_120000) do
     t.integer "salary_min_minor"
     t.integer "score"
     t.jsonb "score_breakdown"
-    t.datetime "scored_at"
     t.jsonb "secondary_technologies"
     t.string "source", null: false
+    t.jsonb "steps_details", default: {}, null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.string "url_hash", null: false
     t.index ["city"], name: "index_job_offers_on_city"
-    t.index ["scored_at"], name: "index_job_offers_on_scored_at"
     t.index ["url"], name: "index_job_offers_on_url", unique: true
     t.index ["url_hash"], name: "index_job_offers_on_url_hash", unique: true
   end

@@ -21,6 +21,7 @@ gem "solid_cable"
 gem "sidekiq"
 gem "playwright-ruby-client"
 gem "ruby_llm"
+gem "dry-schema"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

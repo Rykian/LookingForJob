@@ -53,6 +53,10 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
     expect(queued.size).to eq(2)
     expect(discovery_step).to have_received(:close_playwright).with(playwright_runtime: runtime)
+
+    offer = JobOffer.find_by(url: "https://example.com/jobs/1")
+    expect(offer.steps_details["discovery"]).to include("version" => 1)
+    expect(offer.steps_details.dig("discovery", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
   end
 
   it "does not enqueue further discovery jobs (pagination is internal to the step)" do

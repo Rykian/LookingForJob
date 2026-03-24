@@ -11,9 +11,10 @@ module Sourcing
         url_hash: offer.url_hash
       )
 
+      now = Time.current
       offer.update!(
         html_content: html_content,
-        fetched_at: Time.current
+        steps_details: offer.steps_details.merge("fetch" => { "at" => now.iso8601, "version" => 1 })
       )
 
       AnalyzeJob.perform_later(url_hash: offer.url_hash)
