@@ -10,8 +10,7 @@ module Sourcing
             DiscoveryJob.perform_later(
               source: source,
               keyword: keyword,
-              work_mode: work_mode,
-              page: 1
+              work_mode: work_mode
             )
           end
         end

@@ -2,29 +2,55 @@ require "digest"
 
 module Sourcing
   class DiscoveryJob < ApplicationJob
-    def perform(source:, keyword:, work_mode:, page:)
-      provider = Sourcing::Providers.registry.fetch(source)
-      result = provider.discovery_step.call(
+    include ActiveJob::Continuable
+
+    def perform(source:, keyword:, work_mode:)
+      input = {
         source: source,
         keyword: keyword,
-        work_mode: work_mode,
-        page: page
-      )
+        work_mode: work_mode
+      }
 
-      discovered_at = Time.current
+      provider = Sourcing::Providers.registry.fetch(source)
+      discovery_step = provider.discovery_step
 
-      result.fetch(:discovered_urls).each do |url|
-        offer = upsert_offer_url(source: source, url: url, now: discovered_at)
-
-        FetchJob.perform_later(url_hash: offer.url_hash)
+      step :playwright_initialization do
+        @playwright_runtime = discovery_step.initialize_playwright(input: input)
       end
 
-      if result.fetch(:has_next_page) && result[:next_job_data]
-        self.class.perform_later(**result[:next_job_data])
+      step :crawl_every_pages do |job_step|
+        page = Integer(job_step.cursor || input.fetch(:page, 1))
+
+        loop do
+          result = discovery_step.crawl_page(
+            input: input,
+            playwright_runtime: @playwright_runtime,
+            page: page
+          )
+          enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls))
+
+          break unless result.fetch(:has_next_page, false)
+
+          page += 1
+          job_step.advance! from: page
+        end
+      end
+
+      step :close_playwright do
+        discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
       end
     end
 
     private
+
+    def enqueue_discovered_urls(source:, discovered_urls:)
+      discovered_at = Time.current
+
+      discovered_urls.each do |url|
+        offer = upsert_offer_url(source: source, url: url, now: discovered_at)
+        FetchJob.perform_later(url_hash: offer.url_hash)
+      end
+    end
 
     def upsert_offer_url(source:, url:, now:)
       url_hash = Digest::SHA256.hexdigest(url)

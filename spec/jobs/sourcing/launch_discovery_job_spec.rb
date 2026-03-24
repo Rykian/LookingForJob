@@ -51,18 +51,18 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
 
     expect(queued.size).to eq(8)
     normalized_args = queued.map do |job|
-      job[:args].first.deep_symbolize_keys.slice(:source, :keyword, :work_mode, :page)
+      job[:args].first.deep_symbolize_keys.slice(:source, :keyword, :work_mode)
     end
 
     expect(normalized_args).to match_array([
-      { source: "linkedin", keyword: "ruby", work_mode: "remote", page: 1 },
-      { source: "linkedin", keyword: "ruby", work_mode: "hybrid", page: 1 },
-      { source: "linkedin", keyword: "rails", work_mode: "remote", page: 1 },
-      { source: "linkedin", keyword: "rails", work_mode: "hybrid", page: 1 },
-      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "remote", page: 1 },
-      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "hybrid", page: 1 },
-      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "remote", page: 1 },
-      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "hybrid", page: 1 }
+      { source: "linkedin", keyword: "ruby", work_mode: "remote" },
+      { source: "linkedin", keyword: "ruby", work_mode: "hybrid" },
+      { source: "linkedin", keyword: "rails", work_mode: "remote" },
+      { source: "linkedin", keyword: "rails", work_mode: "hybrid" },
+      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "remote" },
+      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "hybrid" },
+      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "remote" },
+      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "hybrid" }
     ])
   end
 

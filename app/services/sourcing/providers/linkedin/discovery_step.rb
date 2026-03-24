@@ -14,38 +14,78 @@ module Sourcing
           "button.jobs-search-pagination__button--next"
         ].freeze
 
+        # +crawler+ is an optional callable used in tests. It receives the same
+        # keyword args as the real per-page crawl and must return
+        # { discovered_urls: [...], has_next_page: true/false }.
         def initialize(crawler: nil)
-          @crawler = crawler || method(:crawl_with_playwright)
+          @crawler = crawler
         end
 
-        def call(input)
+        def initialize_playwright(input:)
+          return { mode: :crawler } if @crawler
+
+          require "playwright"
+
+          session = Sourcing::Providers::Linkedin::SessionManager.load
+          execution = Playwright.create(playwright_cli_executable_path: "npx playwright")
+          browser = execution.playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
+          context = browser.new_context(storageState: session)
+
+          {
+            mode: :playwright,
+            execution: execution,
+            browser: browser,
+            context: context,
+            closed: false
+          }
+        rescue Sourcing::Providers::Linkedin::SessionNotFoundError
+          raise
+        rescue StandardError => e
+          source = input[:source]
+          work_mode = input[:work_mode]
+          raise "LinkedIn discovery initialization failed for source=#{source} work_mode=#{work_mode}: #{e.message}"
+        end
+
+        def crawl_every_pages(input:, playwright_runtime:)
+          super
+        end
+
+        def crawl_page(input:, playwright_runtime:, page:)
           source = input.fetch(:source)
           keyword = input.fetch(:keyword)
           work_mode = input.fetch(:work_mode)
-          page = Integer(input.fetch(:page))
 
-          crawled = @crawler.call(
-            source: source,
-            keyword: keyword,
-            work_mode: work_mode,
-            page: page
-          )
-
-          discovered_urls = Array(crawled[:discovered_urls]).map { |u| clean_url(u) }.uniq
-          # Use next-page button state when the real crawler provides it;
-          # fall back to count-based heuristic for test doubles.
-          has_next_page = crawled.fetch(:has_next_page, discovered_urls.any? && page < MAX_PAGES)
-
-          {
-            discovered_urls: discovered_urls,
-            has_next_page: has_next_page,
-            next_job_data: has_next_page ? {
+          raw = if playwright_runtime[:mode] == :crawler
+            @crawler.call(source: source, keyword: keyword, work_mode: work_mode, page: page)
+          else
+            crawl_page_with_context(
+              context: playwright_runtime.fetch(:context),
               source: source,
               keyword: keyword,
               work_mode: work_mode,
-              page: page + 1
-            } : nil
+              page: page
+            )
+          end
+
+          urls = Array(raw[:discovered_urls]).map { |u| clean_url(u) }.uniq
+          has_next_page = raw.fetch(:has_next_page, urls.any? && page < MAX_PAGES) && page < MAX_PAGES
+
+          {
+            discovered_urls: urls,
+            has_next_page: has_next_page
           }
+        end
+
+        def close_playwright(playwright_runtime:)
+          return if playwright_runtime.nil?
+          return if playwright_runtime[:closed]
+          return if playwright_runtime[:mode] == :crawler
+
+          playwright_runtime[:context]&.close
+          playwright_runtime[:browser]&.close
+          playwright_runtime[:execution]&.stop
+        ensure
+          playwright_runtime[:closed] = true
         end
 
         def clean_url(url)
@@ -55,19 +95,15 @@ module Sourcing
           uri.to_s
         end
 
-        def crawl_with_playwright(source:, keyword:, work_mode:, page:)
-          require "playwright"
+        private
 
+        def crawl_page_with_context(context:, source:, keyword:, work_mode:, page:)
           url = build_search_url(keyword: keyword, work_mode: work_mode, page: page)
-
           result = { discovered_urls: [], has_next_page: false }
 
-          session = Sourcing::Providers::Linkedin::SessionManager.load
+          page_obj = context.new_page
 
-          Playwright.create(playwright_cli_executable_path: "npx playwright") do |playwright|
-            browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-            context = browser.new_context(storageState: session)
-            page_obj = context.new_page
+          begin
             page_obj.goto(url, waitUntil: "domcontentloaded")
 
             cards_found = begin
@@ -105,16 +141,11 @@ module Sourcing
               result[:discovered_urls] = Array(hrefs).uniq
               result[:has_next_page] = next_page_available?(page_obj) && page < MAX_PAGES
             end
-
-            context.close
-            browser.close
+          ensure
+            page_obj.close rescue nil
           end
 
           result
-        rescue Sourcing::Providers::Linkedin::SessionNotFoundError
-          raise
-        rescue StandardError => e
-          raise "LinkedIn discovery failed for source=#{source} work_mode=#{work_mode} page=#{page}: #{e.message}"
         end
 
         def build_search_url(keyword:, work_mode:, page:)

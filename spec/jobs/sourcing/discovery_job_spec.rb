@@ -31,48 +31,67 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "upserts discovered urls and enqueues fetch jobs" do
+  it "upserts all discovered urls and enqueues fetch jobs" do
     result = {
       discovered_urls: [ "https://example.com/jobs/1", "https://example.com/jobs/2" ],
-      next_job_data: nil,
       has_next_page: false
     }
+    runtime = { mode: :crawler }
 
-    allow(discovery_step).to receive(:call).and_return(result)
+    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
+    allow(discovery_step).to receive(:crawl_page).and_return(result)
+    allow(discovery_step).to receive(:close_playwright)
 
     expect do
       described_class.perform_now(
         source: "linkedin",
         keyword: "ruby",
-        work_mode: "remote",
-        page: 1
+        work_mode: "remote"
       )
     end.to change(JobOffer, :count).by(2)
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
     expect(queued.size).to eq(2)
+    expect(discovery_step).to have_received(:close_playwright).with(playwright_runtime: runtime)
   end
 
-  it "enqueues next discovery job when next page is available" do
-    result = {
-      discovered_urls: [ "https://example.com/jobs/1" ],
-      next_job_data: {
-        source: "linkedin",
-        page: 2
-      },
-      has_next_page: true
-    }
-
-    allow(discovery_step).to receive(:call).and_return(result)
+  it "does not enqueue further discovery jobs (pagination is internal to the step)" do
+    runtime = { mode: :crawler }
+    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
+    allow(discovery_step).to receive(:crawl_page).and_return({ discovered_urls: [], has_next_page: false })
+    allow(discovery_step).to receive(:close_playwright)
 
     described_class.perform_now(
       source: "linkedin",
       keyword: "ruby",
-      work_mode: "remote",
-      page: 1
+      work_mode: "remote"
     )
 
     next_discovery_jobs = enqueued_jobs.select { |job| job[:job] == described_class }
-    expect(next_discovery_jobs.size).to eq(1)
+    expect(next_discovery_jobs).to be_empty
+    expect(discovery_step).to have_received(:close_playwright).with(playwright_runtime: runtime)
+  end
+
+  it "uses page number as cursor while crawling" do
+    runtime = { mode: :crawler }
+    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
+    allow(discovery_step).to receive(:close_playwright)
+
+    allow(discovery_step).to receive(:crawl_page)
+      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 1)
+      .and_return({ discovered_urls: [ "https://example.com/jobs/1" ], has_next_page: true })
+
+    allow(discovery_step).to receive(:crawl_page)
+      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 2)
+      .and_return({ discovered_urls: [ "https://example.com/jobs/2" ], has_next_page: false })
+
+    described_class.perform_now(source: "linkedin", keyword: "ruby", work_mode: "remote")
+
+    expect(discovery_step).to have_received(:crawl_page)
+      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 1)
+      .once
+    expect(discovery_step).to have_received(:crawl_page)
+      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 2)
+      .once
   end
 end
