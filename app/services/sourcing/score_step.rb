@@ -3,32 +3,32 @@ module Sourcing
     # Returns [score, breakdown]
     def self.call(offer:, profile:)
       tech_score, tech_details = tech_subscore(offer, profile)
-      if tech_details[:no_primary_technologies] || tech_details[:no_primary_match]
-        return [ 0, { technology: tech_details, remote_hybrid: nil, location: nil, gate_reason: tech_details[:gate_reason] } ]
+      if tech_details[:no_primary_technologies]
+        return [ 0, { technology: tech_details, location_mode: nil, location_city: nil, gate_reason: tech_details[:gate_reason] } ]
       end
 
-      remote_score, remote_details = remote_subscore(offer, profile)
-      location_score, location_details = location_subscore(offer, profile)
+      mode_score, mode_details = location_mode_subscore(offer, profile)
+      city_score, city_details = location_city_subscore(offer, profile)
 
-      if offer.remote.to_s == "hybrid" && location_score.zero?
-        remote_score = 0
-        remote_details = remote_details.merge(score: 0, forced_to_zero_by_location: true)
+      if normalized_offer_mode(offer) == "hybrid" && city_score.zero?
+        mode_score = 0
+        mode_details = mode_details.merge(score: 0, forced_to_zero_by_city: true)
       end
 
       normalized_weights = aggregation_weights(profile)
       score = weighted_average(
         {
           technology: tech_score,
-          remote_hybrid: remote_score,
-          location: location_score
+          location_mode: mode_score,
+          location_city: city_score
         },
         normalized_weights
       )
 
       breakdown = {
         technology: tech_details,
-        remote_hybrid: remote_details,
-        location: location_details,
+        location_mode: mode_details,
+        location_city: city_details,
         weights: normalized_weights
       }
       [ score, breakdown ]
@@ -39,11 +39,11 @@ module Sourcing
       user_secondary = profile[:technology][:secondary].map(&:downcase)
       offer_primary = Array(offer.primary_technologies).map(&:downcase)
       offer_secondary = Array(offer.secondary_technologies).map(&:downcase)
+      penalties = profile[:penalties] || {}
+      bonuses = profile[:bonuses] || {}
 
       if offer_primary.empty?
         details = {
-          user_primary: user_primary, user_secondary: user_secondary,
-          offer_primary: offer_primary, offer_secondary: offer_secondary,
           no_primary_technologies: true,
           gate_reason: "missing_offer_primary",
           score: 0
@@ -51,156 +51,122 @@ module Sourcing
         return [ 0, details ]
       end
 
-      if user_primary.any? && (offer_primary & user_primary).empty?
-        details = {
-          user_primary: user_primary, user_secondary: user_secondary,
-          offer_primary: offer_primary, offer_secondary: offer_secondary,
-          no_primary_match: true,
-          gate_reason: "no_primary_overlap",
-          score: 0
-        }
-        return [ 0, details ]
-      end
-
-      tech_weights = technology_weights(profile)
       known_user_techs = (user_primary + user_secondary).uniq
-      primary_coverage = ratio((offer_primary & user_primary).size, user_primary.size)
-      secondary_coverage = ratio((offer_secondary & user_secondary).size, user_secondary.size)
-      unknown_primary_ratio = ratio((offer_primary - known_user_techs).size, offer_primary.size)
+      primary_matches = (offer_primary & user_primary).size
+      unknown_required_count = (offer_primary - known_user_techs).size
+      secondary_match_bonus = (offer_secondary & user_secondary).any? ? bonuses.fetch(:secondary_match, 10).to_i : 0
+      secondary_on_primary_bonus = (offer_primary & user_secondary).any? ? bonuses.fetch(:secondary_on_primary_match, 10).to_i : 0
+      unknown_required_penalty = unknown_required_count * penalties.fetch(:unknown_primary_required, 20).to_i
 
-      score = bounded_score(
-        100.0 * (
-          tech_weights[:primary_coverage] * primary_coverage +
-          tech_weights[:secondary_coverage] * secondary_coverage -
-          tech_weights[:unknown_penalty] * unknown_primary_ratio
-        )
-      )
+      base_score = ratio(primary_matches, offer_primary.size) * 100.0
+      score = bounded_score(base_score - unknown_required_penalty + secondary_match_bonus + secondary_on_primary_bonus)
 
       details = {
-        primary_coverage: primary_coverage.round(3),
-        secondary_coverage: secondary_coverage.round(3),
-        unknown_primary_ratio: unknown_primary_ratio.round(3),
+        primary_match_ratio: ratio(primary_matches, offer_primary.size).round(3),
+        unknown_required_count: unknown_required_count,
+        penalties_applied: {
+          unknown_primary_required: unknown_required_penalty
+        },
+        bonuses_applied: {
+          secondary_match: secondary_match_bonus,
+          secondary_on_primary_match: secondary_on_primary_bonus
+        },
         score: score
       }
       [ score, details ]
     end
 
-    def self.remote_subscore(offer, profile)
-      mode = offer.remote || "no"
-      remote_profile = profile[:remote_hybrid] || {}
-      preferred = Array(remote_profile[:preferred_modes]).map(&:to_s)
-      importance = remote_profile[:importance].to_s
-      importance_factor = importance_factor_for(importance)
-      days_weight = hybrid_days_weight(profile)
-      mode_match_score = preferred.include?(mode) ? 100.0 : 0.0
+    def self.location_mode_subscore(offer, profile)
+      mode = normalized_offer_mode(offer)
+      preference = Array(profile.dig(:location, :preference)).map(&:to_s)
+      penalties = profile[:penalties] || {}
+      rank = preference.index(mode)
 
-      hybrid_days_fit = nil
-      raw_score = mode_match_score
-      if mode == "hybrid"
-        target_days = preferred_hybrid_days(profile)
-        days = offer.hybrid_remote_days_min_per_week.to_i
-        hybrid_days_fit = hybrid_day_fit(days, target_days)
-        raw_score = (mode_match_score * (1.0 - days_weight)) + (hybrid_days_fit * days_weight)
+      if rank.nil?
+        return [ 0, { mode: mode, preference: preference, penalty_reason: "not_in_preference", score: 0 } ]
       end
 
-      score = bounded_score(raw_score * importance_factor)
+      step = penalties.fetch(:preference_rank_step, 40).to_i
+      score = bounded_score(100 - (rank * step))
       details = {
         mode: mode,
-        mode_match_score: mode_match_score.round,
-        importance_factor: importance_factor,
-        hybrid_days_fit: hybrid_days_fit&.round,
+        preference: preference,
+        rank: rank,
         score: score
       }
-
       [ score, details ]
     end
 
-    def self.location_subscore(offer, profile)
-      allowed_cities = Array(profile.dig(:remote_hybrid, :hybrid, :allowed_cities)).map(&:downcase)
+    def self.location_city_subscore(offer, profile)
+      mode = normalized_offer_mode(offer)
+      allowed_cities = resolved_city_preferences(profile, mode)
       city = (offer.city || "").downcase
-      mode = (offer.remote || "no").to_s
 
-      # City constraints apply only to hybrid offers.
-      return [ 100, { match_type: "not_hybrid", score: 100 } ] unless mode == "hybrid"
+      return [ 100, { mode: mode, match_type: "not_applicable", score: 100 } ] if mode == "remote"
 
       if allowed_cities.empty?
-        return [ 100, { match_type: "no_constraint", score: 100 } ]
+        return [ 100, { mode: mode, match_type: "no_constraint", score: 100 } ]
       end
 
       if city.empty?
-        return [ 0, { match_type: "missing_city", score: 0 } ]
+        return [ 0, { mode: mode, match_type: "missing_city", score: 0 } ]
       end
 
       exact_match = allowed_cities.include?(city)
       substring_match = allowed_cities.any? { |allowed| city.include?(allowed) }
 
       if exact_match
-        [ 100, { match_type: "exact", score: 100 } ]
+        [ 100, { mode: mode, match_type: "exact", score: 100 } ]
       elsif substring_match
-        [ 100, { match_type: "substring", score: 100 } ]
+        [ 100, { mode: mode, match_type: "substring", score: 100 } ]
       else
-        [ 0, { match_type: "none", score: 0 } ]
+        [ 0, { mode: mode, match_type: "none", penalty_reason: "city_not_allowed", score: 0 } ]
       end
-    end
-
-    def self.technology_weights(profile)
-      raw = profile.dig(:technology, :weights) || {}
-      normalized = normalize_weights(
-        primary_coverage: raw.fetch(:primary_coverage, 0.75),
-        secondary_coverage: raw.fetch(:secondary_coverage, 0.15),
-        unknown_penalty: raw.fetch(:unknown_penalty, 0.10)
-      )
-      {
-        primary_coverage: normalized[:primary_coverage],
-        secondary_coverage: normalized[:secondary_coverage],
-        unknown_penalty: normalized[:unknown_penalty]
-      }
     end
 
     def self.aggregation_weights(profile)
       raw = profile[:weights] || {}
       normalize_weights(
         technology: raw.fetch(:technology, 70.0),
-        remote_hybrid: raw.fetch(:remote_hybrid, 20.0),
-        location: raw.fetch(:location, 10.0)
+        location_mode: raw.fetch(:location_mode, 20.0),
+        location_city: raw.fetch(:location_city, 10.0)
       )
-    end
-
-    def self.preferred_hybrid_days(profile)
-      profile.dig(:remote_hybrid, :hybrid, :hybrid_remote_days_min_per_week).to_i.clamp(1, 5)
-    end
-
-    def self.hybrid_days_weight(profile)
-      weight = profile.dig(:remote_hybrid, :hybrid, :days_weight)
-      return 0.35 if weight.nil?
-
-      weight.to_f.clamp(0.0, 1.0)
-    end
-
-    def self.importance_factor_for(importance)
-      {
-        "low" => 0.5,
-        "medium" => 0.75,
-        "high" => 1.0
-      }.fetch(importance, 0.75)
-    end
-
-    def self.hybrid_day_fit(days, target_days)
-      return 100.0 if days >= target_days
-
-      ratio(days, target_days) * 100.0
     end
 
     def self.weighted_average(scores, weights)
       value =
         (scores[:technology].to_f * weights[:technology]) +
-        (scores[:remote_hybrid].to_f * weights[:remote_hybrid]) +
-        (scores[:location].to_f * weights[:location])
+        (scores[:location_mode].to_f * weights[:location_mode]) +
+        (scores[:location_city].to_f * weights[:location_city])
       bounded_score(value)
     end
 
+    def self.normalized_offer_mode(offer)
+      {
+        "yes" => "remote",
+        "hybrid" => "hybrid",
+        "no" => "on-site"
+      }.fetch(offer.remote.to_s, "on-site")
+    end
+
+    def self.resolved_city_preferences(profile, mode)
+      location = profile[:location] || {}
+      default_cities = Array(location[:city]).map(&:downcase)
+
+      override = case mode
+      when "hybrid"
+        location.dig(:hybrid, :city)
+      when "on-site"
+        location.dig(:on_site, :city)
+      else
+        nil
+      end
+
+      Array(override || default_cities).map(&:downcase)
+    end
+
     def self.ratio(value, total)
-      return 1.0 if total.to_i <= 0
+      return 0.0 if total.to_i <= 0
 
       value.to_f / total.to_f
     end

@@ -34,6 +34,7 @@
 # Data directory runtime artifacts.
 /data/*.json
 !/data/scoring_profile.json
+!/data/scoring_profile.schema.json
 
 # Node / Vite
 node_modules/

@@ -8,26 +8,33 @@ RSpec.describe Sourcing::ScoringProfile do
         {
           "technology": {
             "primary": ["ruby"],
-            "secondary": ["postgresql"],
-            "weights": {
-              "primary_coverage": 0.75,
-              "secondary_coverage": 0.15,
-              "unknown_penalty": 0.1
+            "secondary": ["postgresql"]
+          },
+          "location": {
+            "preference": ["remote", "hybrid", "on-site"],
+            "city": ["Nantes"],
+            "hybrid": {
+              "city": ["Nantes"],
+              "remote_days_min_per_week": 3
+            },
+            "on_site": {
+              "city": ["Paris"]
             }
           },
-          "remote_hybrid": {
-            "importance": "high",
-            "preferred_modes": ["yes", "hybrid"],
-            "hybrid": {
-              "allowed_cities": ["Nantes"],
-              "hybrid_remote_days_min_per_week": 3,
-              "days_weight": 0.35
-            }
+          "penalties": {
+            "unknown_primary_required": 20,
+            "preference_rank_step": 40,
+            "not_in_preference": 100,
+            "city_not_allowed": 100
+          },
+          "bonuses": {
+            "secondary_match": 10,
+            "secondary_on_primary_match": 10
           },
           "weights": {
             "technology": 70,
-            "remote_hybrid": 20,
-            "location": 10
+            "location_mode": 20,
+            "location_city": 10
           }
         }
       JSON
@@ -36,10 +43,8 @@ RSpec.describe Sourcing::ScoringProfile do
 
       expect(profile[:technology][:primary]).to eq(["ruby"])
       expect(profile[:technology][:secondary]).to eq(["postgresql"])
-      expect(profile[:technology][:weights][:primary_coverage]).to eq(0.75)
-      expect(profile[:remote_hybrid][:importance]).to eq("high")
-      expect(profile[:remote_hybrid][:preferred_modes]).to eq(["yes", "hybrid"])
-      expect(profile[:remote_hybrid][:hybrid][:allowed_cities]).to eq(["Nantes"])
+      expect(profile[:location][:preference]).to eq(["remote", "hybrid", "on-site"])
+      expect(profile[:location][:hybrid][:city]).to eq(["Nantes"])
       expect(profile[:weights][:technology]).to eq(70)
     ensure
       File.delete(path) if File.exist?(path)
@@ -75,32 +80,73 @@ RSpec.describe Sourcing::ScoringProfile do
       File.delete(path) if File.exist?(path)
     end
 
-    it "raises when v2 weight keys are missing" do
-      path = Rails.root.join("tmp", "scoring_profile_spec_missing_v2_keys.json")
+    it "raises when location preference is missing" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_missing_v3_keys.json")
       File.write(path, <<~JSON)
         {
           "technology": {
             "primary": ["ruby"],
             "secondary": ["postgresql"]
           },
-          "remote_hybrid": {
-            "importance": "high",
-            "preferred_modes": ["yes", "hybrid"],
-            "hybrid": {
-              "allowed_cities": ["Nantes"],
-              "hybrid_remote_days_min_per_week": 3,
-              "days_weight": 0.35
-            }
+          "location": {
+            "city": ["Nantes"]
+          },
+          "penalties": {
+            "unknown_primary_required": 20,
+            "preference_rank_step": 40,
+            "not_in_preference": 100,
+            "city_not_allowed": 100
+          },
+          "bonuses": {
+            "secondary_match": 10,
+            "secondary_on_primary_match": 10
           },
           "weights": {
             "technology": 70,
-            "remote_hybrid": 20,
-            "location": 10
+            "location_mode": 20,
+            "location_city": 10
           }
         }
       JSON
 
-      expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing technology.weights/)
+      expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing location.preference/)
+    ensure
+      File.delete(path) if File.exist?(path)
+    end
+
+    it "raises when location preference contains invalid values" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_invalid_preference.json")
+      File.write(path, <<~JSON)
+        {
+          "technology": {
+            "primary": ["ruby"],
+            "secondary": ["postgresql"]
+          },
+          "location": {
+            "preference": ["remote", "office"],
+            "hybrid": {
+              "remote_days_min_per_week": 3
+            }
+          },
+          "penalties": {
+            "unknown_primary_required": 20,
+            "preference_rank_step": 40,
+            "not_in_preference": 100,
+            "city_not_allowed": 100
+          },
+          "bonuses": {
+            "secondary_match": 10,
+            "secondary_on_primary_match": 10
+          },
+          "weights": {
+            "technology": 70,
+            "location_mode": 20,
+            "location_city": 10
+          }
+        }
+      JSON
+
+      expect { described_class.load(path) }.to raise_error(RuntimeError, /Invalid location.preference/)
     ensure
       File.delete(path) if File.exist?(path)
     end

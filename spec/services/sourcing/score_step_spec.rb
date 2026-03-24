@@ -14,26 +14,33 @@ RSpec.describe Sourcing::ScoreStep do
     {
       technology: {
         primary: [ "ruby", "rails" ],
-        secondary: [ "postgresql" ],
-        weights: {
-          primary_coverage: 0.75,
-          secondary_coverage: 0.15,
-          unknown_penalty: 0.10
+        secondary: [ "postgresql" ]
+      },
+      location: {
+        preference: [ "remote", "hybrid", "on-site" ],
+        city: [ "Nantes" ],
+        hybrid: {
+          city: [ "Nantes", "Rennes" ],
+          remote_days_min_per_week: 3
+        },
+        on_site: {
+          city: [ "Paris" ]
         }
       },
-      remote_hybrid: {
-        importance: "high",
-        preferred_modes: [ "yes", "hybrid" ],
-        hybrid: {
-          allowed_cities: [ "Nantes", "Rennes" ],
-          hybrid_remote_days_min_per_week: 3,
-          days_weight: 0.35
-        }
+      penalties: {
+        unknown_primary_required: 20,
+        preference_rank_step: 40,
+        not_in_preference: 100,
+        city_not_allowed: 100
+      },
+      bonuses: {
+        secondary_match: 10,
+        secondary_on_primary_match: 10
       },
       weights: {
         technology: 70,
-        remote_hybrid: 20,
-        location: 10
+        location_mode: 20,
+        location_city: 10
       }
     }
   end
@@ -46,26 +53,19 @@ RSpec.describe Sourcing::ScoreStep do
     partial_primary_score, partial_primary_details = described_class.tech_subscore(partial_primary_offer, profile)
 
     expect(primary_score).to be > partial_primary_score
-    expect(primary_details[:primary_coverage]).to eq(1.0)
-    expect(partial_primary_details[:primary_coverage]).to eq(0.5)
+    expect(primary_details[:primary_match_ratio]).to eq(1.0)
+    expect(partial_primary_details[:primary_match_ratio]).to eq(0.5)
   end
 
-  it "returns an extremely low final score when there is no primary technology overlap" do
-    offer = Offer.new(
-      primary_technologies: [ "golang", "kubernetes" ],
-      secondary_technologies: [ "postgresql" ],
-      remote: "hybrid",
-      city: "Rennes",
-      hybrid_remote_days_min_per_week: 5
-    )
+  it "returns score 0 when offer has no primary technologies" do
+    offer = Offer.new(primary_technologies: [], secondary_technologies: [ "postgresql" ])
 
     score, breakdown = described_class.call(offer: offer, profile: profile)
 
     expect(score).to eq(0)
-    expect(breakdown[:technology][:no_primary_match]).to eq(true)
-    expect(breakdown[:gate_reason]).to eq("no_primary_overlap")
-    expect(breakdown[:remote_hybrid]).to be_nil
-    expect(breakdown[:location]).to be_nil
+    expect(breakdown[:technology][:no_primary_technologies]).to eq(true)
+    expect(breakdown[:location_mode]).to be_nil
+    expect(breakdown[:location_city]).to be_nil
   end
 
   it "applies unknown primary penalty when offer includes technologies user does not have" do
@@ -73,46 +73,66 @@ RSpec.describe Sourcing::ScoreStep do
 
     score, details = described_class.tech_subscore(offer, profile)
 
-    expect(details[:unknown_primary_ratio]).to eq(0.5)
+    expect(details[:unknown_required_count]).to eq(1)
     expect(score).to be_between(0, 100)
   end
 
-  it "increases hybrid score with more remote days" do
-    base_offer = Offer.new(remote: "hybrid", city: "Nantes")
-    low_days_offer = Offer.new(remote: "hybrid", city: "Nantes", hybrid_remote_days_min_per_week: 2)
-    high_days_offer = Offer.new(remote: "hybrid", city: "Nantes", hybrid_remote_days_min_per_week: 5)
+  it "adds bonuses for matching secondary technologies" do
+    offer = Offer.new(primary_technologies: [ "ruby", "postgresql" ], secondary_technologies: [ "postgresql" ])
 
-    base_score, = described_class.remote_subscore(base_offer, profile)
-    low_days_score, = described_class.remote_subscore(low_days_offer, profile)
-    high_days_score, = described_class.remote_subscore(high_days_offer, profile)
+    score, details = described_class.tech_subscore(offer, profile)
 
-    expect(low_days_score).to be >= base_score
-    expect(high_days_score).to be > low_days_score
+    expect(score).to eq(70)
+    expect(details[:bonuses_applied][:secondary_match]).to eq(10)
+    expect(details[:bonuses_applied][:secondary_on_primary_match]).to eq(10)
   end
 
-  it "gives location points to hybrid only when city is in allowed list" do
-    matching_offer = Offer.new(remote: "hybrid", city: "Rennes, Brittany, France")
-    non_matching_offer = Offer.new(remote: "hybrid", city: "Lyon, France")
+  it "scores location mode by preference rank" do
+    remote_offer = Offer.new(remote: "yes")
+    hybrid_offer = Offer.new(remote: "hybrid")
+    onsite_offer = Offer.new(remote: "no")
 
-    matching_score, matching_details = described_class.location_subscore(matching_offer, profile)
-    non_matching_score, non_matching_details = described_class.location_subscore(non_matching_offer, profile)
+    remote_score, = described_class.location_mode_subscore(remote_offer, profile)
+    hybrid_score, = described_class.location_mode_subscore(hybrid_offer, profile)
+    onsite_score, = described_class.location_mode_subscore(onsite_offer, profile)
 
-    expect(matching_score).to eq(100)
-    expect(matching_details[:match_type]).to eq("substring")
-    expect(non_matching_score).to eq(0)
-    expect(non_matching_details[:match_type]).to eq("none")
+    expect(remote_score).to eq(100)
+    expect(hybrid_score).to eq(60)
+    expect(onsite_score).to eq(20)
   end
 
-  it "keeps location neutral for non-hybrid offers" do
-    offer = Offer.new(remote: "yes", city: "Anywhere")
+  it "returns 0 mode score when offer mode is omitted from preference" do
+    profile_without_onsite = profile.deep_dup
+    profile_without_onsite[:location][:preference] = [ "remote", "hybrid" ]
+    offer = Offer.new(remote: "no")
 
-    score, details = described_class.location_subscore(offer, profile)
+    score, details = described_class.location_mode_subscore(offer, profile_without_onsite)
+
+    expect(score).to eq(0)
+    expect(details[:penalty_reason]).to eq("not_in_preference")
+  end
+
+  it "uses location default city when no hybrid override exists" do
+    profile_without_hybrid_city = profile.deep_dup
+    profile_without_hybrid_city[:location][:hybrid].delete(:city)
+    offer = Offer.new(remote: "hybrid", city: "Nantes, France")
+
+    score, details = described_class.location_city_subscore(offer, profile_without_hybrid_city)
 
     expect(score).to eq(100)
-    expect(details[:match_type]).to eq("not_hybrid")
+    expect(details[:match_type]).to eq("substring")
   end
 
-  it "forces remote_hybrid score to zero for hybrid offers when location score is zero" do
+  it "uses on-site city override when provided" do
+    offer = Offer.new(remote: "no", city: "Paris, France")
+
+    score, details = described_class.location_city_subscore(offer, profile)
+
+    expect(score).to eq(100)
+    expect(details[:match_type]).to eq("substring")
+  end
+
+  it "forces location mode score to zero for hybrid offers when city score is zero" do
     offer = Offer.new(
       primary_technologies: [ "ruby", "rails" ],
       secondary_technologies: [ "postgresql" ],
@@ -123,10 +143,10 @@ RSpec.describe Sourcing::ScoreStep do
 
     score, breakdown = described_class.call(offer: offer, profile: profile)
 
-    expect(score).to eq(63)
-    expect(breakdown[:location][:score]).to eq(0)
-    expect(breakdown[:remote_hybrid][:score]).to eq(0)
-    expect(breakdown[:remote_hybrid][:forced_to_zero_by_location]).to eq(true)
+    expect(score).to eq(70)
+    expect(breakdown[:location_city][:score]).to eq(0)
+    expect(breakdown[:location_mode][:score]).to eq(0)
+    expect(breakdown[:location_mode][:forced_to_zero_by_city]).to eq(true)
   end
 
   it "returns final score and breakdown" do
@@ -143,8 +163,8 @@ RSpec.describe Sourcing::ScoreStep do
     expect(score).to be_a(Integer)
     expect(score).to be_between(0, 100)
     expect(breakdown[:technology]).to be_a(Hash)
-    expect(breakdown[:remote_hybrid]).to be_a(Hash)
-    expect(breakdown[:location]).to be_a(Hash)
-    expect(breakdown[:weights]).to include(:technology, :remote_hybrid, :location)
+    expect(breakdown[:location_mode]).to be_a(Hash)
+    expect(breakdown[:location_city]).to be_a(Hash)
+    expect(breakdown[:weights]).to include(:technology, :location_mode, :location_city)
   end
 end

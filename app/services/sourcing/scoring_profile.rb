@@ -18,34 +18,56 @@ module Sourcing
     def self.validate!(data)
       raise "Missing technology.primary" unless data.dig("technology", "primary").is_a?(Array)
       raise "Missing technology.secondary" unless data.dig("technology", "secondary").is_a?(Array)
-      raise "Missing technology.weights" unless data.dig("technology", "weights").is_a?(Hash)
-      raise "Missing technology.weights.primary_coverage" unless numeric?(data.dig("technology", "weights", "primary_coverage"))
-      raise "Missing technology.weights.secondary_coverage" unless numeric?(data.dig("technology", "weights", "secondary_coverage"))
-      raise "Missing technology.weights.unknown_penalty" unless numeric?(data.dig("technology", "weights", "unknown_penalty"))
+      raise "Missing location" unless data["location"].is_a?(Hash)
+      raise "Missing location.preference" unless data.dig("location", "preference").is_a?(Array)
+      raise "Invalid location.preference" unless valid_preference?(data.dig("location", "preference"))
 
-      raise "Missing remote_hybrid.importance" unless data.dig("remote_hybrid", "importance")
-      raise "Missing remote_hybrid.preferred_modes" unless data.dig("remote_hybrid", "preferred_modes").is_a?(Array)
-      raise "Missing remote_hybrid.hybrid.allowed_cities" unless data.dig("remote_hybrid", "hybrid", "allowed_cities").is_a?(Array)
-      raise "Missing remote_hybrid.hybrid.hybrid_remote_days_min_per_week" unless numeric?(data.dig("remote_hybrid", "hybrid", "hybrid_remote_days_min_per_week"))
-      raise "Missing remote_hybrid.hybrid.days_weight" unless numeric?(data.dig("remote_hybrid", "hybrid", "days_weight"))
+      if data.dig("location", "city")
+        raise "Invalid location.city" unless string_array?(data.dig("location", "city"))
+      end
+
+      if data.dig("location", "hybrid")
+        raise "Invalid location.hybrid" unless data.dig("location", "hybrid").is_a?(Hash)
+        if data.dig("location", "hybrid", "city")
+          raise "Invalid location.hybrid.city" unless string_array?(data.dig("location", "hybrid", "city"))
+        end
+        raise "Missing location.hybrid.remote_days_min_per_week" unless numeric?(data.dig("location", "hybrid", "remote_days_min_per_week"))
+      end
+
+      if data.dig("location", "on_site")
+        raise "Invalid location.on_site" unless data.dig("location", "on_site").is_a?(Hash)
+        if data.dig("location", "on_site", "city")
+          raise "Invalid location.on_site.city" unless string_array?(data.dig("location", "on_site", "city"))
+        end
+      end
+
+      raise "Missing penalties" unless data["penalties"].is_a?(Hash)
+      raise "Missing penalties.unknown_primary_required" unless numeric?(data.dig("penalties", "unknown_primary_required"))
+      raise "Missing penalties.preference_rank_step" unless numeric?(data.dig("penalties", "preference_rank_step"))
+      raise "Missing penalties.not_in_preference" unless numeric?(data.dig("penalties", "not_in_preference"))
+      raise "Missing penalties.city_not_allowed" unless numeric?(data.dig("penalties", "city_not_allowed"))
+
+      raise "Missing bonuses" unless data["bonuses"].is_a?(Hash)
+      raise "Missing bonuses.secondary_match" unless numeric?(data.dig("bonuses", "secondary_match"))
+      raise "Missing bonuses.secondary_on_primary_match" unless numeric?(data.dig("bonuses", "secondary_on_primary_match"))
 
       raise "Missing weights" unless data["weights"].is_a?(Hash)
       raise "Missing weights.technology" unless numeric?(data.dig("weights", "technology"))
-      raise "Missing weights.remote_hybrid" unless numeric?(data.dig("weights", "remote_hybrid"))
-      raise "Missing weights.location" unless numeric?(data.dig("weights", "location"))
+      raise "Missing weights.location_mode" unless numeric?(data.dig("weights", "location_mode"))
+      raise "Missing weights.location_city" unless numeric?(data.dig("weights", "location_city"))
 
-      unless %w[low medium high].include?(data.dig("remote_hybrid", "importance").to_s)
-        raise "Invalid remote_hybrid.importance"
-      end
-
-      unless (0.0..1.0).cover?(data.dig("remote_hybrid", "hybrid", "days_weight").to_f)
-        raise "Invalid remote_hybrid.hybrid.days_weight"
-      end
-
-      agg_total = %w[technology remote_hybrid location].sum { |key| data.dig("weights", key).to_f }
+      agg_total = %w[technology location_mode location_city].sum { |key| data.dig("weights", key).to_f }
       raise "Invalid weights total" if agg_total <= 0
 
       true
+    end
+
+    def self.valid_preference?(values)
+      values.is_a?(Array) && values.any? && (values - ["remote", "hybrid", "on-site"]).empty? && values.uniq == values
+    end
+
+    def self.string_array?(values)
+      values.is_a?(Array) && values.all? { |value| value.is_a?(String) && value.strip != "" }
     end
 
     def self.numeric?(value)

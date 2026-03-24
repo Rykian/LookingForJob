@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scoring_profile.schema.json",
+  "title": "ScoringProfile",
+  "description": "Scoring profile for job offer ranking",
+  "type": "object",
+  "required": ["technology", "location", "penalties", "bonuses", "weights"],
+  "additionalProperties": false,
+  "properties": {
+    "technology": {
+      "type": "object",
+      "required": ["primary", "secondary"],
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Technologies that gate and drive the tech dimension score"
+        },
+        "secondary": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Nice-to-have technologies that earn bonus points"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": ["preference"],
+      "additionalProperties": false,
+      "properties": {
+        "preference": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["remote", "hybrid", "on-site"]
+          },
+          "description": "Ordered list of preferred work modes (rank 0 = most preferred)"
+        },
+        "city": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Default allowed cities (used when no per-mode override is set)"
+        },
+        "hybrid": {
+          "type": "object",
+          "required": ["remote_days_min_per_week"],
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Allowed cities for hybrid offers (overrides location.city)"
+            },
+            "remote_days_min_per_week": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "description": "Minimum acceptable remote days per week for hybrid"
+            }
+          }
+        },
+        "on_site": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Allowed cities for on-site offers (overrides location.city)"
+            }
+          }
+        }
+      }
+    },
+    "penalties": {
+      "type": "object",
+      "required": [
+        "unknown_primary_required",
+        "preference_rank_step",
+        "not_in_preference",
+        "city_not_allowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "unknown_primary_required": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Points deducted per unknown required technology in the offer"
+        },
+        "preference_rank_step": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Points deducted per rank position away from most preferred mode"
+        },
+        "not_in_preference": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Points deducted when offer mode is absent from preference list"
+        },
+        "city_not_allowed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Points deducted when offer city is not in the allowed list"
+        }
+      }
+    },
+    "bonuses": {
+      "type": "object",
+      "required": ["secondary_match", "secondary_on_primary_match"],
+      "additionalProperties": false,
+      "properties": {
+        "secondary_match": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Bonus when offer secondary technologies overlap with profile secondary"
+        },
+        "secondary_on_primary_match": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Bonus when profile secondary technologies appear in offer primary"
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "required": ["technology", "location_mode", "location_city"],
+      "additionalProperties": false,
+      "properties": {
+        "technology": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Weight of the technology dimension in the final score"
+        },
+        "location_mode": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Weight of the location mode dimension in the final score"
+        },
+        "location_city": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Weight of the location city dimension in the final score"
+        }
+      }
+    }
+  }
+}
