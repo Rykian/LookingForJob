@@ -45,6 +45,7 @@ Rails.application.configure do
 
   # Use Sidekiq for durable background processing.
   config.active_job.queue_adapter = :sidekiq
+  config.active_storage.service = :production
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.

@@ -60,6 +60,8 @@ class JobOffer < ApplicationRecord
     fluent: "fluent"
   }.freeze
 
+  has_one_attached :html_file
+
   enum :remote, REMOTE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true
   enum :offer_language, OFFER_LANGUAGES, prefix: true

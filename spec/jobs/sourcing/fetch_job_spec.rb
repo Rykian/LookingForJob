@@ -7,6 +7,8 @@ RSpec.describe Sourcing::FetchJob, type: :job do
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
+    stub_const("Sourcing::Providers::Linkedin::FetchContentError", Class.new(StandardError))
+
     registry.register(
       "linkedin",
       Sourcing::Provider.new(
@@ -44,7 +46,8 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     described_class.perform_now(url_hash: offer.url_hash)
 
     offer.reload
-    expect(offer.html_content).to eq("<html>ok</html>")
+    expect(offer.html_file).to be_attached
+    expect(offer.html_file.download).to eq("<html>ok</html>")
     expect(offer.steps_details["fetch"]).to include("version" => 1)
     expect(offer.steps_details.dig("fetch", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 
@@ -72,7 +75,7 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     end.to raise_error(Sourcing::Providers::Linkedin::FetchContentError, /shell_html/)
 
     offer.reload
-    expect(offer.html_content).to be_nil
+    expect(offer.html_file).not_to be_attached
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
     expect(queued).to be_empty

@@ -25,6 +25,7 @@ Rails.application.configure do
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
   config.active_job.queue_adapter = :test
+  config.active_storage.service = :test
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false

@@ -17,8 +17,12 @@ module Sourcing
       end
 
       now = Time.current
+      offer.html_file.attach(
+        io: StringIO.new(html_content),
+        filename: "#{offer.url_hash}.html",
+        content_type: "text/html"
+      )
       offer.update!(
-        html_content: html_content,
         steps_details: offer.steps_details.merge("fetch" => { "at" => now.iso8601, "version" => 1 })
       )
 

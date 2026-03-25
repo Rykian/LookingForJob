@@ -11,14 +11,14 @@ module Sourcing
 
     def perform(url_hash:)
       offer = JobOffer.find_by(url_hash: url_hash)
-      return unless offer&.html_content
+      return unless offer&.html_file&.attached?
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       enrichment = provider.enrich_step.call(
         source: offer.source,
         url: offer.url,
         url_hash: offer.url_hash,
-        html_content: offer.html_content,
+        html_content: offer.html_file.download,
         extracted: offer.attributes.symbolize_keys.slice(
           :title,
           :company,

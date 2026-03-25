@@ -36,8 +36,12 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       source: "linkedin",
       url: "https://example.com/jobs/123",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
-      last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
-      html_content: "<html>content</html>"
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html>content</html>"),
+      filename: "html_content.html",
+      content_type: "text/html"
     )
 
     extracted = {
