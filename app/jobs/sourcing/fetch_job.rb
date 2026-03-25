@@ -11,6 +11,11 @@ module Sourcing
         url_hash: offer.url_hash
       )
 
+      if html_content.blank?
+        raise Sourcing::Providers::Linkedin::FetchContentError,
+              "LinkedIn fetch returned blank html_content for url_hash=#{offer.url_hash} url=#{offer.url}"
+      end
+
       now = Time.current
       offer.update!(
         html_content: html_content,

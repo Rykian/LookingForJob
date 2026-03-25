@@ -63,4 +63,68 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
       expect(Rails.logger).to have_received(:warn).with(/Could not expand description/)
     end
   end
+
+  describe "#ensure_valid_content!" do
+    let(:step) { described_class.new(fetcher: ->(_input) { "<html></html>" }) }
+
+    it "raises for shell html" do
+      diagnostics = {
+        marker_found: false,
+        body_text_length: 0,
+        blocked_page: false,
+        current_url: "https://www.linkedin.com/jobs/view/1",
+        title: "",
+        html_length: 39
+      }
+
+      expect do
+        step.send(
+          :ensure_valid_content!,
+          url: "https://www.linkedin.com/jobs/view/1",
+          html: "<html><head></head><body></body></html>",
+          diagnostics: diagnostics
+        )
+      end.to raise_error(Sourcing::Providers::Linkedin::FetchContentError, /shell_html/)
+    end
+
+    it "raises when markers are missing and body text is too short" do
+      diagnostics = {
+        marker_found: false,
+        body_text_length: 20,
+        blocked_page: false,
+        current_url: "https://www.linkedin.com/jobs/view/1",
+        title: "LinkedIn",
+        html_length: 120
+      }
+
+      expect do
+        step.send(
+          :ensure_valid_content!,
+          url: "https://www.linkedin.com/jobs/view/1",
+          html: "<html><body><div>small payload</div></body></html>",
+          diagnostics: diagnostics
+        )
+      end.to raise_error(Sourcing::Providers::Linkedin::FetchContentError, /missing_job_markers/)
+    end
+
+    it "accepts html when at least one marker is present" do
+      diagnostics = {
+        marker_found: true,
+        body_text_length: 50,
+        blocked_page: false,
+        current_url: "https://www.linkedin.com/jobs/view/1",
+        title: "Job",
+        html_length: 500
+      }
+
+      expect do
+        step.send(
+          :ensure_valid_content!,
+          url: "https://www.linkedin.com/jobs/view/1",
+          html: "<html><body><h1 class='jobs-unified-top-card__job-title'>Role</h1></body></html>",
+          diagnostics: diagnostics
+        )
+      end.not_to raise_error
+    end
+  end
 end

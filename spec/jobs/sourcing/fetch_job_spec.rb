@@ -55,4 +55,26 @@ RSpec.describe Sourcing::FetchJob, type: :job do
   it "returns when offer is missing" do
     expect { described_class.perform_now(url_hash: "missing") }.not_to raise_error
   end
+
+  it "fails loudly and does not enqueue analyze when provider raises fetch content error" do
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/456",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/456"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
+    )
+
+    allow(fetch_step).to receive(:call)
+      .and_raise(Sourcing::Providers::Linkedin::FetchContentError, "shell_html")
+
+    expect do
+      described_class.perform_now(url_hash: offer.url_hash)
+    end.to raise_error(Sourcing::Providers::Linkedin::FetchContentError, /shell_html/)
+
+    offer.reload
+    expect(offer.html_content).to be_nil
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
+    expect(queued).to be_empty
+  end
 end
