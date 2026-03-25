@@ -1,0 +1,20 @@
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+
+s3:
+  service: S3
+  access_key_id: <%= ENV.fetch("RUSTFS_ACCESS_KEY", "rustfsadmin") %>
+  secret_access_key: <%= ENV.fetch("RUSTFS_SECRET_KEY", "rustfsadmin") %>
+  region: <%= ENV.fetch("RUSTFS_REGION", "us-east-1") %>
+  bucket: <%= ENV.fetch("RUSTFS_BUCKET", "looking-for-job-active-storage") %>
+  endpoint: <%= ENV.fetch("RUSTFS_ENDPOINT", "http://127.0.0.1:9000") %>
+  force_path_style: true
+
+production:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>

@@ -1,15 +1,12 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: looking_for_job_postgres
     environment:
       POSTGRES_USER: looking_for_job
       POSTGRES_PASSWORD: looking_for_job
       POSTGRES_DB: looking_for_job_development
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U looking_for_job -d looking_for_job_development"]
       interval: 5s
@@ -17,7 +14,6 @@ services:
       retries: 10
   redis:
     image: redis:7-alpine
-    container_name: looking_for_job_redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -25,9 +21,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    volumes:
-      - redis_data:/data
+  
+  rustfs:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-volumes:
-  postgres_data:
-  redis_data:
+  rustfs_setup:
+    image: minio/mc:latest
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://rustfs:9000 rustfsadmin rustfsadmin &&
+      mc mb --ignore-existing local/looking-for-job-active-storage
+      "
