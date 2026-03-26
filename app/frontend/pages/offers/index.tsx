@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
+import { formatLocationMode } from '@/lib/location-mode'
 
 const JOB_OFFERS_QUERY = gql`
   query JobOffers(
     $page: Int!
     $perPage: Int!
     $source: String
-    $remote: String
+    $locationMode: LocationModeEnum
     $scored: Boolean
     $sortBy: String
     $sortDirection: String
@@ -21,7 +22,7 @@ const JOB_OFFERS_QUERY = gql`
       page: $page
       perPage: $perPage
       source: $source
-      remote: $remote
+      locationMode: $locationMode
       scored: $scored
       sortBy: $sortBy
       sortDirection: $sortDirection
@@ -35,7 +36,7 @@ const JOB_OFFERS_QUERY = gql`
         company
         source
         city
-        remote
+        locationMode
         score
         firstSeenAt
       }
@@ -46,7 +47,7 @@ const JOB_OFFERS_QUERY = gql`
 export default function OffersPage() {
   const [page, setPage] = useState(1)
   const [source, setSource] = useState('')
-  const [remote, setRemote] = useState('')
+  const [locationMode, setLocationMode] = useState('')
   const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
   const [sortBy, setSortBy] = useState<
     'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'
@@ -75,7 +76,7 @@ export default function OffersPage() {
     sortBy,
     sortDirection,
     ...(source ? { source } : {}),
-    ...(remote ? { remote } : {}),
+    ...(locationMode ? { locationMode } : {}),
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
   }
 
@@ -113,16 +114,16 @@ export default function OffersPage() {
 
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
-              value={remote}
+              value={locationMode}
               onChange={(event) => {
                 setPage(1)
-                setRemote(event.target.value)
+                setLocationMode(event.target.value)
               }}
             >
-              <option value="">All remote modes</option>
-              <option value="yes">Remote</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="no">On-site</option>
+              <option value="">All location modes</option>
+              <option value="REMOTE">Remote</option>
+              <option value="HYBRID">Hybrid</option>
+              <option value="ON_SITE">On-site</option>
             </select>
 
             <select
@@ -143,7 +144,7 @@ export default function OffersPage() {
               onClick={() => {
                 setPage(1)
                 setSource('')
-                setRemote('')
+                setLocationMode('')
                 setScored('any')
                 setSortBy('score')
                 setSortDirection('desc')
@@ -227,7 +228,7 @@ export default function OffersPage() {
                     <td className="px-3 py-2">{offer.source}</td>
                     <td className="px-3 py-2">{offer.city || '-'}</td>
                     <td className="px-3 py-2">
-                      <Badge variant="outline">{offer.remote || 'unknown'}</Badge>
+                      <Badge variant="outline">{formatLocationMode(offer.locationMode)}</Badge>
                     </td>
                     <td className="px-3 py-2">{offer.score ?? '-'}</td>
                     <td className="px-3 py-2">

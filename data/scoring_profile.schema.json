@@ -2,30 +2,40 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "scoring_profile.schema.json",
   "title": "ScoringProfile",
-  "description": "Scoring profile for job offer ranking",
+  "description": "Scoring profile for job offer ranking. Defines technology and location preferences used by Sourcing::ScoreStep to score job offers on a 0-100 scale.",
   "type": "object",
-  "required": ["technology", "location", "penalties", "bonuses", "weights"],
+  "required": ["technology", "location"],
   "additionalProperties": false,
   "properties": {
     "technology": {
       "type": "object",
+      "description": "Technology preferences for scoring job offers.",
       "required": ["primary", "secondary"],
       "additionalProperties": false,
       "properties": {
         "primary": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
-          "description": "Technologies that gate and drive the tech dimension score"
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required technologies. All primary technologies in an offer are required; missing any results in a penalty. Matching primary technologies do not earn additional points (they are baseline).",
+          "examples": [["ruby", "rails"]]
         },
         "secondary": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
-          "description": "Nice-to-have technologies that earn bonus points"
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Nice-to-have technologies. Each match with offer secondary or primary technologies earns +3 points. Subset of offer secondary technologies that match user's secondary list contributes to the score.",
+          "examples": [["postgresql", "redis", "docker"]]
         }
       }
     },
     "location": {
       "type": "object",
+      "description": "Location and work mode preferences for scoring job offers.",
       "required": ["preference"],
       "additionalProperties": false,
       "properties": {
@@ -37,112 +47,57 @@
             "type": "string",
             "enum": ["remote", "hybrid", "on-site"]
           },
-          "description": "Ordered list of preferred work modes (rank 0 = most preferred)"
+          "description": "Ordered list of preferred work modes, ranked from most to least preferred. Rank 0 is most preferred (100 points), rank 1 deducts 20 points, rank 2 deducts 40 points. Modes not in this list score 0 points.",
+          "examples": [["remote", "hybrid", "on-site"]]
         },
         "city": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
-          "description": "Default allowed cities (used when no per-mode override is set)"
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Default allowed cities (case-insensitive substring matching). Used for all work modes unless overridden. Required if any work mode depends on location (hybrid or on-site).",
+          "examples": [["Nantes", "Rennes", "Laval"]]
         },
         "hybrid": {
           "type": "object",
+          "description": "Specific constraints and preferences for hybrid roles.",
           "required": ["remote_days_min_per_week"],
           "additionalProperties": false,
           "properties": {
-            "city": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 },
-              "description": "Allowed cities for hybrid offers (overrides location.city)"
-            },
             "remote_days_min_per_week": {
               "type": "number",
               "minimum": 0,
               "maximum": 5,
-              "description": "Minimum acceptable remote days per week for hybrid"
+              "description": "Minimum acceptable remote days per week. Offers with fewer remote days score 0. Offers with more remote days deduct (5 - offer_days) * 10 points as a preference penalty.",
+              "examples": [3]
+            },
+            "city": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Optional: Allowed cities for hybrid offers (case-insensitive substring matching). Overrides location.city if provided. If omitted, falls back to location.city.",
+              "examples": [["Nantes", "Rennes"]]
             }
           }
         },
         "on_site": {
           "type": "object",
+          "description": "Specific constraints and preferences for on-site roles.",
           "additionalProperties": false,
           "properties": {
             "city": {
               "type": "array",
-              "items": { "type": "string", "minLength": 1 },
-              "description": "Allowed cities for on-site offers (overrides location.city)"
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Optional: Allowed cities for on-site offers (case-insensitive substring matching). Overrides location.city if provided. If omitted, falls back to location.city.",
+              "examples": [["Paris", "Lyon"]]
             }
           }
-        }
-      }
-    },
-    "penalties": {
-      "type": "object",
-      "required": [
-        "unknown_primary_required",
-        "preference_rank_step",
-        "not_in_preference",
-        "city_not_allowed"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "unknown_primary_required": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Points deducted per unknown required technology in the offer"
-        },
-        "preference_rank_step": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Points deducted per rank position away from most preferred mode"
-        },
-        "not_in_preference": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Points deducted when offer mode is absent from preference list"
-        },
-        "city_not_allowed": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Points deducted when offer city is not in the allowed list"
-        }
-      }
-    },
-    "bonuses": {
-      "type": "object",
-      "required": ["secondary_match", "secondary_on_primary_match"],
-      "additionalProperties": false,
-      "properties": {
-        "secondary_match": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Bonus when offer secondary technologies overlap with profile secondary"
-        },
-        "secondary_on_primary_match": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Bonus when profile secondary technologies appear in offer primary"
-        }
-      }
-    },
-    "weights": {
-      "type": "object",
-      "required": ["technology", "location_mode", "location_city"],
-      "additionalProperties": false,
-      "properties": {
-        "technology": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Weight of the technology dimension in the final score"
-        },
-        "location_mode": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Weight of the location mode dimension in the final score"
-        },
-        "location_city": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Weight of the location city dimension in the final score"
         }
       }
     }

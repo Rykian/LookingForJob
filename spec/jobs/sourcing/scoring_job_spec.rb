@@ -39,7 +39,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     offer.reload
     expect(offer.score).to eq(72)
     expect(offer.score_breakdown).to eq({ "technology" => { "score" => 80 }, "remote_hybrid" => { "score" => 64 } })
-    expect(offer.steps_details["score"]).to include("version" => 1)
+    expect(offer.steps_details["score"]).to include("version" => 2)
     expect(offer.steps_details.dig("score", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
   end
 
@@ -71,7 +71,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
       score: 85,
       steps_details: {
         "score" => {
-          "version" => 1,
+          "version" => 2,
           "at" => Time.current.iso8601,
         },
       }
@@ -100,7 +100,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
       score: 85,
       steps_details: {
         "score" => {
-          "version" => 1,
+          "version" => 2,
           "at" => Time.current.iso8601,
         },
       }
@@ -108,6 +108,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
 
     profile = {
       technology: { primary: ["rust"], secondary: [] },
+      location: { preference: ["remote"] },
     }
 
     allow(Sourcing::ScoringProfile).to receive(:load).and_return(profile)

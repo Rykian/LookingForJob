@@ -13,9 +13,9 @@ RSpec.describe "GraphQL API", type: :request do
         url: "https://example.com/offers/1",
         url_hash: "hash-1",
         last_seen_at: 2.days.ago,
-        remote: "yes",
+        location_mode: "remote",
         title: "Backend Engineer",
-        steps_details: { "score" => { "at" => Time.current.iso8601, "version" => 1 } }
+        steps_details: { "score" => { "at" => Time.current.iso8601, "version" => 2 } }
       )
 
       JobOffer.create!(
@@ -23,19 +23,19 @@ RSpec.describe "GraphQL API", type: :request do
         url: "https://example.com/offers/2",
         url_hash: "hash-2",
         last_seen_at: 1.day.ago,
-        remote: "hybrid",
+        location_mode: "hybrid",
         title: "Frontend Engineer"
       )
 
       query = <<~GRAPHQL
-        query JobOffers($page: Int!, $perPage: Int!, $source: String, $remote: String, $scored: Boolean) {
-          jobOffers(page: $page, perPage: $perPage, source: $source, remote: $remote, scored: $scored) {
+        query JobOffers($page: Int!, $perPage: Int!, $source: String, $locationMode: LocationModeEnum, $scored: Boolean) {
+          jobOffers(page: $page, perPage: $perPage, source: $source, locationMode: $locationMode, scored: $scored) {
             totalCount
             totalPages
             nodes {
               id
               source
-              remote
+              locationMode
               title
             }
           }
@@ -48,8 +48,8 @@ RSpec.describe "GraphQL API", type: :request do
           page: 1,
           perPage: 25,
           source: "linkedin",
-          remote: "yes",
-          scored: true
+          locationMode: "REMOTE",
+          scored: true,
         }
       )
 
@@ -59,7 +59,7 @@ RSpec.describe "GraphQL API", type: :request do
       node = result.dig("data", "jobOffers", "nodes").first
       expect(node["id"]).to eq(first_offer.id.to_s)
       expect(node["source"]).to eq("linkedin")
-      expect(node["remote"]).to eq("yes")
+      expect(node["locationMode"]).to eq("REMOTE")
       expect(node["title"]).to eq("Backend Engineer")
     end
 
@@ -97,7 +97,7 @@ RSpec.describe "GraphQL API", type: :request do
           page: 1,
           perPage: 25,
           sortBy: "score",
-          sortDirection: "desc"
+          sortDirection: "desc",
         }
       )
 
@@ -118,7 +118,7 @@ RSpec.describe "GraphQL API", type: :request do
         steps_details: {
           "fetch"  => { "at" => Time.current.iso8601, "version" => 1 },
           "enrich" => { "at" => Time.current.iso8601, "version" => 1 },
-          "score"  => { "at" => Time.current.iso8601, "version" => 1 }
+          "score"  => { "at" => Time.current.iso8601, "version" => 1 },
         }
       )
 
@@ -188,34 +188,34 @@ RSpec.describe "GraphQL API", type: :request do
       profile = {
         technology: {
           primary: ["ruby"],
-          secondary: ["postgresql"]
+          secondary: ["postgresql"],
         },
         location: {
           preference: ["remote", "hybrid", "on-site"],
           city: ["Paris"],
           hybrid: {
             city: ["Paris"],
-            remote_days_min_per_week: 3
+            remote_days_min_per_week: 3,
           },
           on_site: {
-            city: ["Lyon"]
-          }
+            city: ["Lyon"],
+          },
         },
         penalties: {
           unknown_primary_required: 20,
           preference_rank_step: 40,
           not_in_preference: 100,
-          city_not_allowed: 100
+          city_not_allowed: 100,
         },
         bonuses: {
           secondary_match: 10,
-          secondary_on_primary_match: 10
+          secondary_on_primary_match: 10,
         },
         weights: {
           technology: 70,
           location_mode: 20,
-          location_city: 10
-        }
+          location_city: 10,
+        },
       }
 
       result = post_graphql(query: mutation, variables: { profile: profile })
@@ -242,7 +242,7 @@ RSpec.describe "GraphQL API", type: :request do
         last_seen_at: Time.current,
         steps_details: {
           "discovery" => { "at" => "2026-03-24T10:00:00Z", "version" => 1 },
-          "fetch" => { "at" => "2026-03-24T10:30:00Z", "version" => 1 }
+          "fetch" => { "at" => "2026-03-24T10:30:00Z", "version" => 1 },
         }
       )
 

@@ -19,7 +19,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
         secondary_technologies: ["Redis"],
         offer_language: "en",
         normalized_seniority: "senior",
-        english_level_required: "fluent"
+        english_level_required: "fluent",
       }
     end
   end
@@ -29,8 +29,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
   it "maps structured llm output into enrichment fields" do
     extracted = {
       title: "Senior Ruby on Rails Engineer",
-      remote: "hybrid",
-      description_html: <<~HTML
+      location_mode: "hybrid",
+      description_html: <<~HTML,
         <p>3 days remote per week.</p>
         <p>Stack: Ruby on Rails, PostgreSQL, Redis, Sidekiq.</p>
         <p>Fluent English required.</p>
@@ -50,8 +50,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     result = step.call(
       extracted: {
         title: "Backend Engineer",
-        remote: "yes",
-        description_html: "<p>2 days remote per week</p>"
+        location_mode: "remote",
+        description_html: "<p>2 days remote per week</p>",
       }
     )
 
@@ -68,12 +68,12 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
         secondary_technologies: [],
         offer_language: nil,
         normalized_seniority: nil,
-        english_level_required: nil
+        english_level_required: nil,
       }
     end
 
     step = described_class.new(llm_config: llm_config, generator: passthrough_generator)
-    step.call(extracted: { title: "Backend Engineer", remote: "yes", description_html: "<p>Text</p>" })
+    step.call(extracted: { title: "Backend Engineer", location_mode: "remote", description_html: "<p>Text</p>" })
 
     expect(captured[:model]).to eq("gpt-test-model")
     expect(captured[:provider]).to eq(:openai)

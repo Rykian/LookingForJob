@@ -21,10 +21,10 @@ class JobOffer < ApplicationRecord
     optional(:score).hash(STEP_PAYLOAD_SCHEMA)
   end
 
-  REMOTE_VALUES = {
-    yes: "yes",
+  LOCATION_MODE_VALUES = {
+    remote: "remote",
     hybrid: "hybrid",
-    no: "no"
+    on_site: "on-site",
   }.freeze
 
   EMPLOYMENT_TYPES = {
@@ -36,13 +36,13 @@ class JobOffer < ApplicationRecord
     apprenticeship: "APPRENTICESHIP",
     temporary: "TEMPORARY",
     full_time: "FULL_TIME",
-    part_time: "PART_TIME"
+    part_time: "PART_TIME",
   }.freeze
 
   OFFER_LANGUAGES = {
     fr: "fr",
     en: "en",
-    other: "other"
+    other: "other",
   }.freeze
 
   SENIORITY_LEVELS = {
@@ -50,19 +50,19 @@ class JobOffer < ApplicationRecord
     junior: "junior",
     mid: "mid",
     senior: "senior",
-    staff: "staff"
+    staff: "staff",
   }.freeze
 
   ENGLISH_LEVELS = {
     none: "none",
     basic: "basic",
     professional: "professional",
-    fluent: "fluent"
+    fluent: "fluent",
   }.freeze
 
   has_one_attached :html_file
 
-  enum :remote, REMOTE_VALUES, prefix: true
+  enum :location_mode, LOCATION_MODE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true
   enum :offer_language, OFFER_LANGUAGES, prefix: true
   enum :normalized_seniority, SENIORITY_LEVELS, prefix: true
@@ -75,7 +75,7 @@ class JobOffer < ApplicationRecord
             numericality: {
               only_integer: true,
               greater_than_or_equal_to: 1,
-              less_than_or_equal_to: 5
+              less_than_or_equal_to: 5,
             },
             allow_nil: true
 

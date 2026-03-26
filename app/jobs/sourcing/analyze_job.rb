@@ -5,7 +5,7 @@ module Sourcing
     ANALYZED_ATTRIBUTES = %i[
       title
       company
-      remote
+      location_mode
       employment_type
       description_html
       salary_min_minor

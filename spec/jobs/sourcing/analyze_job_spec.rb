@@ -8,7 +8,7 @@ class MockAnalyzeStep
     {
       title: "Backend Engineer",
       company: "Acme",
-      remote: "hybrid",
+      location_mode: "hybrid",
       employment_type: "PERMANENT",
       description_html: "<p>desc</p>",
       salary_min_minor: 60000,
@@ -69,6 +69,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     offer.reload
     expect(offer.title).to eq("Backend Engineer")
     expect(offer.city).to eq("Nantes")
+    expect(offer.location_mode).to eq("hybrid")
     expect(offer.employment_type).to eq("permanent")
     expect(offer.employment_type_before_type_cast).to eq("PERMANENT")
     expect(offer.steps_details["analyze"]).to include("version" => 1)

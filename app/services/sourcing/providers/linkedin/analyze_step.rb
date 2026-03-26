@@ -89,7 +89,7 @@ module Sourcing
           {
             title: title,
             company: company,
-            remote: map_remote(page_text),
+              location_mode: map_remote(page_text),
             employment_type: map_employment_type(page_text),
             description_html: extract_description_html(doc),
             salary_min_minor: salary[:salary_min_minor],
@@ -526,8 +526,8 @@ module Sourcing
 
           normalized = text.downcase
           return "hybrid" if normalized.match?(/hybrid|hybride/)
-          return "yes" if normalized.match?(/remote|teletravail|télétravail|a distance|à distance/)
-          return "no" if normalized.match?(/on\s?-\s?site|on site|sur site|in office|présentiel|presentiel/)
+          return "remote" if normalized.match?(/remote|teletravail|télétravail|a distance|à distance/)
+          return "on-site" if normalized.match?(/on\s?-\s?site|on site|sur site|in office|présentiel|presentiel/)
 
           nil
         end

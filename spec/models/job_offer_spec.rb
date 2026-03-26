@@ -7,15 +7,15 @@ RSpec.describe JobOffer, type: :model do
         source: "linkedin",
         url: "https://example.com/jobs/1",
         url_hash: "hash-1",
-        last_seen_at: Time.current
+        last_seen_at: Time.current,
       }.merge(attrs)
     )
   end
 
   describe "enum declarations" do
     it do
-      is_expected.to define_enum_for(:remote)
-        .with_values(described_class::REMOTE_VALUES)
+      is_expected.to define_enum_for(:location_mode)
+        .with_values(described_class::LOCATION_MODE_VALUES)
         .without_instance_methods
         .without_scopes
         .backed_by_column_of_type(:string)
@@ -84,7 +84,7 @@ RSpec.describe JobOffer, type: :model do
       job_offer = build_job_offer(
         steps_details: {
           discovery: { at: Time.current.iso8601, version: 1 },
-          fetch: { at: Time.current.iso8601, version: 2 }
+          fetch: { at: Time.current.iso8601, version: 2 },
         }
       )
 
@@ -108,7 +108,7 @@ RSpec.describe JobOffer, type: :model do
     it "rejects unsupported nested payload keys" do
       job_offer = build_job_offer(
         steps_details: {
-          discovery: { at: Time.current.iso8601, version: 1, source: "manual" }
+          discovery: { at: Time.current.iso8601, version: 1, source: "manual" },
         }
       )
 

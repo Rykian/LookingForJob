@@ -94,7 +94,7 @@ module Sourcing
           <<~PROMPT
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
-            Remote status: #{extracted[:remote] || "unknown"}
+              Location mode: #{extracted[:location_mode] || "unknown"}
 
             Job description text:
             #{plain_description}
@@ -106,7 +106,7 @@ module Sourcing
           data = data.transform_keys(&:to_sym)
 
           {
-            hybrid_remote_days_min_per_week: extracted[:remote] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
+            hybrid_remote_days_min_per_week: extracted[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
             primary_technologies: data[:primary_technologies],
             secondary_technologies: data[:secondary_technologies],
             offer_language: data[:offer_language],

@@ -41,24 +41,6 @@ module Sourcing
         end
       end
 
-      raise "Missing penalties" unless data["penalties"].is_a?(Hash)
-      raise "Missing penalties.unknown_primary_required" unless numeric?(data.dig("penalties", "unknown_primary_required"))
-      raise "Missing penalties.preference_rank_step" unless numeric?(data.dig("penalties", "preference_rank_step"))
-      raise "Missing penalties.not_in_preference" unless numeric?(data.dig("penalties", "not_in_preference"))
-      raise "Missing penalties.city_not_allowed" unless numeric?(data.dig("penalties", "city_not_allowed"))
-
-      raise "Missing bonuses" unless data["bonuses"].is_a?(Hash)
-      raise "Missing bonuses.secondary_match" unless numeric?(data.dig("bonuses", "secondary_match"))
-      raise "Missing bonuses.secondary_on_primary_match" unless numeric?(data.dig("bonuses", "secondary_on_primary_match"))
-
-      raise "Missing weights" unless data["weights"].is_a?(Hash)
-      raise "Missing weights.technology" unless numeric?(data.dig("weights", "technology"))
-      raise "Missing weights.location_mode" unless numeric?(data.dig("weights", "location_mode"))
-      raise "Missing weights.location_city" unless numeric?(data.dig("weights", "location_city"))
-
-      agg_total = %w[technology location_mode location_city].sum { |key| data.dig("weights", key).to_f }
-      raise "Invalid weights total" if agg_total <= 0
-
       true
     end
 

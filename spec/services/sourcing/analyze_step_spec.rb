@@ -22,7 +22,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     expect(result[:title]).to eq("Backend Engineer")
     expect(result[:company]).to eq("Acme")
-    expect(result[:remote]).to eq("hybrid")
+    expect(result[:location_mode]).to eq("hybrid")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:description_html]).to include("CDI")
     expect(result[:posted_at]).to be_a(Time)

@@ -5,6 +5,7 @@ import { useParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { JobOfferQuery, JobOfferQueryVariables } from '@/graphql/generated'
+import { formatLocationMode } from '@/lib/location-mode'
 
 const JOB_OFFER_QUERY = gql`
   query JobOffer($id: ID!) {
@@ -15,7 +16,7 @@ const JOB_OFFER_QUERY = gql`
       source
       url
       city
-      remote
+      locationMode
       employmentType
       normalizedSeniority
       offerLanguage
@@ -80,7 +81,7 @@ export default function OfferDetailPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{offer.remote || 'unknown mode'}</Badge>
+            <Badge variant="outline">{formatLocationMode(offer.locationMode)}</Badge>
             <Badge variant="outline">{offer.employmentType || 'unknown type'}</Badge>
             <Badge variant="outline">{offer.normalizedSeniority || 'unknown seniority'}</Badge>
             <Badge variant="outline">score: {offer.score ?? '-'}</Badge>

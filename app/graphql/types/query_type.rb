@@ -28,8 +28,8 @@ module Types
         description: "Items per page."
       argument :source, String, required: false,
         description: "Filter by offer source (for example: linkedin)."
-      argument :remote, String, required: false,
-        description: "Filter by remote mode (yes, hybrid, no)."
+      argument :location_mode, Types::LocationModeEnum, required: false,
+        description: "Filter by location mode."
       argument :scored, Boolean, required: false,
         description: "When true returns only scored offers; when false only unscored offers."
       argument :sort_by, String, required: false, default_value: "first_seen_at",
@@ -38,10 +38,10 @@ module Types
         description: "Sort direction: asc or desc."
     end
 
-    def job_offers(page:, per_page:, source: nil, remote: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc")
+    def job_offers(page:, per_page:, source: nil, location_mode: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc")
       scope = JobOffer.all
       scope = scope.where(source: source) if source.present?
-      scope = scope.where(remote: remote) if remote.present?
+      scope = scope.where(location_mode: location_mode) if location_mode.present?
       scope = scope.where("steps_details ? 'score'") if scored == true
       scope = scope.where("NOT (steps_details ? 'score')") if scored == false
 
@@ -96,7 +96,7 @@ module Types
         enriched: enriched,
         scored: scored,
         average_score: avg_score,
-        top_sources: top_sources
+        top_sources: top_sources,
       }
     end
 
@@ -117,7 +117,7 @@ module Types
         "last_seen_at" => "last_seen_at",
         "score" => "score",
         "company" => "company",
-        "title" => "title"
+        "title" => "title",
       }
       allowed.fetch(sort_by.to_s, "(steps_details->'discovery'->>'at')::timestamptz")
     end

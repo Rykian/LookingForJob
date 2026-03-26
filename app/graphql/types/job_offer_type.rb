@@ -8,7 +8,7 @@ module Types
     field :city, String, null: true
     field :url, String, null: false
     field :source, String, null: false
-    field :remote, String, null: true
+    field :location_mode, Types::LocationModeEnum, null: true
     field :employment_type, String, null: true
     field :normalized_seniority, String, null: true
     field :offer_language, String, null: true

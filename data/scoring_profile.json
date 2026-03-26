@@ -2,28 +2,26 @@
   "$schema": "./scoring_profile.schema.json",
   "technology": {
     "primary": ["ruby", "react", "nodejs"],
-    "secondary": ["postgresql", "sidekiq"]
+    "secondary": [
+      "postgresql",
+      "sidekiq",
+      "typescript",
+      "docker",
+      "elm",
+      "javascript",
+      "redis",
+      "node",
+      "express",
+      "graphql",
+      "rails",
+      "ruby on rails"
+    ]
   },
   "location": {
     "preference": ["remote", "hybrid"],
     "city": ["Nantes", "Rennes", "Laval", "Angers"],
     "hybrid": {
-      "remote_days_min_per_week": 3
+      "remote_days_min_per_week": 2
     }
-  },
-  "penalties": {
-    "unknown_primary_required": 20,
-    "preference_rank_step": 40,
-    "not_in_preference": 100,
-    "city_not_allowed": 100
-  },
-  "bonuses": {
-    "secondary_match": 10,
-    "secondary_on_primary_match": 10
-  },
-  "weights": {
-    "technology": 70,
-    "location_mode": 20,
-    "location_city": 10
   }
 }

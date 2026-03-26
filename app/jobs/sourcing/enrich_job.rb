@@ -31,7 +31,7 @@ module Sourcing
         extracted: offer.attributes.symbolize_keys.slice(
           :title,
           :company,
-          :remote,
+          :location_mode,
           :employment_type,
           :description_html,
           :salary_min_minor,
