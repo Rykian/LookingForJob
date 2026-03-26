@@ -1,6 +1,15 @@
 require "rails_helper"
 
 RSpec.describe Sourcing::Providers::Linkedin::SessionManager do
+  before do
+    @tmp_dir = Dir.mktmpdir
+    stub_const("#{described_class}::SESSION_PATH", Pathname.new(@tmp_dir).join("linkedin_session.json"))
+  end
+
+  after do
+    FileUtils.remove_entry(@tmp_dir) if @tmp_dir && Dir.exist?(@tmp_dir)
+  end
+
   let(:session_path) { described_class::SESSION_PATH }
   let(:valid_state) { { "cookies" => [], "origins" => [] } }
 
