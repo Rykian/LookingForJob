@@ -6,7 +6,7 @@ module Sourcing
   module Providers
     module Linkedin
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 1
+        VERSION = 2
 
         TITLE_SELECTORS = [
           ".job-details-jobs-unified-top-card__job-title h1",
@@ -85,11 +85,12 @@ module Sourcing
           company = extract_company(doc, job_posting)
           page_text = normalize_whitespace(doc.text)
           salary = extract_salary(doc, page_text, job_posting)
+          location_mode = extract_location_mode(doc, page_text)
 
           {
             title: title,
             company: company,
-              location_mode: map_remote(page_text),
+            location_mode: location_mode,
             employment_type: map_employment_type(page_text),
             description_html: extract_description_html(doc),
             salary_min_minor: salary[:salary_min_minor],
@@ -155,6 +156,35 @@ module Sourcing
               return city unless city.nil?
             end
           end
+
+          nil
+        end
+
+        def extract_location_mode(doc, page_text)
+          location_mode = nil
+
+          LOCATION_SELECTORS.each do |selector|
+            doc.css(selector).each do |location_node|
+              location_mode = map_remote(normalize_whitespace(location_node.text))
+              return location_mode unless location_mode.nil?
+            end
+          end
+
+          extract_location_mode_from_top_card_text(page_text)
+        end
+
+        def extract_location_mode_from_top_card_text(page_text)
+          return nil if page_text.nil? || page_text.empty?
+
+          # New LinkedIn snapshots often include a top-card location line such as:
+          # "Paris, Ile-de-France, France (On-site)"
+          match = page_text.match(/\([ ]*(on\s*-\s*site|hybrid|remote)[ ]*\)/i)
+          return map_remote(match[1]) if match
+
+          # Another top-card variant appears as compact chips:
+          # "On-siteFull-timeApply" or "HybridFull-timeApply"
+          compact = page_text.match(/\b(on\s*-\s*site|hybrid|remote)\s*(?:full\s*-?\s*time|part\s*-?\s*time)?\s*(?:applysave|apply|save|see how you compare)\b/i)
+          return map_remote(compact[1]) if compact
 
           nil
         end
@@ -526,8 +556,8 @@ module Sourcing
 
           normalized = text.downcase
           return "hybrid" if normalized.match?(/hybrid|hybride/)
-          return "remote" if normalized.match?(/remote|teletravail|télétravail|a distance|à distance/)
           return "on-site" if normalized.match?(/on\s?-\s?site|on site|sur site|in office|présentiel|presentiel/)
+          return "remote" if normalized.match?(/remote|teletravail|télétravail|a distance|à distance/)
 
           nil
         end

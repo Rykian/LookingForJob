@@ -11,6 +11,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
         <body>
           <div class="job-details-jobs-unified-top-card__job-title"><h1>Backend Engineer</h1></div>
           <div class="job-details-jobs-unified-top-card__company-name"><a>Acme</a></div>
+          <div class="job-details-jobs-unified-top-card__primary-description-container">Nantes (Hybrid)</div>
           <div>Location: Nantes</div>
           <div data-testid="expandable-text-box"><p>CDI, hybrid, 2 days remote.</p></div>
           <time datetime="2026-03-20T09:00:00Z"></time>
@@ -209,5 +210,57 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:city]).to eq("Paris et périphérie")
+  end
+
+  it "prefers top-card on-site mode over unrelated remote mentions" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div class="job-details-jobs-unified-top-card__primary-description-container">
+            Paris, Ile-de-France, France (On-site)
+          </div>
+          <div data-testid="expandable-text-box">
+            <p>Process: test technique a faire en remote.</p>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:location_mode]).to eq("on-site")
+  end
+
+  it "does not detect location mode from plain page text outside top-card" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>WINAMAX • Paris, Ile-de-France, France</div>
+          <div>Test technique a faire en remote</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:location_mode]).to be_nil
+  end
+
+  it "extracts location mode from top-card compact chips text" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Paris, Ile-de-France, France · 1 day ago · 12 people clicked apply Promoted by hirer · Responses managed off LinkedIn On-siteFull-timeApplySave</div>
+          <div>Process: test technique a faire en remote</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:location_mode]).to eq("on-site")
   end
 end
