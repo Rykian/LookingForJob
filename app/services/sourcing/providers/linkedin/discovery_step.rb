@@ -4,6 +4,8 @@ module Sourcing
   module Providers
     module Linkedin
       class DiscoveryStep < Sourcing::DiscoveryStep
+        VERSION = 1
+
         PAGE_SIZE = 25
         MAX_PAGES = 10
         JOB_CARD_SELECTOR = "li.scaffold-layout__list-item[data-occludable-job-id]"
@@ -11,7 +13,7 @@ module Sourcing
         NEXT_PAGE_SELECTORS = [
           "button[aria-label*='Next']",
           "button[aria-label*='Suivant']",
-          "button.jobs-search-pagination__button--next"
+          "button.jobs-search-pagination__button--next",
         ].freeze
 
         # +crawler+ is an optional callable used in tests. It receives the same
@@ -36,7 +38,7 @@ module Sourcing
             execution: execution,
             browser: browser,
             context: context,
-            closed: false
+            closed: false,
           }
         rescue Sourcing::Providers::Linkedin::SessionNotFoundError
           raise
@@ -72,7 +74,7 @@ module Sourcing
 
           {
             discovered_urls: urls,
-            has_next_page: has_next_page
+            has_next_page: has_next_page,
           }
         end
 
@@ -151,7 +153,7 @@ module Sourcing
         def build_search_url(keyword:, work_mode:, page:)
           params = {
             keywords: keyword,
-            start: (page - 1) * PAGE_SIZE
+            start: (page - 1) * PAGE_SIZE,
           }
 
           # LinkedIn remote/hybrid filter (f_WT) is passed from WORK_MODE.

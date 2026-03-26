@@ -5,6 +5,8 @@ module Sourcing
   module Providers
     module Linkedin
       class EnrichStep < Sourcing::EnrichStep
+        VERSION = 1
+
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for job offers.
           Return ONLY a valid JSON object matching the provided schema.
@@ -19,28 +21,28 @@ module Sourcing
               hybrid_remote_days_min_per_week: {
                 type: ["integer", "null"],
                 minimum: 1,
-                maximum: 5
+                maximum: 5,
               },
               primary_technologies: {
                 type: ["array", "null"],
-                items: { type: "string" }
+                items: { type: "string" },
               },
               secondary_technologies: {
                 type: ["array", "null"],
-                items: { type: "string" }
+                items: { type: "string" },
               },
               offer_language: {
                 type: ["string", "null"],
-                enum: ["fr", "en", "other", nil]
+                enum: ["fr", "en", "other", nil],
               },
               normalized_seniority: {
                 type: ["string", "null"],
-                enum: ["intern", "junior", "mid", "senior", "staff", nil]
+                enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
               english_level_required: {
                 type: ["string", "null"],
-                enum: ["none", "basic", "professional", "fluent", nil]
-              }
+                enum: ["none", "basic", "professional", "fluent", nil],
+              },
             },
             required: %w[
               hybrid_remote_days_min_per_week
@@ -50,9 +52,9 @@ module Sourcing
               normalized_seniority
               english_level_required
             ],
-            additionalProperties: false
+            additionalProperties: false,
           },
-          strict: true
+          strict: true,
         }.freeze
 
         def initialize(llm_config: Sourcing::LlmConfig.from_env, generator: nil)
@@ -109,7 +111,7 @@ module Sourcing
             secondary_technologies: data[:secondary_technologies],
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
-            english_level_required: data[:english_level_required]
+            english_level_required: data[:english_level_required],
           }
         end
 

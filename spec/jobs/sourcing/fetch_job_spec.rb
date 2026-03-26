@@ -1,14 +1,34 @@
 require "rails_helper"
+require_relative "shared_version_checking_examples"
+
+class MockFetchStep
+  VERSION = 1
+
+  def call(source:, url:, url_hash:)
+    "<html>ok</html>"
+  end
+end
+
+class MockFetchStepError
+  VERSION = 1
+
+  def call(source:, url:, url_hash:)
+    raise Sourcing::Providers::Linkedin::FetchContentError, "shell_html"
+  end
+end
 
 RSpec.describe Sourcing::FetchJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:fetch_step) { instance_double(Sourcing::FetchStep) }
+  before do
+    stub_const("Sourcing::Providers::Linkedin::FetchContentError", Class.new(StandardError))
+  end
+
+  let(:fetch_step) { MockFetchStep.new }
+
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
-    stub_const("Sourcing::Providers::Linkedin::FetchContentError", Class.new(StandardError))
-
     registry.register(
       "linkedin",
       Sourcing::Provider.new(
@@ -41,8 +61,6 @@ RSpec.describe Sourcing::FetchJob, type: :job do
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
     )
 
-    allow(fetch_step).to receive(:call).and_return("<html>ok</html>")
-
     described_class.perform_now(url_hash: offer.url_hash)
 
     offer.reload
@@ -60,15 +78,24 @@ RSpec.describe Sourcing::FetchJob, type: :job do
   end
 
   it "fails loudly and does not enqueue analyze when provider raises fetch content error" do
+    error_registry = Sourcing::ProviderRegistry.new
+    error_registry.register(
+      "linkedin",
+      Sourcing::Provider.new(
+        discovery_step: nil,
+        fetch_step: MockFetchStepError.new,
+        analyze_step: nil,
+        enrich_step: nil
+      )
+    )
+    allow(Sourcing::Providers).to receive(:registry).and_return(error_registry)
+
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/456",
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/456"),
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
     )
-
-    allow(fetch_step).to receive(:call)
-      .and_raise(Sourcing::Providers::Linkedin::FetchContentError, "shell_html")
 
     expect do
       described_class.perform_now(url_hash: offer.url_hash)
@@ -79,5 +106,13 @@ RSpec.describe Sourcing::FetchJob, type: :job do
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
     expect(queued).to be_empty
+  end
+
+  describe "version checking behavior" do
+    let(:step_name) { "fetch" }
+    let(:next_job_class) { Sourcing::AnalyzeJob }
+    let(:mock_step_class) { MockFetchStep }
+
+    it_behaves_like "skippable sourcing job with version checking"
   end
 end

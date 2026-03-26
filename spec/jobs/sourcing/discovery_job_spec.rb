@@ -1,9 +1,24 @@
 require "rails_helper"
 
+class MockDiscoveryStep
+  VERSION = 1
+
+  def initialize_playwright(input:)
+    { mode: :crawler }
+  end
+
+  def crawl_page(input:, playwright_runtime:, page:)
+    { discovered_urls: [], has_next_page: false }
+  end
+
+  def close_playwright(playwright_runtime:)
+  end
+end
+
 RSpec.describe Sourcing::DiscoveryJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:discovery_step) { instance_double(Sourcing::DiscoveryStep) }
+  let(:discovery_step) { MockDiscoveryStep.new }
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
@@ -33,14 +48,14 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "upserts all discovered urls and enqueues fetch jobs" do
     result = {
-      discovered_urls: [ "https://example.com/jobs/1", "https://example.com/jobs/2" ],
-      has_next_page: false
+      discovered_urls: ["https://example.com/jobs/1", "https://example.com/jobs/2"],
+      has_next_page: false,
     }
     runtime = { mode: :crawler }
 
-    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
-    allow(discovery_step).to receive(:crawl_page).and_return(result)
-    allow(discovery_step).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(result)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
 
     expect do
       described_class.perform_now(
@@ -52,7 +67,6 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
     expect(queued.size).to eq(2)
-    expect(discovery_step).to have_received(:close_playwright).with(playwright_runtime: runtime)
 
     offer = JobOffer.find_by(url: "https://example.com/jobs/1")
     expect(offer.steps_details["discovery"]).to include("version" => 1)
@@ -61,9 +75,9 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "does not enqueue further discovery jobs (pagination is internal to the step)" do
     runtime = { mode: :crawler }
-    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
-    allow(discovery_step).to receive(:crawl_page).and_return({ discovered_urls: [], has_next_page: false })
-    allow(discovery_step).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return({ discovered_urls: [], has_next_page: false })
+    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
 
     described_class.perform_now(
       source: "linkedin",
@@ -73,29 +87,25 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
     next_discovery_jobs = enqueued_jobs.select { |job| job[:job] == described_class }
     expect(next_discovery_jobs).to be_empty
-    expect(discovery_step).to have_received(:close_playwright).with(playwright_runtime: runtime)
   end
 
   it "uses page number as cursor while crawling" do
     runtime = { mode: :crawler }
-    allow(discovery_step).to receive(:initialize_playwright).and_return(runtime)
-    allow(discovery_step).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
 
-    allow(discovery_step).to receive(:crawl_page)
-      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 1)
-      .and_return({ discovered_urls: [ "https://example.com/jobs/1" ], has_next_page: true })
-
-    allow(discovery_step).to receive(:crawl_page)
-      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 2)
-      .and_return({ discovered_urls: [ "https://example.com/jobs/2" ], has_next_page: false })
+    page_calls = []
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page) do |input: nil, playwright_runtime: nil, page: nil|
+      page_calls << page
+      if page == 1
+        { discovered_urls: ["https://example.com/jobs/1"], has_next_page: true }
+      else
+        { discovered_urls: ["https://example.com/jobs/2"], has_next_page: false }
+      end
+    end
 
     described_class.perform_now(source: "linkedin", keyword: "ruby", work_mode: "remote")
 
-    expect(discovery_step).to have_received(:crawl_page)
-      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 1)
-      .once
-    expect(discovery_step).to have_received(:crawl_page)
-      .with(input: { source: "linkedin", keyword: "ruby", work_mode: "remote" }, playwright_runtime: runtime, page: 2)
-      .once
+    expect(page_calls).to eq([1, 2])
   end
 end

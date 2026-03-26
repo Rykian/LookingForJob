@@ -4,10 +4,12 @@ module Sourcing
       class FetchContentError < StandardError; end
 
       class FetchStep < Sourcing::FetchStep
+        VERSION = 1
+
         DESCRIPTION_EXPAND_SELECTORS = [
           ".show-more-less-html__button--more",
           ".jobs-description__footer-button",
-          "button[aria-label*='description']"
+          "button[aria-label*='description']",
         ].freeze
 
         JOB_MARKER_SELECTORS = [
@@ -15,7 +17,7 @@ module Sourcing
           ".jobs-unified-top-card__job-title",
           ".jobs-description__content",
           ".show-more-less-html__markup",
-          "[data-testid='expandable-text-box']"
+          "[data-testid='expandable-text-box']",
         ].freeze
 
         BLOCKED_PAGE_PATTERN = /(checkpoint|challenge|captcha|authwall|login|sign in|security verification)/i
@@ -101,7 +103,7 @@ module Sourcing
             marker_found: marker_found?(page_obj),
             body_text_length: body_text_length.to_i,
             blocked_page: blocked_page?(url: current_url, title: title),
-            html_length: html.to_s.length
+            html_length: html.to_s.length,
           }
         rescue StandardError => e
           Rails.logger.warn("[Linkedin::FetchStep] Could not compute diagnostics for url=#{page_obj.url}: #{e.class}: #{e.message}")
@@ -111,7 +113,7 @@ module Sourcing
             marker_found: false,
             body_text_length: 0,
             blocked_page: false,
-            html_length: html.to_s.length
+            html_length: html.to_s.length,
           }
         end
 

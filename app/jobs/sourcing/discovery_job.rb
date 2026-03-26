@@ -8,18 +8,18 @@ module Sourcing
       input = {
         source: source,
         keyword: keyword,
-        work_mode: work_mode
+        work_mode: work_mode,
       }
 
-      provider = Sourcing::Providers.registry.fetch(source)
-      discovery_step = provider.discovery_step
-      @playwright_runtime = discovery_step.initialize_playwright(input: input)
+      @provider = Sourcing::Providers.registry.fetch(source)
+      @discovery_step = @provider.discovery_step
+      @playwright_runtime = @discovery_step.initialize_playwright(input: input)
 
       step :crawl do |job_step|
         page = Integer(job_step.cursor || input.fetch(:page, 1))
 
         loop do
-          result = discovery_step.crawl_page(
+          result = @discovery_step.crawl_page(
             input: input,
             playwright_runtime: @playwright_runtime,
             page: page
@@ -33,7 +33,7 @@ module Sourcing
         end
       end
 
-      discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
+      @discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
     end
 
     private
@@ -55,7 +55,10 @@ module Sourcing
       offer.url = url
       if offer.steps_details&.dig("discovery").nil?
         offer.steps_details = (offer.steps_details || {}).merge(
-          "discovery" => { "at" => now.iso8601, "version" => 1 }
+          "discovery" => {
+            "at" => now.iso8601,
+            "version" => @discovery_step.class::VERSION,
+          }
         )
       end
       offer.last_seen_at = now

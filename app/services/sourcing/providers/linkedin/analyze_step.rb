@@ -6,13 +6,15 @@ module Sourcing
   module Providers
     module Linkedin
       class AnalyzeStep < Sourcing::AnalyzeStep
+        VERSION = 1
+
         TITLE_SELECTORS = [
           ".job-details-jobs-unified-top-card__job-title h1",
           "h1.t-24",
           "h1.jobs-unified-top-card__job-title",
           ".top-card-layout__title",
           ".topcard__title",
-          "h1"
+          "h1",
         ].freeze
 
         COMPANY_SELECTORS = [
@@ -22,26 +24,26 @@ module Sourcing
           ".jobs-unified-top-card__company-name",
           ".topcard__org-name-link",
           ".topcard__flavor--black-link",
-          ".topcard__flavor"
+          ".topcard__flavor",
         ].freeze
 
         POSTED_AT_SELECTORS = [
           ".posted-time-ago__text",
           ".jobs-unified-top-card__posted-date",
           ".jobs-unified-top-card__subtitle-primary-grouping span",
-          ".topcard__flavor--metadata"
+          ".topcard__flavor--metadata",
         ].freeze
 
         LOCATION_SELECTORS = [
           ".job-details-jobs-unified-top-card__primary-description-container",
           ".jobs-unified-top-card__subtitle-primary-grouping",
-          ".topcard__flavor--bullet"
+          ".topcard__flavor--bullet",
         ].freeze
 
         CURRENCY_BY_SYMBOL = {
           "€" => "EUR",
           "$" => "USD",
-          "£" => "GBP"
+          "£" => "GBP",
         }.freeze
 
         LOCATION_NOISE_TOKENS = %w[
@@ -72,7 +74,7 @@ module Sourcing
           "[data-testid='expandable-text-box']",
           "#job-details",
           ".jobs-description__content",
-          ".show-more-less-html__markup"
+          ".show-more-less-html__markup",
         ].freeze
 
         def call(input)
@@ -94,7 +96,7 @@ module Sourcing
             salary_max_minor: salary[:salary_max_minor],
             salary_currency: salary[:salary_currency],
             posted_at: extract_posted_at(doc, job_posting, page_text),
-            city: extract_city(doc, page_text)
+            city: extract_city(doc, page_text),
           }
         end
 
@@ -306,7 +308,7 @@ module Sourcing
           {
             salary_min_minor: nil,
             salary_max_minor: nil,
-            salary_currency: nil
+            salary_currency: nil,
           }
         end
 
@@ -383,7 +385,7 @@ module Sourcing
             return {
               salary_min_minor: min_minor,
               salary_max_minor: max_minor,
-              salary_currency: currency
+              salary_currency: currency,
             }
           end
 
@@ -411,7 +413,7 @@ module Sourcing
           {
             salary_min_minor: min_minor,
             salary_max_minor: max_minor,
-            salary_currency: currency
+            salary_currency: currency,
           }
         end
 

@@ -1,10 +1,19 @@
 module Sourcing
   class FetchJob < ApplicationJob
-    def perform(url_hash:)
+    include Sourcing::Concerns::VersionChecking
+
+    def perform(url_hash:, force: false)
       offer = JobOffer.find_by(url_hash: url_hash)
       return unless offer
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
+      current_version = provider.fetch_step.class::VERSION
+
+      if should_skip_step?(offer, "fetch", current_version, force:)
+        AnalyzeJob.perform_later(url_hash: offer.url_hash, force:)
+        return
+      end
+
       html_content = provider.fetch_step.call(
         source: offer.source,
         url: offer.url,
@@ -23,10 +32,13 @@ module Sourcing
         content_type: "text/html"
       )
       offer.update!(
-        steps_details: offer.steps_details.merge("fetch" => { "at" => now.iso8601, "version" => 1 })
+        steps_details: offer.steps_details.merge("fetch" => {
+          "at" => now.iso8601,
+          "version" => current_version,
+        })
       )
 
-      AnalyzeJob.perform_later(url_hash: offer.url_hash)
+      AnalyzeJob.perform_later(url_hash: offer.url_hash, force:)
     end
   end
 end

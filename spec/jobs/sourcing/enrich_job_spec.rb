@@ -1,9 +1,25 @@
 require "rails_helper"
+require_relative "shared_version_checking_examples"
+
+class MockEnrichStep
+  VERSION = 1
+
+  def call(source:, url:, url_hash:, html_content:, extracted:)
+    {
+      hybrid_remote_days_min_per_week: 3,
+      primary_technologies: ["Ruby on Rails"],
+      secondary_technologies: ["Redis"],
+      offer_language: "en",
+      normalized_seniority: "senior",
+      english_level_required: "professional",
+    }
+  end
+end
 
 RSpec.describe Sourcing::EnrichJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:enrich_step) { instance_double(Sourcing::EnrichStep) }
+  let(:enrich_step) { MockEnrichStep.new }
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
@@ -46,22 +62,11 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
       content_type: "text/html"
     )
 
-    enrichment = {
-      hybrid_remote_days_min_per_week: 3,
-      primary_technologies: [ "Ruby on Rails" ],
-      secondary_technologies: [ "Redis" ],
-      offer_language: "en",
-      normalized_seniority: "senior",
-      english_level_required: "professional"
-    }
-
-    allow(enrich_step).to receive(:call).and_return(enrichment)
-
     described_class.perform_now(url_hash: offer.url_hash)
 
     offer.reload
     expect(offer.hybrid_remote_days_min_per_week).to eq(3)
-    expect(offer.primary_technologies).to eq([ "Ruby on Rails" ])
+    expect(offer.primary_technologies).to eq(["Ruby on Rails"])
     expect(offer.normalized_seniority).to eq("senior")
     expect(offer.steps_details["enrich"]).to include("version" => 1)
     expect(offer.steps_details.dig("enrich", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
@@ -72,5 +77,13 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
 
   it "returns when offer is missing or has no html" do
     expect { described_class.perform_now(url_hash: "missing") }.not_to raise_error
+  end
+
+  describe "version checking behavior" do
+    let(:step_name) { "enrich" }
+    let(:next_job_class) { Sourcing::ScoringJob }
+    let(:mock_step_class) { MockEnrichStep }
+
+    it_behaves_like "skippable sourcing job with version checking"
   end
 end

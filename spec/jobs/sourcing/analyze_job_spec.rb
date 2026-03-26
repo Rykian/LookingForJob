@@ -1,9 +1,29 @@
 require "rails_helper"
+require_relative "shared_version_checking_examples"
+
+class MockAnalyzeStep
+  VERSION = 1
+
+  def call(source:, url:, url_hash:, html_content:)
+    {
+      title: "Backend Engineer",
+      company: "Acme",
+      remote: "hybrid",
+      employment_type: "PERMANENT",
+      description_html: "<p>desc</p>",
+      salary_min_minor: 60000,
+      salary_max_minor: 80000,
+      salary_currency: "EUR",
+      posted_at: Time.zone.parse("2026-03-20 09:00:00"),
+      city: "Nantes",
+    }
+  end
+end
 
 RSpec.describe Sourcing::AnalyzeJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:analyze_step) { instance_double(Sourcing::AnalyzeStep) }
+  let(:analyze_step) { MockAnalyzeStep.new }
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
@@ -44,21 +64,6 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       content_type: "text/html"
     )
 
-    extracted = {
-      title: "Backend Engineer",
-      company: "Acme",
-      remote: "hybrid",
-      employment_type: "PERMANENT",
-      description_html: "<p>desc</p>",
-      salary_min_minor: 60000,
-      salary_max_minor: 80000,
-      salary_currency: "EUR",
-      posted_at: Time.zone.parse("2026-03-20 09:00:00"),
-      city: "Nantes"
-    }
-
-    allow(analyze_step).to receive(:call).and_return(extracted)
-
     described_class.perform_now(url_hash: offer.url_hash)
 
     offer.reload
@@ -66,6 +71,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     expect(offer.city).to eq("Nantes")
     expect(offer.employment_type).to eq("permanent")
     expect(offer.employment_type_before_type_cast).to eq("PERMANENT")
+    expect(offer.steps_details["analyze"]).to include("version" => 1)
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::EnrichJob }
     expect(queued.size).to eq(1)
@@ -82,5 +88,13 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     )
 
     expect { described_class.perform_now(url_hash: offer.url_hash) }.not_to raise_error
+  end
+
+  describe "version checking behavior" do
+    let(:step_name) { "analyze" }
+    let(:next_job_class) { Sourcing::EnrichJob }
+    let(:mock_step_class) { MockAnalyzeStep }
+
+    it_behaves_like "skippable sourcing job with version checking"
   end
 end

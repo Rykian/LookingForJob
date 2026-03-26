@@ -1,5 +1,7 @@
 module Sourcing
   class ScoreStep
+    VERSION = 1
+
     # Returns [score, breakdown]
     def self.call(offer:, profile:)
       tech_score, tech_details = tech_subscore(offer, profile)
@@ -20,7 +22,7 @@ module Sourcing
         {
           technology: tech_score,
           location_mode: mode_score,
-          location_city: city_score
+          location_city: city_score,
         },
         normalized_weights
       )
@@ -29,7 +31,7 @@ module Sourcing
         technology: tech_details,
         location_mode: mode_details,
         location_city: city_details,
-        weights: normalized_weights
+        weights: normalized_weights,
       }
       [ score, breakdown ]
     end
@@ -46,7 +48,7 @@ module Sourcing
         details = {
           no_primary_technologies: true,
           gate_reason: "missing_offer_primary",
-          score: 0
+          score: 0,
         }
         return [ 0, details ]
       end
@@ -65,13 +67,13 @@ module Sourcing
         primary_match_ratio: ratio(primary_matches, offer_primary.size).round(3),
         unknown_required_count: unknown_required_count,
         penalties_applied: {
-          unknown_primary_required: unknown_required_penalty
+          unknown_primary_required: unknown_required_penalty,
         },
         bonuses_applied: {
           secondary_match: secondary_match_bonus,
-          secondary_on_primary_match: secondary_on_primary_bonus
+          secondary_on_primary_match: secondary_on_primary_bonus,
         },
-        score: score
+        score: score,
       }
       [ score, details ]
     end
@@ -92,7 +94,7 @@ module Sourcing
         mode: mode,
         preference: preference,
         rank: rank,
-        score: score
+        score: score,
       }
       [ score, details ]
     end
@@ -145,7 +147,7 @@ module Sourcing
       {
         "yes" => "remote",
         "hybrid" => "hybrid",
-        "no" => "on-site"
+        "no" => "on-site",
       }.fetch(offer.remote.to_s, "on-site")
     end
 
