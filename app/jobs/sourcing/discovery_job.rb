@@ -4,12 +4,8 @@ module Sourcing
   class DiscoveryJob < ApplicationJob
     include ActiveJob::Continuable
 
-    def perform(source:, keyword:, work_mode:)
-      input = {
-        source: source,
-        keyword: keyword,
-        work_mode: work_mode,
-      }
+    def perform(source:, keyword:, work_mode:, force: false)
+      input = { source:, keyword:, work_mode:, force: }
 
       @provider = Sourcing::Providers.registry.fetch(source)
       @discovery_step = @provider.discovery_step
@@ -38,12 +34,12 @@ module Sourcing
 
     private
 
-    def enqueue_discovered_urls(source:, discovered_urls:)
+    def enqueue_discovered_urls(source:, discovered_urls:, force: false)
       discovered_at = Time.current
 
       discovered_urls.each do |url|
         offer = upsert_offer_url(source: source, url: url, now: discovered_at)
-        FetchJob.perform_later(url_hash: offer.url_hash)
+        FetchJob.perform_later(url_hash: offer.url_hash, force:)
       end
     end
 

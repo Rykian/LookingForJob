@@ -1,12 +1,27 @@
 import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { JobOffersQuery, JobOffersQueryVariables } from '@/graphql/generated'
+import {
+  type JobOffersQuery,
+  type JobOffersQueryVariables,
+  LocationModeEnum,
+} from '@/graphql/generated'
 import { formatLocationMode } from '@/lib/location-mode'
+
+const LOCATION_MODE_VALUES = Object.values(LocationModeEnum)
+const SCORED_VALUES = ['any', 'true', 'false'] as const
+const SORT_BY_VALUES = ['first_seen_at', 'last_seen_at', 'score', 'company', 'title'] as const
+const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
+
+type SortBy = (typeof SORT_BY_VALUES)[number]
+type SortDirection = (typeof SORT_DIRECTION_VALUES)[number]
+
+function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
+  return values.includes(value)
+}
 
 const JOB_OFFERS_QUERY = gql`
   query JobOffers(
@@ -45,24 +60,56 @@ const JOB_OFFERS_QUERY = gql`
 `
 
 export default function OffersPage() {
-  const [page, setPage] = useState(1)
-  const [source, setSource] = useState('')
-  const [locationMode, setLocationMode] = useState('')
-  const [scored, setScored] = useState<'any' | 'true' | 'false'>('any')
-  const [sortBy, setSortBy] = useState<
-    'first_seen_at' | 'last_seen_at' | 'score' | 'company' | 'title'
-  >('score')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const pageParam = Number.parseInt(searchParams.get('page') ?? '1', 10)
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+  const source = searchParams.get('source') ?? ''
+
+  const locationModeParam = searchParams.get('locationMode')
+  const locationMode: LocationModeEnum | '' =
+    locationModeParam && isOneOf(locationModeParam, LOCATION_MODE_VALUES) ? locationModeParam : ''
+
+  const scoredParam = searchParams.get('scored')
+  const scored = scoredParam && isOneOf(scoredParam, SCORED_VALUES) ? scoredParam : 'any'
+
+  const sortByParam = searchParams.get('sortBy')
+  const sortBy: SortBy = sortByParam && isOneOf(sortByParam, SORT_BY_VALUES) ? sortByParam : 'score'
+
+  const sortDirectionParam = searchParams.get('sortDirection')
+  const sortDirection: SortDirection =
+    sortDirectionParam && isOneOf(sortDirectionParam, SORT_DIRECTION_VALUES)
+      ? sortDirectionParam
+      : 'desc'
+
+  const updateSearchParams = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams)
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) {
+        next.delete(key)
+      } else {
+        next.set(key, value)
+      }
+    })
+
+    setSearchParams(next)
+  }
 
   const toggleSort = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
-    setPage(1)
     if (sortBy === column) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+      updateSearchParams({
+        page: null,
+        sortDirection: sortDirection === 'asc' ? 'desc' : 'asc',
+      })
       return
     }
 
-    setSortBy(column)
-    setSortDirection('desc')
+    updateSearchParams({
+      page: null,
+      sortBy: column === 'score' ? null : column,
+      sortDirection: null,
+    })
   }
 
   const sortIndicator = (column: 'first_seen_at' | 'score' | 'company' | 'title') => {
@@ -107,8 +154,10 @@ export default function OffersPage() {
               placeholder="Source (e.g. linkedin)"
               value={source}
               onChange={(event) => {
-                setPage(1)
-                setSource(event.target.value)
+                updateSearchParams({
+                  page: null,
+                  source: event.target.value || null,
+                })
               }}
             />
 
@@ -116,22 +165,26 @@ export default function OffersPage() {
               className="h-10 rounded-md border bg-background px-3 text-sm"
               value={locationMode}
               onChange={(event) => {
-                setPage(1)
-                setLocationMode(event.target.value)
+                updateSearchParams({
+                  page: null,
+                  locationMode: event.target.value || null,
+                })
               }}
             >
               <option value="">All location modes</option>
-              <option value="REMOTE">Remote</option>
-              <option value="HYBRID">Hybrid</option>
-              <option value="ON_SITE">On-site</option>
+              <option value={LocationModeEnum.Remote}>Remote</option>
+              <option value={LocationModeEnum.Hybrid}>Hybrid</option>
+              <option value={LocationModeEnum.OnSite}>On-site</option>
             </select>
 
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
               value={scored}
               onChange={(event) => {
-                setPage(1)
-                setScored(event.target.value as 'any' | 'true' | 'false')
+                updateSearchParams({
+                  page: null,
+                  scored: event.target.value === 'any' ? null : event.target.value,
+                })
               }}
             >
               <option value="any">Scoring: any</option>
@@ -142,12 +195,7 @@ export default function OffersPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setPage(1)
-                setSource('')
-                setLocationMode('')
-                setScored('any')
-                setSortBy('score')
-                setSortDirection('desc')
+                setSearchParams(new URLSearchParams())
               }}
             >
               Reset
@@ -249,7 +297,10 @@ export default function OffersPage() {
                 variant="outline"
                 size="sm"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => {
+                  const previousPage = page - 1
+                  updateSearchParams({ page: previousPage <= 1 ? null : String(previousPage) })
+                }}
               >
                 Previous
               </Button>
@@ -257,7 +308,9 @@ export default function OffersPage() {
                 variant="outline"
                 size="sm"
                 disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => {
+                  updateSearchParams({ page: String(page + 1) })
+                }}
               >
                 Next
               </Button>

@@ -1,17 +1,13 @@
 module Sourcing
   class LaunchDiscoveryJob < ApplicationJob
-    def perform
+    def perform(force: false)
       keywords = parse_env_list!("KEYWORDS")
       work_modes = parse_env_list!("WORK_MODE")
 
       Sourcing::Providers.registry.sources.each do |source|
         keywords.each do |keyword|
           work_modes.each do |work_mode|
-            DiscoveryJob.perform_later(
-              source: source,
-              keyword: keyword,
-              work_mode: work_mode
-            )
+            DiscoveryJob.perform_later(source:, keyword:, work_mode:, force:)
           end
         end
       end

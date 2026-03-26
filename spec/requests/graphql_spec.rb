@@ -105,6 +105,40 @@ RSpec.describe "GraphQL API", type: :request do
       node_ids = result.dig("data", "jobOffers", "nodes").map { |node| node["id"] }
       expect(node_ids.index(high.id.to_s)).to be < node_ids.index(low.id.to_s)
     end
+
+    it "serializes on-site location mode as ON_SITE" do
+      offer = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/on-site",
+        url_hash: "hash-on-site",
+        last_seen_at: Time.current,
+        location_mode: "on_site"
+      )
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!) {
+          jobOffers(page: $page, perPage: $perPage) {
+            nodes {
+              id
+              locationMode
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(
+        query: query,
+        variables: {
+          page: 1,
+          perPage: 25,
+        }
+      )
+
+      expect(result["errors"]).to be_nil
+      node = result.dig("data", "jobOffers", "nodes").find { |n| n["id"] == offer.id.to_s }
+      expect(node).to be_present
+      expect(node["locationMode"]).to eq("ON_SITE")
+    end
   end
 
   describe "query dashboardMetrics" do
