@@ -5,6 +5,38 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from '@/components/ui/combobox'
+
+// Static list from scoring_profile.json (primary + secondary)
+const TECHNOLOGIES = [
+  'ruby',
+  'react',
+  'nodejs',
+  'postgresql',
+  'sidekiq',
+  'typescript',
+  'docker',
+  'elm',
+  'javascript',
+  'redis',
+  'node',
+  'express',
+  'graphql',
+  'rails',
+  'ruby on rails',
+]
+
+import { useEffect } from 'react'
+import {
   type JobOffersQuery,
   type JobOffersQueryVariables,
   LocationModeEnum,
@@ -32,6 +64,7 @@ const JOB_OFFERS_QUERY = gql`
     $scored: Boolean
     $sortBy: String
     $sortDirection: String
+    $technologies: [String!]
   ) {
     jobOffers(
       page: $page
@@ -41,6 +74,7 @@ const JOB_OFFERS_QUERY = gql`
       scored: $scored
       sortBy: $sortBy
       sortDirection: $sortDirection
+      technologies: $technologies
     ) {
       totalCount
       totalPages
@@ -61,6 +95,8 @@ const JOB_OFFERS_QUERY = gql`
 
 export default function OffersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const techParam = searchParams.get('technologies') || ''
+  const selectedTechnologies = techParam ? techParam.split(',').filter(Boolean) : []
 
   const pageParam = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
@@ -125,6 +161,7 @@ export default function OffersPage() {
     ...(source ? { source } : {}),
     ...(locationMode ? { locationMode } : {}),
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
+    ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
   }
 
   const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(
@@ -148,7 +185,36 @@ export default function OffersPage() {
           <CardTitle className="text-base">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+            <Combobox
+              multiple
+              items={TECHNOLOGIES}
+              onValueChange={(techs: string[]) => {
+                console.log('Selected technologies:', techs)
+                const val = techs.length > 0 ? techs.join(',') : null
+                updateSearchParams({ page: null, technologies: val })
+              }}
+            >
+              <ComboboxChips>
+                <ComboboxValue>
+                  {selectedTechnologies.map((item) => (
+                    <ComboboxChip key={item}>{item}</ComboboxChip>
+                  ))}
+                </ComboboxValue>
+                <ComboboxChipsInput placeholder="Filter by technology..." />
+              </ComboboxChips>
+
+              <ComboboxContent>
+                <ComboboxEmpty>All technologies</ComboboxEmpty>
+                <ComboboxList>
+                  {(item) => (
+                    <ComboboxItem key={item} value={item}>
+                      {item}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
             <input
               className="h-10 rounded-md border bg-background px-3 text-sm"
               placeholder="Source (e.g. linkedin)"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_26_150913) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_27_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -55,13 +55,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_150913) do
     t.string "normalized_seniority"
     t.string "offer_language"
     t.datetime "posted_at"
-    t.jsonb "primary_technologies"
+    t.string "primary_technologies", default: [], null: false, array: true
     t.string "salary_currency"
     t.integer "salary_max_minor"
     t.integer "salary_min_minor"
     t.integer "score"
     t.jsonb "score_breakdown"
-    t.jsonb "secondary_technologies"
+    t.string "secondary_technologies", default: [], null: false, array: true
     t.string "source", null: false
     t.jsonb "steps_details", default: {}, null: false
     t.string "title"

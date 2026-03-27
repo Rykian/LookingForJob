@@ -36,14 +36,36 @@ module Types
         description: "Sort field: first_seen_at, last_seen_at, score, company, title."
       argument :sort_direction, String, required: false, default_value: "desc",
         description: "Sort direction: asc or desc."
+      argument :technologies, [String], required: false,
+        description: "Filter offers by matching any of these technologies (primary or secondary)."
     end
 
-    def job_offers(page:, per_page:, source: nil, location_mode: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc")
+    def job_offers(page:, per_page:, source: nil, location_mode: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil)
       scope = JobOffer.all
       scope = scope.where(source: source) if source.present?
       scope = scope.where(location_mode: location_mode) if location_mode.present?
       scope = scope.where("steps_details ? 'score'") if scored == true
       scope = scope.where("NOT (steps_details ? 'score')") if scored == false
+
+      if technologies.present?
+        # Normalize filter: downcase, remove non-letters
+        norm_techs = technologies.map { |t| t.downcase.gsub(/[^a-z]/, "") }
+        # SQL: normalize both DB and filter arrays
+        sql = <<~SQL.squish
+          (
+            ARRAY(
+              SELECT lower(regexp_replace(t, '[^a-z]', '', 'g')) FROM unnest(primary_technologies) AS t
+            ) && ARRAY[?]::text[]
+          )
+          OR
+          (
+            ARRAY(
+              SELECT lower(regexp_replace(t, '[^a-z]', '', 'g')) FROM unnest(secondary_technologies) AS t
+            ) && ARRAY[?]::text[]
+          )
+        SQL
+        scope = scope.where(sql, norm_techs, norm_techs)
+      end
 
       sort_column = normalize_sort_column(sort_by)
       direction = normalize_sort_direction(sort_direction)

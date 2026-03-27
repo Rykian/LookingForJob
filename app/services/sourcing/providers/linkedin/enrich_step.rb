@@ -105,10 +105,14 @@ module Sourcing
           data = payload.respond_to?(:to_h) ? payload.to_h : payload
           data = data.transform_keys(&:to_sym)
 
+          normalize_techs = ->(arr) do
+            Array(arr).map { |t| t.is_a?(String) ? t.gsub(/[^a-zA-Z]/, "").downcase : t }
+          end
+
           {
             hybrid_remote_days_min_per_week: extracted[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
-            primary_technologies: data[:primary_technologies],
-            secondary_technologies: data[:secondary_technologies],
+            primary_technologies: normalize_techs.call(data[:primary_technologies]),
+            secondary_technologies: normalize_techs.call(data[:secondary_technologies]),
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
             english_level_required: data[:english_level_required],
