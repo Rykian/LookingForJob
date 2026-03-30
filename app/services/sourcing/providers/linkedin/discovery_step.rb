@@ -3,6 +3,7 @@ require "uri"
 module Sourcing
   module Providers
     module Linkedin
+      class DiscoveryContentError < StandardError; end
       class DiscoveryStep < Sourcing::DiscoveryStep
         VERSION = 1
 
@@ -108,6 +109,25 @@ module Sourcing
           begin
             page_obj.goto(url, waitUntil: "domcontentloaded")
 
+            # Diagnostics for shell/login/challenge/interstitial
+            title = page_obj.title.to_s
+            current_url = page_obj.url.to_s
+            body_text_length = page_obj.evaluate(<<~JS)
+              () => {
+                const body = document && document.body ? document.body.innerText : "";
+                return (body || "").trim().length;
+              }
+            JS
+            html = page_obj.content.to_s
+            compact_html = html.downcase.gsub(/\s+/, "")
+            blocked_pattern = /(checkpoint|challenge|captcha|authwall|login|sign in|security verification)/i
+            if compact_html == "<html><head></head><body></body></html>" || compact_html == "<html><body></body></html>"
+              raise DiscoveryContentError, "LinkedIn discovery produced shell_html for url=#{url}"
+            end
+            if "#{current_url} #{title}".downcase.match?(blocked_pattern)
+              raise DiscoveryContentError, "LinkedIn discovery reached challenge_or_login_page for url=#{url} current_url=#{current_url} title=#{title.inspect}"
+            end
+
             cards_found = begin
               page_obj.wait_for_selector(JOB_CARD_SELECTOR, timeout: 15_000, state: "attached")
               true
@@ -116,33 +136,35 @@ module Sourcing
               false
             end
 
-            if cards_found
-              hydrate_search_results(page_obj)
+            if !cards_found
+              raise DiscoveryContentError, "LinkedIn discovery found no job cards for url=#{url} title=#{title.inspect} body_text_length=#{body_text_length}"
+            end
 
-              hrefs = page_obj.evaluate(<<~JS, arg: { card: JOB_CARD_SELECTOR, link: JOB_LINK_SELECTOR })
-                ({ card, link }) => {
-                  const base = window.location.origin;
-                  const seen = new Set();
-                  const urls = [];
-                  for (const item of document.querySelectorAll(card)) {
-                    const anchor = item.querySelector(link);
-                    if (anchor && anchor.href) {
-                      if (!seen.has(anchor.href)) { seen.add(anchor.href); urls.push(anchor.href); }
-                    } else {
-                      const jobId = item.getAttribute("data-occludable-job-id");
-                      if (jobId) {
-                        const url = base + "/jobs/view/" + jobId + "/";
-                        if (!seen.has(url)) { seen.add(url); urls.push(url); }
-                      }
+            hydrate_search_results(page_obj)
+
+            hrefs = page_obj.evaluate(<<~JS, arg: { card: JOB_CARD_SELECTOR, link: JOB_LINK_SELECTOR })
+              ({ card, link }) => {
+                const base = window.location.origin;
+                const seen = new Set();
+                const urls = [];
+                for (const item of document.querySelectorAll(card)) {
+                  const anchor = item.querySelector(link);
+                  if (anchor && anchor.href) {
+                    if (!seen.has(anchor.href)) { seen.add(anchor.href); urls.push(anchor.href); }
+                  } else {
+                    const jobId = item.getAttribute("data-occludable-job-id");
+                    if (jobId) {
+                      const url = base + "/jobs/view/" + jobId + "/";
+                      if (!seen.has(url)) { seen.add(url); urls.push(url); }
                     }
                   }
-                  return urls;
                 }
-              JS
+                return urls;
+              }
+            JS
 
-              result[:discovered_urls] = Array(hrefs).uniq
-              result[:has_next_page] = next_page_available?(page_obj) && page < MAX_PAGES
-            end
+            result[:discovered_urls] = Array(hrefs).uniq
+            result[:has_next_page] = next_page_available?(page_obj) && page < MAX_PAGES
           ensure
             page_obj.close rescue nil
           end
@@ -157,7 +179,12 @@ module Sourcing
           }
 
           # LinkedIn remote/hybrid filter (f_WT) is passed from WORK_MODE.
-          params[:f_WT] = work_mode if work_mode && !work_mode.to_s.strip.empty?
+          params[:f_WT] = case work_mode
+          when "remote" then "2"
+          when "hybrid" then "3"
+          when "onsite" then "1"
+          else nil
+          end
 
           "https://www.linkedin.com/jobs/search/?#{URI.encode_www_form(params)}"
         end
