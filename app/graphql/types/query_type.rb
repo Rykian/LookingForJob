@@ -131,6 +131,14 @@ module Types
       Sourcing::ScoringProfile.load
     end
 
+    # --- Providers ---
+
+    field :providers, [Types::ProviderEnum], null: false, description: "All available sourcing provider keys."
+
+    def providers
+      Sourcing::Providers.registry.sources
+    end
+
     private
 
     def normalize_sort_column(sort_by)

@@ -35,7 +35,12 @@ const TECHNOLOGIES = [
   'ruby on rails',
 ]
 
-import { useEffect } from 'react'
+const PROVIDERS = gql`
+  query Providers {
+    providers
+  }
+`
+
 import {
   type JobOffersQuery,
   type JobOffersQueryVariables,
@@ -94,13 +99,17 @@ const JOB_OFFERS_QUERY = gql`
 `
 
 export default function OffersPage() {
+  // Fetch provider keys (sources) from backend
+  const { data: providerData, loading: providerLoading } = useQuery<ProvidersQuery>(PROVIDERS)
+  const providerKeys = providerData?.providerKeys || []
   const [searchParams, setSearchParams] = useSearchParams()
   const techParam = searchParams.get('technologies') || ''
   const selectedTechnologies = techParam ? techParam.split(',').filter(Boolean) : []
 
   const pageParam = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
-  const source = searchParams.get('source') ?? ''
+  const sourceParam = searchParams.get('source') || ''
+  const selectedSources = sourceParam ? sourceParam.split(',').filter(Boolean) : []
 
   const locationModeParam = searchParams.get('locationMode')
   const locationMode: LocationModeEnum | '' =
@@ -158,7 +167,7 @@ export default function OffersPage() {
     perPage: 25,
     sortBy,
     sortDirection,
-    ...(source ? { source } : {}),
+    ...(selectedSources.length > 0 ? { source: selectedSources.join(',') } : {}),
     ...(locationMode ? { locationMode } : {}),
     ...(scored === 'any' ? {} : { scored: scored === 'true' }),
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
@@ -190,7 +199,6 @@ export default function OffersPage() {
               multiple
               items={TECHNOLOGIES}
               onValueChange={(techs: string[]) => {
-                console.log('Selected technologies:', techs)
                 const val = techs.length > 0 ? techs.join(',') : null
                 updateSearchParams({ page: null, technologies: val })
               }}
@@ -215,17 +223,36 @@ export default function OffersPage() {
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
-            <input
-              className="h-10 rounded-md border bg-background px-3 text-sm"
-              placeholder="Source (e.g. linkedin)"
-              value={source}
-              onChange={(event) => {
-                updateSearchParams({
-                  page: null,
-                  source: event.target.value || null,
-                })
+
+            <Combobox
+              multiple
+              items={providerKeys}
+              onValueChange={(sources: string[]) => {
+                const val = sources.length > 0 ? sources.join(',') : null
+                updateSearchParams({ page: null, source: val })
               }}
-            />
+              disabled={providerLoading}
+            >
+              <ComboboxChips>
+                <ComboboxValue>
+                  {selectedSources.map((item) => (
+                    <ComboboxChip key={item}>{item}</ComboboxChip>
+                  ))}
+                </ComboboxValue>
+                <ComboboxChipsInput placeholder="Filter by source..." />
+              </ComboboxChips>
+
+              <ComboboxContent>
+                <ComboboxEmpty>All sources</ComboboxEmpty>
+                <ComboboxList>
+                  {(item) => (
+                    <ComboboxItem key={item} value={item}>
+                      {item}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
 
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
