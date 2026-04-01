@@ -30,7 +30,7 @@ module Sourcing
           require "playwright"
 
           session = Sourcing::Providers::Linkedin::SessionManager.load
-          execution = Playwright.create(playwright_cli_executable_path: "npx playwright")
+          execution = Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path)
           browser = execution.playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
           context = browser.new_context(storageState: session)
 
