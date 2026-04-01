@@ -36,7 +36,7 @@ module Sourcing
             salary_currency: parse_salary_currency(extract_first(doc, SALARY_SELECTORS)),
             remote: normalize_remote_policy(extract_labeled_text(doc, REMOTE_LABELS)),
             posted_at: parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)),
-            description_html: extract_section_by_label(doc, DESCRIPTION_LABELS) || extract_first_html(doc, [".description"]),
+            description_html: extract_first_html(doc, ["#the-position-section"]) || extract_section_by_label(doc, DESCRIPTION_LABELS) || extract_first_html(doc, [".description"]),
           }
         end
 
@@ -138,74 +138,6 @@ module Sourcing
           end
         end
       end
-
-        # Add normalization helpers from Linkedin AnalyzeStep for future robustness
-        def normalize_whitespace(value)
-          return "" if value.nil?
-          value.to_s.gsub(/\s+/, " ").strip
-        end
-
-        def blank_to_nil(value)
-          return nil if value.nil? || value.empty?
-          value
-        end
-
-        private
-
-        def extract_first(doc, selectors)
-          selectors.each do |selector|
-            node = doc.at_css(selector)
-            return node.text.strip if node && !node.text.strip.empty?
-          end
-          nil
-        end
-
-        def extract_first_html(doc, selectors)
-          selectors.each do |selector|
-            node = doc.at_css(selector)
-            return node.inner_html.strip if node && !node.inner_html.strip.empty?
-          end
-          nil
-        end
-
-        def extract_labeled_text(doc, label_regexes)
-          doc.xpath("//*[self::p or self::li or self::div or self::span]").each do |node|
-            label_regexes.each do |regex|
-              if node.text =~ regex
-                return node.text.strip
-              end
-            end
-          end
-          nil
-        end
-
-        def extract_section_by_label(doc, label_regexes)
-          doc.xpath("//*[self::section or self::div or self::article or self::h2 or self::h3]").each do |node|
-            label_regexes.each do |regex|
-              if node.text =~ regex
-                # Return the parent section or the node itself
-                return (node.parent&.inner_html || node.inner_html).strip
-              end
-            end
-          end
-          nil
-        end
-
-        def extract_apply_link(doc)
-          link = doc.at_css("a[href*='postuler'], a[href*='apply'], a[aria-label*='Postuler']")
-          link&.[]("href")
-        end
-
-        # Add normalization helpers from Linkedin AnalyzeStep for future robustness
-        def normalize_whitespace(value)
-          return "" if value.nil?
-          value.to_s.gsub(/\s+/, " ").strip
-        end
-
-        def blank_to_nil(value)
-          return nil if value.nil? || value.empty?
-          value
-        end
 
         private
 

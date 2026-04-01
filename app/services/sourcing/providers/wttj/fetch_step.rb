@@ -31,7 +31,7 @@ module Sourcing
 
           html = nil
 
-          Playwright.create(playwright_cli_executable_path: "npx playwright") do |playwright|
+          Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path) do |playwright|
             browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
             context = browser.new_context(
               viewport: { width: 1366, height: 768 },

@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
   let(:stub_generator) do
     Class.new {
-      def extract_json(**)
+      def call(**)
         {
           remote_policy: "hybrid",
           contract_type: "CDI",
@@ -25,7 +25,7 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
   end
 
   it "extracts enrichment fields from description" do
-    result = step.call(description_html: description_html)
+    result = step.call(extracted: { description_html: description_html })
     expect(result[:remote_policy]).to eq("hybrid")
     expect(result[:contract_type]).to eq("CDI")
     expect(result[:salary_range]).to eq("40k-50k")

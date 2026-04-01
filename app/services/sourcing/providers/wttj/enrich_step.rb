@@ -47,53 +47,42 @@ module Sourcing
           strict: true,
         }.freeze
 
-        def initialize(llm_config: Sourcing::LlmConfig.from_env, generator: nil)
-          @llm_config = llm_config
-          @generator = generator || method(:generate_with_ruby_llm)
-        end
+        # Inherit initialize and generate_with_ruby_llm from parent
 
         def call(input)
           extracted = input.fetch(:extracted, nil)
-          description = input[:description_html] || ""
           payload = @generator.call(
             model: @llm_config.model,
             provider: @llm_config.provider,
             schema: RESPONSE_SCHEMA,
             system: SYSTEM_PROMPT,
-            prompt: build_user_prompt(description, extracted)
+            prompt: build_user_prompt(extracted)
           )
 
           normalize_payload(payload, extracted)
         end
-
-        private
-
-        def generate_with_ruby_llm(model:, provider:, schema:, system:, prompt:)
-          @llm_config.configure!
-
-          response = RubyLLM
-                     .chat(model: model, provider: provider)
-                     .with_schema(schema)
-                     .ask("#{system}\n\n#{prompt}")
-
-          response.content
-        end
-
-        def build_user_prompt(description, extracted)
+        def build_user_prompt(extracted)
+          plain_description = description_html_to_text(extracted[:description_html])
           <<~PROMPT
-            Extract the following fields from the job offer description below. Use the schema provided. If a field is not present, return null for that field.
+            Job title: #{extracted[:title] || "unknown"}
+            Company: #{extracted[:company] || "unknown"}
+            Location mode: #{extracted[:location_mode] || "unknown"}
 
-            Job offer description:
-            #{description}
-
-            Extracted fields (if any):
-            #{extracted.inspect}
+            Job description text:
+            #{plain_description}
           PROMPT
         end
 
         def normalize_payload(payload, extracted)
-          # Optionally merge or post-process as needed
-          payload
+          data = super(payload, extracted).transform_keys(&:to_sym)
+          {
+            remote_policy: data[:remote_policy],
+            contract_type: data[:contract_type],
+            salary_range: data[:salary_range],
+            offer_language: data[:offer_language],
+            normalized_seniority: data[:normalized_seniority],
+            english_level_required: data[:english_level_required],
+          }
         end
       end
     end
