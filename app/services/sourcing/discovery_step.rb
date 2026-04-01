@@ -1,5 +1,7 @@
 module Sourcing
   class DiscoveryStep
+    include PlaywrightSupport
+
     def initialize_playwright(input:)
       raise NotImplementedError, "Sourcing::DiscoveryStep#initialize_playwright must be implemented"
     end
