@@ -2,9 +2,6 @@
 
 Repository guide for coding agents.
 
-Base inspiration:
-https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md
-
 ## Project Snapshot
 
 - Stack: Rails 8 API, PostgreSQL, Sidekiq, Playwright, RubyLLM
@@ -14,11 +11,6 @@ https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md
 
 ## Core Checklist
 
-- Restate goal and assumptions before coding.
-- If ambiguous, ask one direct clarifying question first.
-- Implement the smallest change that solves the request.
-- Touch only relevant files; no unrelated refactor.
-- Keep existing style and architecture.
 - Preserve pipeline contracts and payload shapes.
 - Prefer idempotent writes for ingestion paths.
 - Run the smallest relevant verification command.
