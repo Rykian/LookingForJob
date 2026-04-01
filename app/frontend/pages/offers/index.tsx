@@ -45,6 +45,7 @@ import {
   type JobOffersQuery,
   type JobOffersQueryVariables,
   LocationModeEnum,
+  type ProvidersQuery,
 } from '@/graphql/generated'
 import { formatLocationMode } from '@/lib/location-mode'
 
@@ -101,7 +102,7 @@ const JOB_OFFERS_QUERY = gql`
 export default function OffersPage() {
   // Fetch provider keys (sources) from backend
   const { data: providerData, loading: providerLoading } = useQuery<ProvidersQuery>(PROVIDERS)
-  const providerKeys = providerData?.providerKeys || []
+  const providerKeys = providerData?.providers || []
   const [searchParams, setSearchParams] = useSearchParams()
   const techParam = searchParams.get('technologies') || ''
   const selectedTechnologies = techParam ? techParam.split(',').filter(Boolean) : []

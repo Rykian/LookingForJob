@@ -6,7 +6,7 @@ module Types
 
     # Add all provider keys as enum values
     Sourcing::Providers.registry.sources.each do |key|
-      value key.upcase, value: key, description: "Provider: #{key}"
+      value key, value: key, description: "Provider: #{key}"
     end
   end
 end
