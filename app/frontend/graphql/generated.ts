@@ -127,9 +127,9 @@ export type MutationUpdateScoringProfileArgs = {
 /** All available sourcing provider keys. */
 export enum ProviderEnum {
   /** Provider: linkedin */
-  Linkedin = 'LINKEDIN',
+  Linkedin = 'linkedin',
   /** Provider: wttj */
-  Wttj = 'WTTJ'
+  Wttj = 'wttj'
 }
 
 export type Query = {

@@ -37,7 +37,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:salary_min_minor]).to eq(50000)
     expect(result[:salary_max_minor]).to eq(80000)
     expect(result[:salary_currency]).to eq("EUR")
-    expect(result[:remote]).to eq("remote")
+    expect(result[:location_mode]).to eq("remote")
     expect(result[:posted_at]).to match(/T\d{2}:\d{2}:\d{2}/) # ISO8601
     expect(result[:description_html]).to include("Job description here")
   end
@@ -61,7 +61,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:salary_min_minor]).to be_nil
     expect(result[:salary_max_minor]).to be_nil
     expect(result[:salary_currency]).to be_nil
-    expect(result[:remote]).to eq("hybrid")
+    expect(result[:location_mode]).to eq("hybrid")
     expect(result[:posted_at]).to match(/T\d{2}:\d{2}:\d{2}/)
   end
 
@@ -83,7 +83,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:salary_max_minor]).to be_nil
     expect(result[:salary_currency]).to eq("EUR")
     expect(result[:employment_type]).to eq("FIXED_TERM")
-    expect(result[:remote]).to eq("on-site")
+    expect(result[:location_mode]).to eq("on-site")
     expect(result[:posted_at]).to match(/2026-03-31T/)
   end
 

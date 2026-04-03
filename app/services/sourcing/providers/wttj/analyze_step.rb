@@ -1,10 +1,10 @@
-  REMOTE_LABELS = [/Télétravail/i, /Remote/i, /télétravail/i, /remote/i]
+# frozen_string_literal: true
+
 module Sourcing
   module Providers
     module Wttj
       class AnalyzeStep < Sourcing::AnalyzeStep
         VERSION = 1
-
 
         # Selectors for fixed fields
         TITLE_SELECTORS = ["h2"].freeze
@@ -13,14 +13,7 @@ module Sourcing
         CONTRACT_SELECTORS = ["[class*='contract']"].freeze
         SALARY_SELECTORS = ["[class*='salary']"].freeze
         POSTED_AT_SELECTORS = ["[class*='posted']"].freeze
-        START_DATE_LABELS = [/Début de mission/i, /Date de début/i]
-        WORK_RHYTHM_LABELS = [/Rythme scolaire/i, /Rythme/i]
-        DESCRIPTION_LABELS = [/Descriptif du poste/i, /Missions/i]
-        PROFILE_LABELS = [/Profil recherché/i, /Profil/i]
-        BENEFITS_LABELS = [/Rémunération et avantages/i, /avantages salariés/i, /avantages/i]
-        COMPANY_DESC_LABELS = [/Qui sont-ils/i, /Présentation de l'entreprise/i]
-        WORKPLACE_LABELS = [/Le lieu de travail/i, /Lieu/i]
-        RECRUITMENT_LABELS = [/Processus de recrutement/i, /Recrutement/i]
+        REMOTE_LABELS = [/Télétravail/i, /Remote/i, /télétravail/i, /remote/i, /Hybride/i, /sur site/i, /présentiel/i, /on[- ]?site/i].freeze
 
         def call(input)
           html = input[:html] || input[:html_content] || input[:description_html] || ""
@@ -34,9 +27,9 @@ module Sourcing
             salary_min_minor: parse_salary_min(extract_first(doc, SALARY_SELECTORS)),
             salary_max_minor: parse_salary_max(extract_first(doc, SALARY_SELECTORS)),
             salary_currency: parse_salary_currency(extract_first(doc, SALARY_SELECTORS)),
-            remote: normalize_remote_policy(extract_labeled_text(doc, REMOTE_LABELS)),
+            location_mode: normalize_remote_policy(extract_labeled_text(doc, REMOTE_LABELS)),
             posted_at: parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)),
-            description_html: extract_first_html(doc, ["#the-position-section"]) || extract_section_by_label(doc, DESCRIPTION_LABELS) || extract_first_html(doc, [".description"]),
+            description_html: extract_first_html(doc, ["#the-position-section", "section", ".description"]),
           }
         end
 
@@ -45,12 +38,14 @@ module Sourcing
         # --- Normalization helpers for DB compatibility ---
         def normalize_city(location)
           return nil if location.nil? || location.empty?
+
           # Pick the first city if multiple are listed
           location.split(",").first.strip
         end
 
         def normalize_contract_type(contract)
           return nil if contract.nil?
+
           case contract.strip.downcase
           when /cdi/ then "PERMANENT"
           when /cdd/ then "FIXED_TERM"
@@ -60,23 +55,24 @@ module Sourcing
           when /intérim|interim|temporaire/ then "TEMPORARY"
           when /temps plein|full[- ]?time/ then "FULL_TIME"
           when /temps partiel|part[- ]?time/ then "PART_TIME"
-
           else
             nil
           end
         end
 
-
         def parse_salary_min(salary)
           return nil if salary.nil? || salary =~ /non spécifié/i
+
           # Match "50K à 80K €" or "50 000 - 80 000 EUR"
           if salary =~ /(\d+[\sKk]*)[\sà\-]+(\d+[\sKk]*)/i
-            min = $1.gsub(/[\sKk]/, "").to_i
-            min *= 1000 if $1 =~ /[Kk]/
+            raw_min = $1
+            min = raw_min.gsub(/[\sKk]/, "").to_i
+            min *= 1000 if raw_min =~ /[Kk]/
             min
           elsif salary =~ /(\d+[\sKk]*)/i
-            min = $1.gsub(/[\sKk]/, "").to_i
-            min *= 1000 if $1 =~ /[Kk]/
+            raw_min = $1
+            min = raw_min.gsub(/[\sKk]/, "").to_i
+            min *= 1000 if raw_min =~ /[Kk]/
             min
           else
             nil
@@ -85,9 +81,11 @@ module Sourcing
 
         def parse_salary_max(salary)
           return nil if salary.nil? || salary =~ /non spécifié/i
+
           if salary =~ /(\d+[\sKk]*)[\sà\-]+(\d+[\sKk]*)/i
-            max = $2.gsub(/[\sKk]/, "").to_i
-            max *= 1000 if $2 =~ /[Kk]/
+            raw_max = $2
+            max = raw_max.gsub(/[\sKk]/, "").to_i
+            max *= 1000 if raw_max =~ /[Kk]/
             max
           else
             nil
@@ -96,6 +94,7 @@ module Sourcing
 
         def parse_salary_currency(salary)
           return nil if salary.nil? || salary =~ /non spécifié/i
+
           if salary =~ /€|eur/i
             "EUR"
           elsif salary =~ /\$/
@@ -109,6 +108,7 @@ module Sourcing
 
         def normalize_remote_policy(remote)
           return nil if remote.nil?
+
           case remote.strip.downcase
           when /télétravail total|full remote|remote/i
             "remote"
@@ -123,10 +123,11 @@ module Sourcing
 
         def parse_posted_at(posted)
           return nil if posted.nil?
+
           # Example: "il y a 8 jours"
           if posted =~ /il y a (\d+) jours?/
             days_ago = $1.to_i
-            (Time.now - days_ago * 86400).iso8601
+            (Time.now - days_ago * 86_400).iso8601
           elsif posted =~ /il y a (\d+) heures?/
             hours_ago = $1.to_i
             (Time.now - hours_ago * 3600).iso8601
@@ -137,9 +138,6 @@ module Sourcing
             posted
           end
         end
-      end
-
-        private
 
         def extract_first(doc, selectors)
           selectors.each do |selector|
@@ -160,25 +158,12 @@ module Sourcing
         def extract_labeled_text(doc, label_regexes)
           doc.xpath("//*[self::p or self::li or self::div or self::span]").each do |node|
             label_regexes.each do |regex|
-              if node.text =~ regex
-                return node.text.strip
-              end
+              return node.text.strip if node.text =~ regex
             end
           end
           nil
         end
-
-        def extract_section_by_label(doc, label_regexes)
-          doc.xpath("//*[self::section or self::div or self::article or self::h2 or self::h3]").each do |node|
-            label_regexes.each do |regex|
-              if node.text =~ regex
-                # Return the parent section or the node itself
-                return (node.parent&.inner_html || node.inner_html).strip
-              end
-            end
-          end
-          nil
-        end
+      end
     end
   end
 end

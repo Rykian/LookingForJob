@@ -5,7 +5,7 @@ module Sourcing
   module Providers
     module Wttj
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 1
+        VERSION = 2
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for Welcome to the Jungle job offers.
@@ -18,9 +18,19 @@ module Sourcing
           schema: {
             type: "object",
             properties: {
-              remote_policy: { type: ["string", "null"] },
-              contract_type: { type: ["string", "null"] },
-              salary_range: { type: ["string", "null"] },
+              hybrid_remote_days_min_per_week: {
+                type: ["integer", "null"],
+                minimum: 1,
+                maximum: 5,
+              },
+              primary_technologies: {
+                type: ["array", "null"],
+                items: { type: "string" },
+              },
+              secondary_technologies: {
+                type: ["array", "null"],
+                items: { type: "string" },
+              },
               offer_language: {
                 type: ["string", "null"],
                 enum: ["fr", "en", "other", nil],
@@ -35,9 +45,9 @@ module Sourcing
               },
             },
             required: %w[
-              remote_policy
-              contract_type
-              salary_range
+              hybrid_remote_days_min_per_week
+              primary_technologies
+              secondary_technologies
               offer_language
               normalized_seniority
               english_level_required
@@ -50,7 +60,7 @@ module Sourcing
         # Inherit initialize and generate_with_ruby_llm from parent
 
         def call(input)
-          extracted = input.fetch(:extracted, nil)
+          extracted = input.fetch(:extracted)
           payload = @generator.call(
             model: @llm_config.model,
             provider: @llm_config.provider,
@@ -61,12 +71,15 @@ module Sourcing
 
           normalize_payload(payload, extracted)
         end
+
         def build_user_prompt(extracted)
+          location_mode = extracted[:location_mode] || extracted[:remote]
           plain_description = description_html_to_text(extracted[:description_html])
+
           <<~PROMPT
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
-            Location mode: #{extracted[:location_mode] || "unknown"}
+            Location mode: #{location_mode || "unknown"}
 
             Job description text:
             #{plain_description}
@@ -75,10 +88,12 @@ module Sourcing
 
         def normalize_payload(payload, extracted)
           data = super(payload, extracted).transform_keys(&:to_sym)
+          location_mode = extracted[:location_mode] || extracted[:remote]
+
           {
-            remote_policy: data[:remote_policy],
-            contract_type: data[:contract_type],
-            salary_range: data[:salary_range],
+            hybrid_remote_days_min_per_week: location_mode == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
+            primary_technologies: normalize_techs(data[:primary_technologies]),
+            secondary_technologies: normalize_techs(data[:secondary_technologies]),
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
             english_level_required: data[:english_level_required],

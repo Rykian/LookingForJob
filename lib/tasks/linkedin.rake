@@ -5,8 +5,9 @@ namespace :linkedin do
 
     puts "Opening browser — log in to LinkedIn, then wait for the feed to load."
     puts "The session will be saved automatically. Timeout: 5 minutes."
+    include Sourcing::PlaywrightSupport
 
-    Playwright.create(playwright_cli_executable_path: "npx playwright") do |playwright|
+    Playwright.create(playwright_cli_executable_path:) do |playwright|
       browser = playwright.chromium.launch(headless: false)
       context = browser.new_context
       page = context.new_page

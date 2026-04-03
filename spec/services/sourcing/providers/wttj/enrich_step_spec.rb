@@ -5,9 +5,9 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
     Class.new {
       def call(**)
         {
-          remote_policy: "hybrid",
-          contract_type: "CDI",
-          salary_range: "40k-50k",
+          hybrid_remote_days_min_per_week: 3,
+          primary_technologies: ["Ruby on Rails"],
+          secondary_technologies: ["Redis"],
           offer_language: "fr",
           normalized_seniority: "junior",
           english_level_required: "professional",
@@ -25,10 +25,10 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
   end
 
   it "extracts enrichment fields from description" do
-    result = step.call(extracted: { description_html: description_html })
-    expect(result[:remote_policy]).to eq("hybrid")
-    expect(result[:contract_type]).to eq("CDI")
-    expect(result[:salary_range]).to eq("40k-50k")
+    result = step.call(extracted: { description_html: description_html, location_mode: "hybrid" })
+    expect(result[:hybrid_remote_days_min_per_week]).to eq(3)
+    expect(result[:primary_technologies]).to eq(["rubyonrails"])
+    expect(result[:secondary_technologies]).to eq(["redis"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("junior")
     expect(result[:english_level_required]).to eq("professional")
