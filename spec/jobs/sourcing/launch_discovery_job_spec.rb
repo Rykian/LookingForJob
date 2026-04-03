@@ -3,13 +3,15 @@ require "rails_helper"
 RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
   include ActiveJob::TestHelper
 
+  let(:work_mode_step) { instance_double(Sourcing::DiscoveryStep, supports_work_mode_filter?: true) }
+  let(:no_work_mode_step) { instance_double(Sourcing::DiscoveryStep, supports_work_mode_filter?: false) }
   let(:registry) { Sourcing::ProviderRegistry.new }
 
   before do
     registry.register(
       "linkedin",
       Sourcing::Provider.new(
-        discovery_step: nil,
+        discovery_step: work_mode_step,
         fetch_step: nil,
         analyze_step: nil,
         enrich_step: nil
@@ -17,9 +19,9 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
     )
 
     registry.register(
-      "welcome_to_the_jungle",
+      "france_travail",
       Sourcing::Provider.new(
-        discovery_step: nil,
+        discovery_step: no_work_mode_step,
         fetch_step: nil,
         analyze_step: nil,
         enrich_step: nil
@@ -41,7 +43,7 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "enqueues discovery jobs for each provider, keyword, and work mode" do
+  it "enqueues one job per work mode only for providers that support work mode filtering" do
     allow(ENV).to receive(:[]).with("KEYWORDS").and_return("ruby, rails ")
     allow(ENV).to receive(:[]).with("WORK_MODE").and_return("remote, hybrid")
 
@@ -49,7 +51,7 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
 
-    expect(queued.size).to eq(8)
+    expect(queued.size).to eq(6)
     normalized_args = queued.map do |job|
       job[:args].first.deep_symbolize_keys.slice(:source, :keyword, :work_mode)
     end
@@ -59,10 +61,8 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
       { source: "linkedin", keyword: "ruby", work_mode: "hybrid" },
       { source: "linkedin", keyword: "rails", work_mode: "remote" },
       { source: "linkedin", keyword: "rails", work_mode: "hybrid" },
-      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "remote" },
-      { source: "welcome_to_the_jungle", keyword: "ruby", work_mode: "hybrid" },
-      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "remote" },
-      { source: "welcome_to_the_jungle", keyword: "rails", work_mode: "hybrid" }
+      { source: "france_travail", keyword: "ruby", work_mode: "remote" },
+      { source: "france_travail", keyword: "rails", work_mode: "remote" }
     ])
   end
 

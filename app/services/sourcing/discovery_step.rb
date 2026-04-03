@@ -2,6 +2,10 @@ module Sourcing
   class DiscoveryStep
     include PlaywrightSupport
 
+    def supports_work_mode_filter?
+      true
+    end
+
     def initialize_playwright(input:)
       raise NotImplementedError, "Sourcing::DiscoveryStep#initialize_playwright must be implemented"
     end
