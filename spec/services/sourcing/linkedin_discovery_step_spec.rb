@@ -53,7 +53,7 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
     expect(call_count).to eq(3)
     expect(result[:discovered_urls]).to match_array([
       "https://example.com/jobs/page1",
-      "https://example.com/jobs/page2"
+      "https://example.com/jobs/page2",
     ])
   end
 
@@ -85,7 +85,7 @@ RSpec.describe Sourcing::Providers::Linkedin::DiscoveryStep do
   it "builds search url with f_WT when work_mode is present" do
     step = described_class.new(crawler: ->(_input) { { discovered_urls: [], has_next_page: false } })
 
-    url = step.send(:build_search_url, keyword: "Ruby", work_mode: "2", page: 1)
+    url = step.send(:build_search_url, keyword: "Ruby", work_mode: "remote", page: 1)
 
     expect(url).to include("keywords=Ruby")
     expect(url).to include("start=0")

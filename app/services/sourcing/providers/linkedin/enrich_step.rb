@@ -92,12 +92,21 @@ module Sourcing
 
           {
             hybrid_remote_days_min_per_week: extracted[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
-            primary_technologies: normalize_techs(data[:primary_technologies]),
-            secondary_technologies: normalize_techs(data[:secondary_technologies]),
+            primary_technologies: technology_labels(data[:primary_technologies]),
+            secondary_technologies: technology_labels(data[:secondary_technologies]),
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
             english_level_required: data[:english_level_required],
           }
+        end
+
+        def technology_labels(values)
+          Array(values).filter_map do |value|
+            next value unless value.is_a?(String)
+
+            label = value.strip
+            label unless label.empty?
+          end.uniq
         end
       end
     end
