@@ -62,7 +62,7 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
       { source: "linkedin", keyword: "rails", work_mode: "remote" },
       { source: "linkedin", keyword: "rails", work_mode: "hybrid" },
       { source: "france_travail", keyword: "ruby", work_mode: "remote" },
-      { source: "france_travail", keyword: "rails", work_mode: "remote" }
+      { source: "france_travail", keyword: "rails", work_mode: "remote" },
     ])
   end
 

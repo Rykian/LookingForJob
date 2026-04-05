@@ -4,7 +4,17 @@ module Sourcing
   class DiscoveryJob < ApplicationJob
     include ActiveJob::Continuable
 
-    def perform(source:, keyword:, work_mode:, force: false)
+    # ActiveJob::Continuable's around_perform callback causes Ruby 3+ to receive
+    # deserialized kwargs as a positional hash rather than keyword args when the
+    # job is executed via Sidekiq. Accept both forms explicitly.
+    def perform(*pos_args, source: nil, keyword: nil, work_mode: nil, force: false)
+      if (hash = pos_args.first).is_a?(Hash)
+        source    = hash[:source]
+        keyword   = hash[:keyword]
+        work_mode = hash[:work_mode]
+        force     = hash.fetch(:force, false)
+      end
+
       input = { source:, keyword:, work_mode:, force: }
 
       @provider = Sourcing::Providers.registry.fetch(source)

@@ -24,14 +24,13 @@ module Sourcing
 
           {
             mode: :playwright,
-            execution: execution,
-            browser: browser,
-            context: context,
+            execution:,
+            browser:,
+            context:,
             closed: false,
           }
         rescue StandardError => e
-          source = input[:source]
-          raise "WTTJ discovery initialization failed for source=#{source}: #{e.message}"
+          raise "WTTJ discovery initialization failed: #{e.message}"
         end
 
         def crawl_page(input:, playwright_runtime:, page:)

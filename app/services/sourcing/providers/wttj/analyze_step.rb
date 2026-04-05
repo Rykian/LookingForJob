@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Sourcing
   module Providers
     module Wttj
@@ -18,18 +20,20 @@ module Sourcing
         def call(input)
           html = input[:html] || input[:html_content] || input[:description_html] || ""
           doc = Nokogiri::HTML(html)
+          embedded_job = extract_embedded_job_data(doc)
+          salary_text = extract_first(doc, SALARY_SELECTORS)
 
           {
-            title: extract_first(doc, TITLE_SELECTORS),
-            company: extract_first(doc, COMPANY_SELECTORS),
-            city: normalize_city(extract_first(doc, LOCATION_SELECTORS)),
-            employment_type: normalize_contract_type(extract_first(doc, CONTRACT_SELECTORS)),
-            salary_min_minor: parse_salary_min(extract_first(doc, SALARY_SELECTORS)),
-            salary_max_minor: parse_salary_max(extract_first(doc, SALARY_SELECTORS)),
-            salary_currency: parse_salary_currency(extract_first(doc, SALARY_SELECTORS)),
-            location_mode: normalize_remote_policy(extract_labeled_text(doc, REMOTE_LABELS)),
-            posted_at: parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)),
-            description_html: extract_first_html(doc, ["#the-position-section", "section", ".description"]),
+            title: embedded_job["name"] || extract_first(doc, TITLE_SELECTORS),
+            company: embedded_job.dig("organization", "name") || extract_first(doc, COMPANY_SELECTORS),
+            city: embedded_job.dig("office", "city") || normalize_city(extract_first(doc, LOCATION_SELECTORS)),
+            employment_type: normalize_contract_type(embedded_job["contract_type"] || extract_first(doc, CONTRACT_SELECTORS)),
+            salary_min_minor: embedded_job["salary_min"] || parse_salary_min(salary_text),
+            salary_max_minor: embedded_job["salary_max"] || parse_salary_max(salary_text),
+            salary_currency: embedded_job["salary_currency"] || parse_salary_currency(salary_text),
+            location_mode: normalize_remote_policy(embedded_job["remote"] || extract_labeled_text(doc, REMOTE_LABELS)),
+            posted_at: extract_relative_posted_at(doc) || parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)) || embedded_job["published_at"],
+            description_html: extract_first_html(doc, ["#the-position-section", "section", ".description"]) || embedded_job["description"],
           }
         end
 
@@ -47,7 +51,9 @@ module Sourcing
           return nil if contract.nil?
 
           case contract.strip.downcase
+          when /full_time/ then "PERMANENT"
           when /cdi/ then "PERMANENT"
+          when /temporary|temp/ then "TEMPORARY"
           when /cdd/ then "FIXED_TERM"
           when /freelance/ then "FREELANCE"
           when /stage/ then "INTERNSHIP"
@@ -110,6 +116,12 @@ module Sourcing
           return nil if remote.nil?
 
           case remote.strip.downcase
+          when /partial|hybride|partiel|quelques jours/
+            "hybrid"
+          when /full remote|full_remote|remote|full/i
+            "remote"
+          when /none|no_remote/
+            "on-site"
           when /télétravail total|full remote|remote/i
             "remote"
           when /hybride|partiel|quelques jours/i
@@ -123,6 +135,8 @@ module Sourcing
 
         def parse_posted_at(posted)
           return nil if posted.nil?
+
+          return "last month" if posted.match?(/\ble mois dernier\b|\blast month\b/i)
 
           # Example: "il y a 8 jours"
           if posted =~ /il y a (\d+) jours?/
@@ -161,6 +175,37 @@ module Sourcing
               return node.text.strip if node.text =~ regex
             end
           end
+          nil
+        end
+
+        def extract_relative_posted_at(doc)
+          text = doc.text.gsub(/\s+/, " ").strip
+          return "last month" if text.match?(/\ble mois dernier\b|\blast month\b/i)
+
+          nil
+        end
+
+        def extract_embedded_job_data(doc)
+          data = extract_embedded_initial_data(doc)
+          return {} unless data.is_a?(Hash)
+
+          query = Array(data["queries"]).find do |entry|
+            Array(entry["queryKey"]).first == "job"
+          end
+
+          query&.dig("state", "data") || {}
+        end
+
+        def extract_embedded_initial_data(doc)
+          script = doc.css("script").find { |node| node.text.include?("window.__INITIAL_DATA__") }
+          return nil unless script
+
+          match = script.text.match(/window\.__INITIAL_DATA__\s*=\s*("(?:\\.|[^"])*")/m)
+          return nil unless match
+
+          decoded = JSON.parse(match[1])
+          JSON.parse(decoded)
+        rescue JSON::ParserError
           nil
         end
       end

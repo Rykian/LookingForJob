@@ -26,6 +26,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "france_travail",
+            Provider.new(
+              discovery_step: Sourcing::Providers::FranceTravail::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::FranceTravail::FetchStep.new,
+              analyze_step:   Sourcing::Providers::FranceTravail::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::FranceTravail::EnrichStep.new
+            )
+          )
+
         registry
       end
     end

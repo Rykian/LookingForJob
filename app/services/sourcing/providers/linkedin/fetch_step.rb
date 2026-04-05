@@ -35,23 +35,9 @@ module Sourcing
         private
 
         def fetch_with_playwright(url:)
-          require "playwright"
-
-          html = nil
-
           session = Sourcing::Providers::Linkedin::SessionManager.load
 
-          Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path) do |playwright|
-            browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-            context = browser.new_context(
-              storageState: session,
-              viewport: { width: 1366, height: 768 },
-              locale: "en-US",
-              timezoneId: "Europe/Paris",
-              userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-            )
-            page_obj = context.new_page
-            page_obj.goto(url, waitUntil: "domcontentloaded")
+          with_playwright_page(url: url, locale: "en-US", storage_state: session) do |page_obj|
             wait_for_job_markers(page_obj)
             expansion = expand_job_description(page_obj)
             html = page_obj.content
@@ -60,31 +46,30 @@ module Sourcing
             Rails.logger.info(
               "[Linkedin::FetchStep] Description expansion strategy=#{expansion[:strategy]} expanded=#{expansion[:expanded]} markers=#{diagnostics[:marker_found]} body_text_length=#{diagnostics[:body_text_length]} url=#{url}"
             )
-            context.close
-            browser.close
+            html
           end
-
-          html
         end
 
         def wait_for_job_markers(page_obj)
           timeout_ms = ENV.fetch("LINKEDIN_FETCH_MARKER_TIMEOUT_MS", "12000").to_i
-          selector = JOB_MARKER_SELECTORS.join(", ")
+          found = wait_for_any_selector(
+            page_obj: page_obj,
+            selectors: JOB_MARKER_SELECTORS,
+            timeout_ms: timeout_ms,
+            wait_options: { state: "attached" }
+          )
+          return if found
 
-          begin
-            page_obj.wait_for_selector(selector, timeout: timeout_ms, state: "attached")
-          rescue StandardError
-            # LinkedIn pages are often hydrated after first paint. Try a short fallback pass.
-            page_obj.wait_for_timeout(700)
-            page_obj.evaluate(<<~JS)
-              () => {
-                if (document && document.body) {
-                  window.scrollBy(0, Math.max(400, window.innerHeight * 0.8));
-                }
+          # LinkedIn pages are often hydrated after first paint. Try a short fallback pass.
+          page_obj.wait_for_timeout(700)
+          page_obj.evaluate(<<~JS)
+            () => {
+              if (document && document.body) {
+                window.scrollBy(0, Math.max(400, window.innerHeight * 0.8));
               }
-            JS
-            page_obj.wait_for_timeout(700)
-          end
+            }
+          JS
+          page_obj.wait_for_timeout(700)
         end
 
         def page_diagnostics(page_obj, html:)

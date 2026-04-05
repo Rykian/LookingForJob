@@ -87,5 +87,52 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:posted_at]).to match(/2026-03-31T/)
   end
 
+  it "extracts fields from embedded initial data used by live WTTJ pages" do
+    payload = {
+      "queries" => [
+        {
+          "queryKey" => ["job", "fr", "bluecoders", "senior-software-engineer-ror_paris"],
+          "state" => {
+            "data" => {
+              "name" => "Senior Software Engineer RoR",
+              "contract_type" => "full_time",
+              "salary_min" => 1,
+              "salary_max" => 1000,
+              "salary_currency" => "EUR",
+              "remote" => "partial",
+              "published_at" => "2026-03-03T11:19:08Z",
+              "description" => "<p>Backend job description</p>",
+              "office" => { "city" => "Paris" },
+              "organization" => { "name" => "Bluecoders" },
+            },
+          },
+        },
+      ],
+    }.to_json.to_json
+
+    html = <<~HTML
+      <html><body>
+        <script>
+          window.__INITIAL_DATA__ = #{payload}
+          window.__GROWTHBOOK_PAYLOAD__ = "{}"
+        </script>
+        <div>le mois dernier</div>
+      </body></html>
+    HTML
+
+    result = step.call(html: html)
+
+    expect(result[:title]).to eq("Senior Software Engineer RoR")
+    expect(result[:company]).to eq("Bluecoders")
+    expect(result[:city]).to eq("Paris")
+    expect(result[:employment_type]).to eq("PERMANENT")
+    expect(result[:salary_min_minor]).to eq(1)
+    expect(result[:salary_max_minor]).to eq(1000)
+    expect(result[:salary_currency]).to eq("EUR")
+    expect(result[:location_mode]).to eq("hybrid")
+    expect(result[:posted_at]).to eq("last month")
+    expect(result[:description_html]).to include("Backend job description")
+  end
+
   # TODO: Add integration tests for analyzing WTTJ job details
 end

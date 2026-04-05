@@ -13,7 +13,9 @@ module Sourcing
           "[class*='description']", # Class contains 'description'
         ].freeze
 
-        COOKIE_CONSENT_SELECTOR = "button[aria-label*='Accepter'][data-testid*='cookie']"
+        COOKIE_CONSENT_SELECTORS = [
+          "button[aria-label*='Accepter'][data-testid*='cookie']",
+        ].freeze
 
         def initialize(fetcher: nil)
           @fetcher = fetcher || method(:fetch_with_playwright)
@@ -27,44 +29,17 @@ module Sourcing
         private
 
         def fetch_with_playwright(url:)
-          require "playwright"
-
-          html = nil
-
-          Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path) do |playwright|
-            browser = playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-            context = browser.new_context(
-              viewport: { width: 1366, height: 768 },
-              locale: "fr-FR",
-              timezoneId: "Europe/Paris",
-              userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-            )
-            page_obj = context.new_page
-            page_obj.goto(url, waitUntil: "domcontentloaded")
-
-            # Handle cookie consent popup if present
-            if page_obj.query_selector(COOKIE_CONSENT_SELECTOR)
-              page_obj.click(COOKIE_CONSENT_SELECTOR)
-            end
+          with_playwright_page(url: url, locale: "fr-FR") do |page_obj|
+            click_first_selector(page_obj: page_obj, selectors: COOKIE_CONSENT_SELECTORS)
 
             # Wait for main content selectors
-            found = false
-            MAIN_CONTENT_SELECTORS.each do |selector|
-              begin
-                page_obj.wait_for_selector(selector, timeout: 4000)
-                found = true
-                break
-              rescue
-                # Try next selector
-              end
-            end
+            found = wait_for_any_selector(page_obj: page_obj, selectors: MAIN_CONTENT_SELECTORS, timeout_ms: 4000)
             raise "WTTJ job page did not load main content" unless found
 
             html = page_obj.content
-            page_obj.close
-            browser.close
+            ensure_basic_html_content!(provider_name: "WTTJ", url: url, html: html)
+            html
           end
-          html
         end
       end
     end
