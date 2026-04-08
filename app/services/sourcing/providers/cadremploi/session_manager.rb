@@ -13,6 +13,7 @@ module Sourcing
 
       class SessionManager
         SESSION_PATH = Rails.root.join("data", "cadremploi_session.json").freeze
+        REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
 
         def self.path
           custom = ENV["CADREMPLOI_STORAGE_STATE_PATH"].to_s.strip
@@ -30,15 +31,36 @@ module Sourcing
         end
 
         def self.save(storage_state)
+          validate_storage_state!(storage_state)
           File.write(path, JSON.generate(storage_state))
         end
 
         def self.load
           raise SessionNotFoundError unless exists?
 
-          JSON.parse(File.read(path))
+          storage_state = JSON.parse(File.read(path))
+          validate_storage_state!(storage_state)
+          storage_state
         rescue JSON::ParserError
           raise SessionNotFoundError, "Cadremploi session file is invalid JSON at #{path}"
+        end
+
+        def self.validate_storage_state!(storage_state)
+          unless storage_state.is_a?(Hash)
+            raise SessionNotFoundError, "Cadremploi session file is invalid at #{path}"
+          end
+
+          missing_keys = REQUIRED_ROOT_KEYS.reject { |key| storage_state.key?(key) }
+          if missing_keys.any?
+            raise SessionNotFoundError,
+                  "Cadremploi session file is invalid: missing #{missing_keys.join(', ')} at #{path}"
+          end
+
+          unless storage_state["cookies"].is_a?(Array) && storage_state["origins"].is_a?(Array)
+            raise SessionNotFoundError, "Cadremploi session file is invalid at #{path}"
+          end
+
+          true
         end
 
         def self.load_if_exists

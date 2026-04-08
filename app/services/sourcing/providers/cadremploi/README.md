@@ -65,6 +65,7 @@ Cadremploi can return anti-bot challenge pages. To use a trusted browser session
 
 1. Create/save a session:
    - bin/rails cadremploi:login
+   - The task loads existing session state if available, then saves and validates refreshed state.
 2. Enable strict trusted-session mode for runtime:
    - CADREMPLOI_REQUIRE_SESSION=true
 

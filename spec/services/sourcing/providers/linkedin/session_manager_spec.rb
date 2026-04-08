@@ -50,6 +50,32 @@ RSpec.describe Sourcing::Providers::Linkedin::SessionManager do
         /corrupt/
       )
     end
+
+    it "raises SessionNotFoundError when file shape is invalid" do
+      File.write(session_path, JSON.generate({ "cookies" => "wrong", "origins" => [] }))
+
+      expect { described_class.load }.to raise_error(
+        Sourcing::Providers::Linkedin::SessionNotFoundError,
+        /invalid/
+      )
+    end
+  end
+
+  describe ".authenticated_storage_state?" do
+    it "returns true when the LinkedIn auth cookie is present" do
+      state = {
+        "cookies" => [
+          { "name" => "li_at", "value" => "token" },
+        ],
+        "origins" => [],
+      }
+
+      expect(described_class.authenticated_storage_state?(state)).to be(true)
+    end
+
+    it "returns false when the LinkedIn auth cookie is absent" do
+      expect(described_class.authenticated_storage_state?(valid_state)).to be(false)
+    end
   end
 
   describe ".clear" do
