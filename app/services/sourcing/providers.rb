@@ -36,6 +36,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "cadremploi",
+            Provider.new(
+              discovery_step: Sourcing::Providers::Cadremploi::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::Cadremploi::FetchStep.new,
+              analyze_step:   Sourcing::Providers::Cadremploi::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::Cadremploi::EnrichStep.new
+            )
+          )
+
         registry
       end
     end

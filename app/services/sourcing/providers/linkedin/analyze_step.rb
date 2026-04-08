@@ -300,7 +300,7 @@ module Sourcing
             next unless node
 
             html = node.inner_html&.strip
-            return html unless html.nil? || html.empty?
+            return clean_attributes(html) unless html.nil? || html.empty?
           end
 
           nil

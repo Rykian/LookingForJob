@@ -164,7 +164,7 @@ module Sourcing
         def extract_first_html(doc, selectors)
           selectors.each do |selector|
             node = doc.at_css(selector)
-            return node.inner_html.strip if node && !node.inner_html.strip.empty?
+            return clean_attributes(node.inner_html.strip) if node && !node.inner_html.strip.empty?
           end
           nil
         end

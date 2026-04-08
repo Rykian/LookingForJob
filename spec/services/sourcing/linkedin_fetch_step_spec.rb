@@ -20,6 +20,7 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
     it "clicks known LinkedIn description expand button when present" do
       button = instance_double("Playwright::ElementHandle")
 
+      allow(page_obj).to receive(:evaluate).and_return(false)
       allow(page_obj).to receive(:query_selector).and_return(nil)
       allow(page_obj).to receive(:query_selector).with(described_class::DESCRIPTION_EXPAND_SELECTORS.first).and_return(button)
       allow(button).to receive(:click)
@@ -28,32 +29,42 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
       result = step.send(:expand_job_description, page_obj)
 
       expect(result).to eq(expanded: true, strategy: described_class::DESCRIPTION_EXPAND_SELECTORS.first)
-      expect(button).to have_received(:click)
+      expect(button).to have_received(:click).with(timeout: 1_200)
       expect(page_obj).to have_received(:wait_for_timeout).with(400)
     end
 
     it "falls back to text-based expansion when selectors miss" do
       allow(page_obj).to receive(:query_selector).and_return(nil)
-      allow(page_obj).to receive(:evaluate).and_return(true)
+      allow(page_obj).to receive(:evaluate).and_return(false, true)
       allow(page_obj).to receive(:wait_for_timeout)
 
       result = step.send(:expand_job_description, page_obj)
 
       expect(result).to eq(expanded: true, strategy: "text_fallback")
-      expect(page_obj).to have_received(:evaluate)
+      expect(page_obj).to have_received(:evaluate).twice
       expect(page_obj).to have_received(:wait_for_timeout).with(400)
     end
 
     it "returns none when no expansion control is found" do
       allow(page_obj).to receive(:query_selector).and_return(nil)
-      allow(page_obj).to receive(:evaluate).and_return(false)
+      allow(page_obj).to receive(:evaluate).and_return(false, false)
 
       result = step.send(:expand_job_description, page_obj)
 
       expect(result).to eq(expanded: false, strategy: "none")
     end
 
+    it "short-circuits when a blocking overlay is visible" do
+      allow(page_obj).to receive(:evaluate).and_return(true)
+
+      result = step.send(:expand_job_description, page_obj)
+
+      expect(result).to eq(expanded: false, strategy: "blocked_overlay")
+      expect(page_obj).to have_received(:evaluate).once
+    end
+
     it "returns false when expansion raises" do
+      allow(page_obj).to receive(:evaluate).and_return(false)
       allow(page_obj).to receive(:query_selector).and_raise(StandardError, "boom")
       allow(Rails.logger).to receive(:warn)
 
@@ -74,7 +85,7 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
         blocked_page: false,
         current_url: "https://www.linkedin.com/jobs/view/1",
         title: "",
-        html_length: 39
+        html_length: 39,
       }
 
       expect do
@@ -94,7 +105,7 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
         blocked_page: false,
         current_url: "https://www.linkedin.com/jobs/view/1",
         title: "LinkedIn",
-        html_length: 120
+        html_length: 120,
       }
 
       expect do
@@ -114,7 +125,7 @@ RSpec.describe Sourcing::Providers::Linkedin::FetchStep do
         blocked_page: false,
         current_url: "https://www.linkedin.com/jobs/view/1",
         title: "Job",
-        html_length: 500
+        html_length: 500,
       }
 
       expect do

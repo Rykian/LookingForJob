@@ -133,13 +133,23 @@ module Sourcing
         end
 
         def expand_job_description(page_obj)
+          if blocking_modal_visible?(page_obj)
+            return { expanded: false, strategy: "blocked_overlay" }
+          end
+
           DESCRIPTION_EXPAND_SELECTORS.each do |selector|
             button = page_obj.query_selector(selector)
             next unless button
 
-            button.click
-            page_obj.wait_for_timeout(400)
-            return { expanded: true, strategy: selector }
+            begin
+              button.click(timeout: 1_200)
+              page_obj.wait_for_timeout(400)
+              return { expanded: true, strategy: selector }
+            rescue StandardError => e
+              Rails.logger.warn("[Linkedin::FetchStep] Expand click failed for selector=#{selector}: #{e.class}: #{e.message}")
+              # Try next selector or text fallback instead of burning full default click timeout.
+              next
+            end
           end
 
           clicked = page_obj.evaluate(<<~JS)
@@ -186,6 +196,20 @@ module Sourcing
         rescue StandardError => e
           Rails.logger.warn("[Linkedin::FetchStep] Could not expand description: #{e.class}: #{e.message}")
           { expanded: false, strategy: "error" }
+        end
+
+        def blocking_modal_visible?(page_obj)
+          page_obj.evaluate(<<~JS)
+            () => {
+              const overlay = document.querySelector('.modal__overlay--visible');
+              if (!overlay) return false;
+
+              const style = window.getComputedStyle(overlay);
+              return style.pointerEvents !== 'none' && style.visibility !== 'hidden' && style.display !== 'none';
+            }
+          JS
+        rescue StandardError
+          false
         end
       end
     end

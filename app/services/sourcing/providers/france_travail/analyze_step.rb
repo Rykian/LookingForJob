@@ -134,7 +134,7 @@ module Sourcing
           return nil unless node
 
           html = node.inner_html.strip
-          html.empty? ? nil : html
+          html.empty? ? nil : clean_attributes(html)
         end
 
         def html_to_text(html)
