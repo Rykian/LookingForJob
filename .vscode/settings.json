@@ -7,7 +7,7 @@
     "source.fixAll.biome": "explicit"
   },
   "[ruby]": {
-    "editor.defaultFormatter": "Shopify.ruby-lsp"
+    "editor.defaultFormatter": "rubocop.vscode-rubocop"
   },
   "rubocop.commandPath": "${cwd}/bin/rubocop"
 }

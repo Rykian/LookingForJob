@@ -74,6 +74,15 @@ Run type checks:
 npx tsc --noEmit
 ```
 
+## Sourcing Provider Documentation
+
+Provider-specific sourcing behavior is documented in:
+
+- `app/services/sourcing/providers/cadremploi/README.md`
+- `app/services/sourcing/providers/linkedin/README.md`
+- `app/services/sourcing/providers/wttj/README.md`
+- `app/services/sourcing/providers/france_travail/README.md`
+
 ## Profile-Driven Scoring (V1)
 
 Job offers are scored after enrichment by `Sourcing::ScoringJob`, using a JSON profile file at `data/scoring_profile.json`.

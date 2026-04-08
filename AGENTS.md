@@ -24,6 +24,7 @@ Repository guide for coding agents.
   - `Sourcing::FetchStep`
   - `Sourcing::AnalyzeStep`
   - `Sourcing::EnrichStep`
+- When provider behavior changes, update the matching provider doc in `app/services/sourcing/providers/<provider>/README.md`.
 - LinkedIn crawling is brittle: fail explicitly with context.
 - LLM enrichment requires env-backed keys (`OPENAI_API_KEY` or `LLM_API_KEY`).
 - On quota/rate-limit issues, fail loudly with actionable details.

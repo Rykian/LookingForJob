@@ -126,6 +126,8 @@ export type MutationUpdateScoringProfileArgs = {
 
 /** All available sourcing provider keys. */
 export enum ProviderEnum {
+  /** Provider: cadremploi */
+  Cadremploi = 'cadremploi',
   /** Provider: france_travail */
   FranceTravail = 'france_travail',
   /** Provider: linkedin */
