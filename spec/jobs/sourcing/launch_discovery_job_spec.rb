@@ -6,6 +6,12 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
   let(:work_mode_step) { instance_double(Sourcing::DiscoveryStep, supports_work_mode_filter?: true) }
   let(:no_work_mode_step) { instance_double(Sourcing::DiscoveryStep, supports_work_mode_filter?: false) }
   let(:registry) { Sourcing::ProviderRegistry.new }
+  let(:profile) do
+    {
+      technology: { primary: ["ruby", "nodejs"] },
+      location: { preference: ["remote", "hybrid"] },
+    }
+  end
 
   before do
     registry.register(
@@ -29,6 +35,7 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
     )
 
     allow(Sourcing::Providers).to receive(:registry).and_return(registry)
+    allow(Sourcing::ScoringProfile).to receive(:load).and_return(profile)
     allow(ENV).to receive(:[]).and_call_original
   end
 
@@ -66,13 +73,64 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
     ])
   end
 
-  it "fails loudly when KEYWORDS is missing" do
+  it "falls back to scoring profile when KEYWORDS and WORK_MODE are not set" do
     allow(ENV).to receive(:[]).with("KEYWORDS").and_return(nil)
-    allow(ENV).to receive(:[]).with("WORK_MODE").and_return("remote")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    described_class.perform_now
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    normalized_args = queued.map do |job|
+      job[:args].first.deep_symbolize_keys.slice(:source, :keyword, :work_mode)
+    end
+
+    expect(normalized_args).to include(
+      { source: "linkedin", keyword: "ruby", work_mode: "remote" },
+      { source: "linkedin", keyword: "nodejs", work_mode: "hybrid" },
+      { source: "france_travail", keyword: "ruby", work_mode: "remote" },
+      { source: "france_travail", keyword: "nodejs", work_mode: "remote" }
+    )
+  end
+
+  it "uses canonical on-site work mode from scoring profile" do
+    allow(Sourcing::ScoringProfile).to receive(:load).and_return(
+      {
+        technology: { primary: ["ruby"] },
+        location: { preference: ["on-site"] },
+      }
+    )
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return(nil)
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    described_class.perform_now
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    normalized_args = queued.map do |job|
+      job[:args].first.deep_symbolize_keys.slice(:source, :keyword, :work_mode)
+    end
+
+    expect(normalized_args).to include(
+      { source: "linkedin", keyword: "ruby", work_mode: "on-site" },
+      { source: "france_travail", keyword: "ruby", work_mode: "on-site" }
+    )
+  end
+
+  it "fails loudly when WORK_MODE env override includes non-canonical on-site token" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return("ruby")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return("onsite")
 
     expect do
       described_class.perform_now
-    end.to raise_error(ArgumentError, "Missing required environment variable: KEYWORDS")
+    end.to raise_error(ArgumentError, "Unsupported work mode(s): onsite. Supported values: remote, hybrid, on-site")
+  end
+
+  it "fails loudly when KEYWORDS env override has no usable values" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return(", ,")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    expect do
+      described_class.perform_now
+    end.to raise_error(ArgumentError, "Environment variable KEYWORDS must contain at least one value")
   end
 
   it "fails loudly when WORK_MODE has no usable values" do

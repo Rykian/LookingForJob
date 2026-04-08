@@ -182,7 +182,7 @@ module Sourcing
           params[:f_WT] = case work_mode
           when "remote" then "2"
           when "hybrid" then "3"
-          when "onsite" then "1"
+          when "on-site" then "1"
           else nil
           end
 

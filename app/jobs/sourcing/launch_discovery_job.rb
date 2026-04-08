@@ -1,10 +1,13 @@
 module Sourcing
   class LaunchDiscoveryJob < ApplicationJob
     WORK_MODE_UNSUPPORTED_SOURCES = %w[france_travail].freeze
+    SUPPORTED_WORK_MODES = %w[remote hybrid on-site].freeze
 
     def perform(force: false)
-      keywords = parse_env_list!("KEYWORDS")
-      work_modes = parse_env_list!("WORK_MODE")
+      profile = Sourcing::ScoringProfile.load
+      keywords = parse_env_list("KEYWORDS") || parse_profile_list!(profile: profile, path: %i[technology primary], label: "technology.primary")
+      work_modes = parse_env_list("WORK_MODE") || parse_profile_list!(profile: profile, path: %i[location preference], label: "location.preference")
+      validate_work_modes!(work_modes)
 
       Sourcing::Providers.registry.sources.each do |source|
         provider = Sourcing::Providers.registry.fetch(source)
@@ -20,20 +23,44 @@ module Sourcing
 
     private
 
-    def parse_env_list!(key)
+    def parse_env_list(key)
       raw_value = ENV[key]
 
-      if raw_value.blank?
-        raise ArgumentError, "Missing required environment variable: #{key}"
+      return nil if raw_value.blank?
+
+      parse_list!(raw_value:, source_label: "Environment variable #{key}")
+    end
+
+    def parse_profile_list!(profile:, path:, label:)
+      raw_values = profile.dig(*path)
+      unless raw_values.is_a?(Array)
+        raise ArgumentError, "Missing required scoring profile field: #{label}"
       end
 
-      values = raw_value.split(",").map(&:strip).reject(&:blank?).uniq
+      values = raw_values.map(&:to_s).map(&:strip).reject(&:blank?).uniq
 
       if values.empty?
-        raise ArgumentError, "Environment variable #{key} must contain at least one value"
+        raise ArgumentError, "Scoring profile #{label} must contain at least one value"
       end
 
       values
+    end
+
+    def parse_list!(raw_value:, source_label:)
+      values = raw_value.split(",").map(&:strip).reject(&:blank?).uniq
+
+      if values.empty?
+        raise ArgumentError, "#{source_label} must contain at least one value"
+      end
+
+      values
+    end
+
+    def validate_work_modes!(values)
+      invalid_modes = values - SUPPORTED_WORK_MODES
+      return if invalid_modes.empty?
+
+      raise ArgumentError, "Unsupported work mode(s): #{invalid_modes.join(", ")}. Supported values: #{SUPPORTED_WORK_MODES.join(", ")}"
     end
 
     def supports_work_mode_filter_for_source?(source:, provider:)

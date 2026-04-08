@@ -1,8 +1,9 @@
 {
   "$schema": "./scoring_profile.schema.json",
   "technology": {
-    "primary": ["ruby", "react", "nodejs"],
+    "primary": ["ruby", "nodejs"],
     "secondary": [
+      "react",
       "postgresql",
       "sidekiq",
       "typescript",
