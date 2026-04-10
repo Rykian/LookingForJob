@@ -4,3 +4,7 @@ pre-commit:
       files: git diff --cached --name-only --diff-filter=ACMR
       glob: "{Gemfile,Rakefile,config.ru,bin/*,**/*.rb,**/*.rake}"
       run: RUBOCOP_CACHE_ROOT=tmp/rubocop_cache bin/rubocop --force-exclusion {files}
+    biome:
+      files: git diff --cached --name-only --diff-filter=ACMR
+      glob: "{app/frontend/**/*.{js,jsx,ts,tsx,json},package.json,package-lock.json,tsconfig*.json,biome.json,codegen.ts,graphql.config.ts,vite.config.ts}"
+      run: ./node_modules/.bin/biome check {files}
