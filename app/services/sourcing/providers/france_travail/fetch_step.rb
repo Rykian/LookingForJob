@@ -8,7 +8,6 @@ module Sourcing
 
         # Offer detail pages are server-rendered; wait for the schema.org description node.
         CONTENT_SELECTOR = "[itemprop='description']"
-        BLOCKED_PATTERN  = /(connexion|login|authentification)/i
 
         def initialize(fetcher: nil)
           @fetcher = fetcher || method(:fetch_with_playwright)
@@ -28,15 +27,8 @@ module Sourcing
 
             html = page_obj.content
             ensure_basic_html_content!(provider_name: "FranceTravail", url: url, html: html)
-            ensure_not_blocked!(url: url, html: html)
             html
           end
-        end
-
-        def ensure_not_blocked!(url:, html:)
-          return unless html =~ BLOCKED_PATTERN
-
-          raise "FranceTravail fetch: page appears to require authentication for #{url}"
         end
       end
     end
