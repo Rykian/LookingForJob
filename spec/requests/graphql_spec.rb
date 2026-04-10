@@ -426,8 +426,8 @@ RSpec.describe "GraphQL API", type: :request do
       payload = result.dig("data", "recomputeOfferScores")
       expect(payload["enqueuedCount"]).to eq(2)
       expect(payload["message"]).to eq("Score recomputation enqueued for 2 offers.")
-      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(url_hash: first.url_hash)
-      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(url_hash: second.url_hash)
+      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(first.id)
+      expect(Sourcing::ScoringJob).to have_received(:perform_later).with(second.id)
     end
   end
 end

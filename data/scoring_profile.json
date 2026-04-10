@@ -15,7 +15,8 @@
       "express",
       "graphql",
       "rails",
-      "ruby on rails"
+      "ruby on rails",
+      "tailwindcss"
     ]
   },
   "location": {

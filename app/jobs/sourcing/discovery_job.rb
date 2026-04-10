@@ -30,7 +30,7 @@ module Sourcing
             playwright_runtime: @playwright_runtime,
             page: page
           )
-          enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls))
+          enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls), force: force)
 
           break unless result.fetch(:has_next_page, false)
 
@@ -49,7 +49,7 @@ module Sourcing
 
       discovered_urls.each do |url|
         offer = upsert_offer_url(source: source, url: url, now: discovered_at)
-        FetchJob.perform_later(url_hash: offer.url_hash, force:)
+        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_DISCOVERED, offer_id: offer.id, force:)
       end
     end
 

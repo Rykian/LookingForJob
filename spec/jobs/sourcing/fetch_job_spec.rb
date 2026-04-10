@@ -61,7 +61,7 @@ RSpec.describe Sourcing::FetchJob, type: :job do
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
     )
 
-    described_class.perform_now(url_hash: offer.url_hash)
+    described_class.perform_now(offer.id)
 
     offer.reload
     expect(offer.html_file).to be_attached
@@ -71,10 +71,11 @@ RSpec.describe Sourcing::FetchJob, type: :job do
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
     expect(queued.size).to eq(1)
+    expect(queued.first[:args].first).to eq(offer.id)
   end
 
   it "returns when offer is missing" do
-    expect { described_class.perform_now(url_hash: "missing") }.not_to raise_error
+    expect { described_class.perform_now(-1) }.not_to raise_error
   end
 
   it "fails loudly and does not enqueue analyze when provider raises fetch content error" do
@@ -98,7 +99,7 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     )
 
     expect do
-      described_class.perform_now(url_hash: offer.url_hash)
+      described_class.perform_now(offer.id)
     end.to raise_error(Sourcing::Providers::Linkedin::FetchContentError, /shell_html/)
 
     offer.reload

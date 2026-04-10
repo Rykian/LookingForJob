@@ -10,14 +10,14 @@ module Mutations
       description: "Number of scoring jobs enqueued."
 
     def resolve
-      url_hashes = JobOffer.pluck(:url_hash)
-      url_hashes.each do |url_hash|
-        Sourcing::ScoringJob.perform_later(url_hash: url_hash)
+      offer_ids = JobOffer.pluck(:id)
+      offer_ids.each do |offer_id|
+        Sourcing::ScoringJob.perform_later(offer_id)
       end
 
       {
-        message: "Score recomputation enqueued for #{url_hashes.size} offers.",
-        enqueued_count: url_hashes.size,
+        message: "Score recomputation enqueued for #{offer_ids.size} offers.",
+        enqueued_count: offer_ids.size,
       }
     end
   end

@@ -69,8 +69,30 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     expect(queued.size).to eq(2)
 
     offer = JobOffer.find_by(url: "https://example.com/jobs/1")
+    expect(queued.map { |job| job[:args].first }).to include(offer.id)
+    expect(queued.first[:args].second).to include("force" => false)
     expect(offer.steps_details["discovery"]).to include("version" => 1)
     expect(offer.steps_details.dig("discovery", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
+  end
+
+  it "propagates force to the fetch job through the event subscriber" do
+    runtime = { mode: :crawler }
+    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
+      { discovered_urls: ["https://example.com/jobs/force"], has_next_page: false }
+    )
+    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
+
+    described_class.perform_now(
+      source: "linkedin",
+      keyword: "ruby",
+      work_mode: "remote",
+      force: true
+    )
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
+    expect(queued.size).to eq(1)
+    expect(queued.first[:args].second).to include("force" => true)
   end
 
   it "does not enqueue further discovery jobs (pagination is internal to the step)" do

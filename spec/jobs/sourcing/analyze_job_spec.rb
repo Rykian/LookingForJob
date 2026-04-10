@@ -64,7 +64,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       content_type: "text/html"
     )
 
-    described_class.perform_now(url_hash: offer.url_hash)
+    described_class.perform_now(offer.id)
 
     offer.reload
     expect(offer.title).to eq("Backend Engineer")
@@ -76,10 +76,11 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
     queued = enqueued_jobs.select { |job| job[:job] == Sourcing::EnrichJob }
     expect(queued.size).to eq(1)
+    expect(queued.first[:args].first).to eq(offer.id)
   end
 
   it "returns when offer is missing or has no html" do
-    expect { described_class.perform_now(url_hash: "missing") }.not_to raise_error
+    expect { described_class.perform_now(-1) }.not_to raise_error
 
     offer = JobOffer.create!(
       source: "linkedin",
@@ -88,7 +89,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
     )
 
-    expect { described_class.perform_now(url_hash: offer.url_hash) }.not_to raise_error
+    expect { described_class.perform_now(offer.id) }.not_to raise_error
   end
 
   describe "version checking behavior" do

@@ -1,5 +1,6 @@
 module Sourcing
   class EnrichJob < ApplicationJob
+    include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 
     ENRICHED_ATTRIBUTES = %i[
@@ -11,15 +12,16 @@ module Sourcing
       english_level_required
     ].freeze
 
-    def perform(url_hash:, force: false)
-      offer = JobOffer.find_by(url_hash: url_hash)
+    def perform(offer_id, options = {})
+      force = extract_force(options)
+      offer = find_offer(offer_id)
       return unless offer&.html_file&.attached?
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.enrich_step.class::VERSION
 
       if should_skip_step?(offer, "enrich", current_version, force:)
-        Sourcing::ScoringJob.perform_later(url_hash: offer.url_hash, force:)
+        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ENRICHED, offer_id: offer.id, force:)
         return
       end
 
@@ -50,7 +52,7 @@ module Sourcing
           })
         )
       )
-      Sourcing::ScoringJob.perform_later(url_hash: offer.url_hash, force:)
+      Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ENRICHED, offer_id: offer.id, force:)
     end
   end
 end

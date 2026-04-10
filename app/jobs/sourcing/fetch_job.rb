@@ -1,16 +1,18 @@
 module Sourcing
   class FetchJob < ApplicationJob
+    include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 
-    def perform(url_hash:, force: false)
-      offer = JobOffer.find_by(url_hash: url_hash)
+    def perform(offer_id, options = {})
+      force = extract_force(options)
+      offer = find_offer(offer_id)
       return unless offer
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.fetch_step.class::VERSION
 
       if should_skip_step?(offer, "fetch", current_version, force:)
-        AnalyzeJob.perform_later(url_hash: offer.url_hash, force:)
+        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_FETCHED, offer_id: offer.id, force:)
         return
       end
 
@@ -38,7 +40,7 @@ module Sourcing
         })
       )
 
-      AnalyzeJob.perform_later(url_hash: offer.url_hash, force:)
+      Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_FETCHED, offer_id: offer.id, force:)
     end
   end
 end

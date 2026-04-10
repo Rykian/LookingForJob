@@ -1,5 +1,6 @@
 module Sourcing
   class AnalyzeJob < ApplicationJob
+    include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 
     ANALYZED_ATTRIBUTES = %i[
@@ -15,15 +16,16 @@ module Sourcing
       city
     ].freeze
 
-    def perform(url_hash:, force: false)
-      offer = JobOffer.find_by(url_hash: url_hash)
+    def perform(offer_id, options = {})
+      force = extract_force(options)
+      offer = find_offer(offer_id)
       return unless offer&.html_file&.attached?
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.analyze_step.class::VERSION
 
       if should_skip_step?(offer, "analyze", current_version, force:)
-        EnrichJob.perform_later(url_hash: offer.url_hash, force:)
+        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ANALYZED, offer_id: offer.id, force:)
         return
       end
 
@@ -41,7 +43,7 @@ module Sourcing
         })
       ))
 
-      EnrichJob.perform_later(url_hash: offer.url_hash, force:)
+      Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ANALYZED, offer_id: offer.id, force:)
     end
   end
 end

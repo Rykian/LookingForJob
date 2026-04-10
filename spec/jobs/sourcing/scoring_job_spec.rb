@@ -34,7 +34,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     allow(Sourcing::ScoringProfile).to receive(:load).and_return(profile)
     allow(Sourcing::ScoreStep).to receive(:call).and_return([72, { technology: { score: 80 }, remote_hybrid: { score: 64 } }])
 
-    described_class.perform_now(url_hash: offer.url_hash)
+    described_class.perform_now(offer.id)
 
     offer.reload
     expect(offer.score).to eq(72)
@@ -44,7 +44,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
   end
 
   it "returns when offer is missing" do
-    expect { described_class.perform_now(url_hash: "missing") }.not_to raise_error
+    expect { described_class.perform_now(-1) }.not_to raise_error
   end
 
   it "logs and raises when profile loading fails" do
@@ -58,7 +58,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     allow(Sourcing::ScoringProfile).to receive(:load).and_raise("bad profile")
     allow(Rails.logger).to receive(:error)
 
-    expect { described_class.perform_now(url_hash: offer.url_hash) }.to raise_error(RuntimeError, /bad profile/)
+    expect { described_class.perform_now(offer.id) }.to raise_error(RuntimeError, /bad profile/)
     expect(Rails.logger).to have_received(:error).with(/ScoringJob failed/)
   end
 
@@ -83,7 +83,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
       [90, {}]
     end
 
-    described_class.perform_now(url_hash: offer.url_hash, force: false)
+    described_class.perform_now(offer.id, force: false)
 
     expect(call_count).to eq(0)
 
@@ -114,7 +114,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     allow(Sourcing::ScoringProfile).to receive(:load).and_return(profile)
     allow(Sourcing::ScoreStep).to receive(:call).and_return([92, { technology: { score: 95 } }])
 
-    described_class.perform_now(url_hash: offer.url_hash, force: true)
+    described_class.perform_now(offer.id, force: true)
 
     offer.reload
     expect(offer.score).to eq(92)

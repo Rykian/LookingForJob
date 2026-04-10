@@ -30,7 +30,7 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     end
 
     # Execute without force
-    described_class.perform_now(url_hash: offer.url_hash, force: false)
+    described_class.perform_now(offer.id, force: false)
 
     # Verify step was skipped
     expect(call_count).to eq(0)
@@ -38,7 +38,8 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     # Verify next job was enqueued with force propagated
     queued = enqueued_jobs.select { |job| job[:job] == next_job_class }
     expect(queued.size).to eq(1)
-    expect(queued[0][:args].first).to include("url_hash" => offer.url_hash, "force" => false)
+    expect(queued[0][:args].first).to eq(offer.id)
+    expect(queued[0][:args].second).to include("force" => false)
   end
 
   it "forces step execution even if version matches when force is true" do
@@ -81,7 +82,7 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     end
 
     # Execute with force=true
-    described_class.perform_now(url_hash: offer.url_hash, force: true)
+    described_class.perform_now(offer.id, force: true)
 
     # Verify step was executed
     expect(call_count).to eq(1)
@@ -89,6 +90,7 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     # Verify next job was enqueued with force propagated
     queued = enqueued_jobs.select { |job| job[:job] == next_job_class }
     expect(queued.size).to eq(1)
-    expect(queued[0][:args].first).to include("url_hash" => offer.url_hash, "force" => true)
+    expect(queued[0][:args].first).to eq(offer.id)
+    expect(queued[0][:args].second).to include("force" => true)
   end
 end
