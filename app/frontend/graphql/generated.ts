@@ -130,6 +130,8 @@ export enum ProviderEnum {
   Cadremploi = 'cadremploi',
   /** Provider: france_travail */
   FranceTravail = 'france_travail',
+  /** Provider: hellowork */
+  Hellowork = 'hellowork',
   /** Provider: linkedin */
   Linkedin = 'linkedin',
   /** Provider: wttj */

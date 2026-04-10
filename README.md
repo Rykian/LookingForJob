@@ -82,6 +82,7 @@ Provider-specific sourcing behavior is documented in:
 - `app/services/sourcing/providers/linkedin/README.md`
 - `app/services/sourcing/providers/wttj/README.md`
 - `app/services/sourcing/providers/france_travail/README.md`
+- `app/services/sourcing/providers/hellowork/README.md`
 
 ## Profile-Driven Scoring (V1)
 

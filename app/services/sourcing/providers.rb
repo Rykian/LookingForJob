@@ -46,6 +46,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "hellowork",
+            Provider.new(
+              discovery_step: Sourcing::Providers::Hellowork::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::Hellowork::FetchStep.new,
+              analyze_step:   Sourcing::Providers::Hellowork::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::Hellowork::EnrichStep.new
+            )
+          )
+
         registry
       end
     end
