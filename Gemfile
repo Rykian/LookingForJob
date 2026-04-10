@@ -42,6 +42,8 @@ gem "vite_rails"
 # GraphQL API
 gem "graphql", "~> 2.3"
 
+gem "rails-ai-context", group: :development
+
 group :development, :test do
   gem "dotenv-rails"
   gem "rspec-rails"

@@ -53,3 +53,6 @@ node_modules
 
 # Playwright MCP
 /.playwright-mcp
+
+# rails-ai-context (JSON cache — markdown files should be committed)
+.ai-context.json
