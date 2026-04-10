@@ -28,10 +28,16 @@ module Types
         description: "Items per page."
       argument :source, String, required: false,
         description: "Filter by offer source (for example: linkedin)."
-      argument :location_mode, Types::LocationModeEnum, required: false,
-        description: "Filter by location mode."
-      argument :scored, Boolean, required: false,
-        description: "When true returns only scored offers; when false only unscored offers."
+      argument :location_modes, [Types::LocationModeEnum], required: false,
+        description: "Filter by one or more location modes."
+      argument :first_seen_after, GraphQL::Types::ISO8601DateTime, required: false,
+        description: "Filter by first seen timestamp lower bound (inclusive)."
+      argument :first_seen_before, GraphQL::Types::ISO8601DateTime, required: false,
+        description: "Filter by first seen timestamp upper bound (inclusive)."
+      argument :last_seen_after, GraphQL::Types::ISO8601DateTime, required: false,
+        description: "Filter by last seen timestamp lower bound (inclusive)."
+      argument :last_seen_before, GraphQL::Types::ISO8601DateTime, required: false,
+        description: "Filter by last seen timestamp upper bound (inclusive)."
       argument :sort_by, String, required: false, default_value: "first_seen_at",
         description: "Sort field: first_seen_at, last_seen_at, score, company, title."
       argument :sort_direction, String, required: false, default_value: "desc",
@@ -40,12 +46,21 @@ module Types
         description: "Filter offers by matching any of these technologies (primary or secondary)."
     end
 
-    def job_offers(page:, per_page:, source: nil, location_mode: nil, scored: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil)
+    def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil)
       scope = JobOffer.all
       scope = scope.where(source: source) if source.present?
-      scope = scope.where(location_mode: location_mode) if location_mode.present?
-      scope = scope.where("steps_details ? 'score'") if scored == true
-      scope = scope.where("NOT (steps_details ? 'score')") if scored == false
+      scope = scope.where(location_mode: location_modes) if location_modes.present?
+
+      if first_seen_after.present?
+        scope = scope.where("(steps_details->'discovery'->>'at')::timestamptz >= ?", first_seen_after)
+      end
+
+      if first_seen_before.present?
+        scope = scope.where("(steps_details->'discovery'->>'at')::timestamptz <= ?", first_seen_before)
+      end
+
+      scope = scope.where("last_seen_at >= ?", last_seen_after) if last_seen_after.present?
+      scope = scope.where("last_seen_at <= ?", last_seen_before) if last_seen_before.present?
 
       if technologies.present?
         # Normalize filter: downcase, remove non-letters

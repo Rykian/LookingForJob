@@ -8,6 +8,7 @@ RSpec.describe "GraphQL API", type: :request do
 
   describe "query jobOffers" do
     it "returns paginated offers and applies filters" do
+      discovery_at = 2.days.ago.iso8601
       first_offer = JobOffer.create!(
         source: "linkedin",
         url: "https://example.com/offers/1",
@@ -15,7 +16,10 @@ RSpec.describe "GraphQL API", type: :request do
         last_seen_at: 2.days.ago,
         location_mode: "remote",
         title: "Backend Engineer",
-        steps_details: { "score" => { "at" => Time.current.iso8601, "version" => 2 } }
+        steps_details: {
+          "discovery" => { "at" => discovery_at, "version" => 1 },
+          "score" => { "at" => Time.current.iso8601, "version" => 2 },
+        }
       )
 
       JobOffer.create!(
@@ -28,8 +32,8 @@ RSpec.describe "GraphQL API", type: :request do
       )
 
       query = <<~GRAPHQL
-        query JobOffers($page: Int!, $perPage: Int!, $source: String, $locationMode: LocationModeEnum, $scored: Boolean) {
-          jobOffers(page: $page, perPage: $perPage, source: $source, locationMode: $locationMode, scored: $scored) {
+        query JobOffers($page: Int!, $perPage: Int!, $source: String, $locationModes: [LocationModeEnum!]) {
+          jobOffers(page: $page, perPage: $perPage, source: $source, locationModes: $locationModes) {
             totalCount
             totalPages
             nodes {
@@ -48,8 +52,7 @@ RSpec.describe "GraphQL API", type: :request do
           page: 1,
           perPage: 25,
           source: "linkedin",
-          locationMode: "REMOTE",
-          scored: true,
+          locationModes: ["REMOTE", "HYBRID"],
         }
       )
 
@@ -61,6 +64,94 @@ RSpec.describe "GraphQL API", type: :request do
       expect(node["source"]).to eq("linkedin")
       expect(node["locationMode"]).to eq("REMOTE")
       expect(node["title"]).to eq("Backend Engineer")
+    end
+
+    it "filters offers by firstSeenAt range" do
+      in_range = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/first-seen-in-range",
+        url_hash: "hash-first-seen-in-range",
+        last_seen_at: Time.current,
+        steps_details: {
+          "discovery" => { "at" => 2.days.ago.iso8601, "version" => 1 },
+        }
+      )
+
+      JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/first-seen-old",
+        url_hash: "hash-first-seen-old",
+        last_seen_at: Time.current,
+        steps_details: {
+          "discovery" => { "at" => 20.days.ago.iso8601, "version" => 1 },
+        }
+      )
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!, $firstSeenAfter: ISO8601DateTime, $firstSeenBefore: ISO8601DateTime) {
+          jobOffers(page: $page, perPage: $perPage, firstSeenAfter: $firstSeenAfter, firstSeenBefore: $firstSeenBefore) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(
+        query: query,
+        variables: {
+          page: 1,
+          perPage: 25,
+          firstSeenAfter: 7.days.ago.iso8601,
+          firstSeenBefore: Time.current.iso8601,
+        }
+      )
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
+      expect(result.dig("data", "jobOffers", "nodes").first["id"]).to eq(in_range.id.to_s)
+    end
+
+    it "filters offers by lastSeenAt range" do
+      in_range = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/last-seen-in-range",
+        url_hash: "hash-last-seen-in-range",
+        last_seen_at: 1.day.ago
+      )
+
+      JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/last-seen-old",
+        url_hash: "hash-last-seen-old",
+        last_seen_at: 20.days.ago
+      )
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!, $lastSeenAfter: ISO8601DateTime, $lastSeenBefore: ISO8601DateTime) {
+          jobOffers(page: $page, perPage: $perPage, lastSeenAfter: $lastSeenAfter, lastSeenBefore: $lastSeenBefore) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(
+        query: query,
+        variables: {
+          page: 1,
+          perPage: 25,
+          lastSeenAfter: 7.days.ago.iso8601,
+          lastSeenBefore: Time.current.iso8601,
+        }
+      )
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
+      expect(result.dig("data", "jobOffers", "nodes").first["id"]).to eq(in_range.id.to_s)
     end
 
     it "sorts offers by score in descending order" do

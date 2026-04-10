@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -50,10 +51,13 @@ import {
 import { formatLocationMode } from '@/lib/location-mode'
 
 const LOCATION_MODE_VALUES = Object.values(LocationModeEnum)
-const SCORED_VALUES = ['any', 'true', 'false'] as const
+const SEEN_FIELD_VALUES = ['first_seen_at', 'last_seen_at'] as const
+const DATE_PRESET_VALUES = ['today', 'yesterday', 'last_7_days', 'last_30_days'] as const
 const SORT_BY_VALUES = ['first_seen_at', 'last_seen_at', 'score', 'company', 'title'] as const
 const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
 
+type SeenField = (typeof SEEN_FIELD_VALUES)[number]
+type DatePreset = (typeof DATE_PRESET_VALUES)[number]
 type SortBy = (typeof SORT_BY_VALUES)[number]
 type SortDirection = (typeof SORT_DIRECTION_VALUES)[number]
 
@@ -61,13 +65,56 @@ function isOneOf<T extends readonly string[]>(value: string, values: T): value i
   return values.includes(value)
 }
 
+function getPresetRange(preset: DatePreset): { after: string; before: string } {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  switch (preset) {
+    case 'today': {
+      return {
+        after: startOfToday.toISOString(),
+        before: now.toISOString(),
+      }
+    }
+    case 'yesterday': {
+      const start = new Date(startOfToday)
+      start.setDate(start.getDate() - 1)
+      const end = new Date(startOfToday)
+      end.setMilliseconds(end.getMilliseconds() - 1)
+      return {
+        after: start.toISOString(),
+        before: end.toISOString(),
+      }
+    }
+    case 'last_7_days': {
+      const start = new Date(startOfToday)
+      start.setDate(start.getDate() - 6)
+      return {
+        after: start.toISOString(),
+        before: now.toISOString(),
+      }
+    }
+    case 'last_30_days': {
+      const start = new Date(startOfToday)
+      start.setDate(start.getDate() - 29)
+      return {
+        after: start.toISOString(),
+        before: now.toISOString(),
+      }
+    }
+  }
+}
+
 const JOB_OFFERS_QUERY = gql`
   query JobOffers(
     $page: Int!
     $perPage: Int!
     $source: String
-    $locationMode: LocationModeEnum
-    $scored: Boolean
+    $locationModes: [LocationModeEnum!]
+    $firstSeenAfter: ISO8601DateTime
+    $firstSeenBefore: ISO8601DateTime
+    $lastSeenAfter: ISO8601DateTime
+    $lastSeenBefore: ISO8601DateTime
     $sortBy: String
     $sortDirection: String
     $technologies: [String!]
@@ -76,8 +123,11 @@ const JOB_OFFERS_QUERY = gql`
       page: $page
       perPage: $perPage
       source: $source
-      locationMode: $locationMode
-      scored: $scored
+      locationModes: $locationModes
+      firstSeenAfter: $firstSeenAfter
+      firstSeenBefore: $firstSeenBefore
+      lastSeenAfter: $lastSeenAfter
+      lastSeenBefore: $lastSeenBefore
       sortBy: $sortBy
       sortDirection: $sortDirection
       technologies: $technologies
@@ -112,12 +162,22 @@ export default function OffersPage() {
   const sourceParam = searchParams.get('source') || ''
   const selectedSources = sourceParam ? sourceParam.split(',').filter(Boolean) : []
 
-  const locationModeParam = searchParams.get('locationMode')
-  const locationMode: LocationModeEnum | '' =
-    locationModeParam && isOneOf(locationModeParam, LOCATION_MODE_VALUES) ? locationModeParam : ''
+  const locationModesParam = searchParams.get('locationModes') || ''
+  const selectedLocationModes = locationModesParam
+    ? locationModesParam
+        .split(',')
+        .filter((value): value is LocationModeEnum => isOneOf(value, LOCATION_MODE_VALUES))
+    : []
 
-  const scoredParam = searchParams.get('scored')
-  const scored = scoredParam && isOneOf(scoredParam, SCORED_VALUES) ? scoredParam : 'any'
+  const seenFieldParam = searchParams.get('seenField')
+  const seenField: SeenField =
+    seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'last_seen_at'
+
+  const datePresetParam = searchParams.get('datePreset')
+  const datePreset: DatePreset =
+    datePresetParam && isOneOf(datePresetParam, DATE_PRESET_VALUES)
+      ? datePresetParam
+      : 'last_7_days'
 
   const sortByParam = searchParams.get('sortBy')
   const sortBy: SortBy = sortByParam && isOneOf(sortByParam, SORT_BY_VALUES) ? sortByParam : 'score'
@@ -127,6 +187,27 @@ export default function OffersPage() {
     sortDirectionParam && isOneOf(sortDirectionParam, SORT_DIRECTION_VALUES)
       ? sortDirectionParam
       : 'desc'
+
+  const seenDateVariables = useMemo<
+    Pick<
+      JobOffersQueryVariables,
+      'firstSeenAfter' | 'firstSeenBefore' | 'lastSeenAfter' | 'lastSeenBefore'
+    >
+  >(() => {
+    const { after: seenAfter, before: seenBefore } = getPresetRange(datePreset)
+
+    if (seenField === 'first_seen_at') {
+      return {
+        firstSeenAfter: seenAfter,
+        firstSeenBefore: seenBefore,
+      }
+    }
+
+    return {
+      lastSeenAfter: seenAfter,
+      lastSeenBefore: seenBefore,
+    }
+  }, [datePreset, seenField])
 
   const updateSearchParams = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams)
@@ -169,8 +250,8 @@ export default function OffersPage() {
     sortBy,
     sortDirection,
     ...(selectedSources.length > 0 ? { source: selectedSources.join(',') } : {}),
-    ...(locationMode ? { locationMode } : {}),
-    ...(scored === 'any' ? {} : { scored: scored === 'true' }),
+    ...(selectedLocationModes.length > 0 ? { locationModes: selectedLocationModes } : {}),
+    ...seenDateVariables,
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
   }
 
@@ -195,7 +276,7 @@ export default function OffersPage() {
           <CardTitle className="text-base">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
             <Combobox
               multiple
               items={TECHNOLOGIES}
@@ -255,35 +336,63 @@ export default function OffersPage() {
               </ComboboxContent>
             </Combobox>
 
+            <Combobox
+              multiple
+              items={LOCATION_MODE_VALUES}
+              onValueChange={(locationModes: string[]) => {
+                const val = locationModes.length > 0 ? locationModes.join(',') : null
+                updateSearchParams({ page: null, locationModes: val })
+              }}
+            >
+              <ComboboxChips>
+                <ComboboxValue>
+                  {selectedLocationModes.map((item) => (
+                    <ComboboxChip key={item}>{formatLocationMode(item)}</ComboboxChip>
+                  ))}
+                </ComboboxValue>
+                <ComboboxChipsInput placeholder="Filter by location mode..." />
+              </ComboboxChips>
+
+              <ComboboxContent>
+                <ComboboxEmpty>All location modes</ComboboxEmpty>
+                <ComboboxList>
+                  {(item) => (
+                    <ComboboxItem key={item} value={item}>
+                      {formatLocationMode(item)}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
-              value={locationMode}
+              value={seenField}
               onChange={(event) => {
                 updateSearchParams({
                   page: null,
-                  locationMode: event.target.value || null,
+                  seenField: event.target.value,
                 })
               }}
             >
-              <option value="">All location modes</option>
-              <option value={LocationModeEnum.Remote}>Remote</option>
-              <option value={LocationModeEnum.Hybrid}>Hybrid</option>
-              <option value={LocationModeEnum.OnSite}>On-site</option>
+              <option value="first_seen_at">Seen field: first seen</option>
+              <option value="last_seen_at">Seen field: last seen</option>
             </select>
 
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
-              value={scored}
+              value={datePreset}
               onChange={(event) => {
                 updateSearchParams({
                   page: null,
-                  scored: event.target.value === 'any' ? null : event.target.value,
+                  datePreset: event.target.value,
                 })
               }}
             >
-              <option value="any">Scoring: any</option>
-              <option value="true">Scored only</option>
-              <option value="false">Unscored only</option>
+              <option value="today">Date: today</option>
+              <option value="yesterday">Date: yesterday</option>
+              <option value="last_7_days">Date: last 7 days</option>
+              <option value="last_30_days">Date: last 30 days</option>
             </select>
 
             <Button
