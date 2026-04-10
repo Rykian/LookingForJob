@@ -61,7 +61,14 @@ module Sourcing
             timeout_ms: 8_000,
             wait_options: { state: "attached" }
           )
-          raise "Hellowork discovery found no job links on #{url}" unless found_selector
+          unless found_selector
+            raise "Hellowork discovery found no job links on #{url}" if page <= 1
+
+            return {
+              discovered_urls: [],
+              has_next_page: false,
+            }
+          end
 
           links = page_obj.eval_on_selector_all(
             JOB_LINK_SELECTOR,
