@@ -10,4 +10,3 @@ module Types
       description: "Replace the scoring profile JSON used by scoring jobs."
   end
 end
-

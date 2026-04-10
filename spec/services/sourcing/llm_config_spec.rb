@@ -8,7 +8,7 @@ RSpec.describe Sourcing::LlmConfig do
         "LLM_MODEL" => "gpt-4.1",
         "LLM_API_KEY" => "test-key",
         "LLM_REQUEST_TIMEOUT_SECONDS" => "45",
-        "LLM_MAX_RETRIES" => "5"
+        "LLM_MAX_RETRIES" => "5",
       }
 
       config = described_class.from_env(env: env)
@@ -23,7 +23,7 @@ RSpec.describe Sourcing::LlmConfig do
     it "falls back to openai env vars when generic vars are missing" do
       env = {
         "OPENAI_MODEL" => "gpt-4.1-mini",
-        "OPENAI_API_KEY" => "openai-key"
+        "OPENAI_API_KEY" => "openai-key",
       }
 
       config = described_class.from_env(env: env)
@@ -43,7 +43,7 @@ RSpec.describe Sourcing::LlmConfig do
         model: "gpt-4.1-mini",
         api_key: "k",
         request_timeout: 30,
-        max_retries: 4
+        max_retries: 4,
       )
 
       fake_ruby_llm = Class.new do

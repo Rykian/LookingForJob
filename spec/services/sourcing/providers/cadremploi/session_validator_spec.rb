@@ -14,7 +14,7 @@ RSpec.describe Sourcing::Providers::Cadremploi::SessionValidator do
     instance_double(
       "Playwright::Page",
       url: "https://www.cadremploi.fr/emploi/liste_offres?motsCles=developpeur",
-      title: "Offres d'emploi - Cadremploi"
+      title: "Offres d'emploi - Cadremploi",
     )
   end
 

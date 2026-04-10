@@ -17,7 +17,7 @@ module Mutations
 
       {
         message: "Score recomputation enqueued for #{url_hashes.size} offers.",
-        enqueued_count: url_hashes.size
+        enqueued_count: url_hashes.size,
       }
     end
   end

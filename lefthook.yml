@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    rubocop:
+      files: git diff --cached --name-only --diff-filter=ACMR
+      glob: "{Gemfile,Rakefile,config.ru,bin/*,**/*.rb,**/*.rake}"
+      run: RUBOCOP_CACHE_ROOT=tmp/rubocop_cache bin/rubocop --force-exclusion {files}

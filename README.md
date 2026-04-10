@@ -59,8 +59,11 @@ docker compose up -d postgres
 
 ```bash
 bundle install
+bundle exec lefthook install -f
 bin/rails db:create db:migrate
 ```
+
+`bin/setup` also installs the repo git hooks automatically with `lefthook`.
 
 ## Run tests
 
