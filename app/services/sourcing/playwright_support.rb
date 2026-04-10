@@ -58,15 +58,11 @@ module Sourcing
     end
 
     def wait_for_any_selector(page_obj:, selectors:, timeout_ms:, wait_options: {})
-      selectors.each do |selector|
-        begin
-          page_obj.wait_for_selector(selector, timeout: timeout_ms, **wait_options)
-          return selector
-        rescue StandardError
-          # Try next selector.
-        end
-      end
-
+      combined = selectors.join(", ")
+      page_obj.wait_for_selector(combined, timeout: timeout_ms, **wait_options)
+      # Return whichever individual selector is now present so callers get consistent behaviour.
+      selectors.find { |s| page_obj.query_selector(s) } || combined
+    rescue StandardError
       nil
     end
 
