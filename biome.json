@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["app/frontend/**", "*.ts", "*.tsx", "*.js", "*.json"]
+    "includes": [
+      "app/frontend/**",
+      "*.ts",
+      "*.tsx",
+      "*.js",
+      "*.json",
+      "!app/frontend/graphql/generated.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

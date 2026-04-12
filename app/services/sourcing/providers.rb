@@ -56,6 +56,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "apec",
+            Provider.new(
+              discovery_step: Sourcing::Providers::Apec::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::Apec::FetchStep.new,
+              analyze_step:   Sourcing::Providers::Apec::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::Apec::EnrichStep.new
+            )
+          )
+
         registry
       end
     end
