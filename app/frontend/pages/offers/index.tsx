@@ -171,13 +171,11 @@ export default function OffersPage() {
 
   const seenFieldParam = searchParams.get('seenField')
   const seenField: SeenField =
-    seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'last_seen_at'
+    seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
 
   const datePresetParam = searchParams.get('datePreset')
   const datePreset: DatePreset =
-    datePresetParam && isOneOf(datePresetParam, DATE_PRESET_VALUES)
-      ? datePresetParam
-      : 'last_7_days'
+    datePresetParam && isOneOf(datePresetParam, DATE_PRESET_VALUES) ? datePresetParam : 'today'
 
   const sortByParam = searchParams.get('sortBy')
   const sortBy: SortBy = sortByParam && isOneOf(sortByParam, SORT_BY_VALUES) ? sortByParam : 'score'
