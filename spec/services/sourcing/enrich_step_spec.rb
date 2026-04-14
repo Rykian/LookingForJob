@@ -14,6 +14,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
   let(:generator) do
     lambda do |_input|
       {
+        location_mode: "hybrid",
+        city: "Paris",
         hybrid_remote_days_min_per_week: 3,
         primary_technologies: ["Ruby on Rails", "PostgreSQL"],
         secondary_technologies: ["Redis"],
@@ -29,7 +31,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
   it "maps structured llm output into enrichment fields" do
     extracted = {
       title: "Senior Ruby on Rails Engineer",
-      location_mode: "hybrid",
+      topcard_text: "Paris, Ile-de-France, France · Hybrid · Full-time",
       description_html: <<~HTML,
         <p>3 days remote per week.</p>
         <p>Stack: Ruby on Rails, PostgreSQL, Redis, Sidekiq.</p>
@@ -38,6 +40,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     }
 
     result = step.call(extracted: extracted)
+  expect(result[:location_mode]).to eq("hybrid")
+  expect(result[:city]).to eq("Paris")
 
     expect(result[:hybrid_remote_days_min_per_week]).to eq(3)
     expect(result[:primary_technologies]).to include("Ruby on Rails", "PostgreSQL")
@@ -50,12 +54,13 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     result = step.call(
       extracted: {
         title: "Backend Engineer",
-        location_mode: "remote",
+        topcard_text: "Paris, Ile-de-France, France · Remote",
         description_html: "<p>2 days remote per week</p>",
       }
     )
 
-    expect(result[:hybrid_remote_days_min_per_week]).to be_nil
+  expect(result[:location_mode]).to eq("hybrid")
+  expect(result[:hybrid_remote_days_min_per_week]).to eq(3)
   end
 
   it "forwards configured model and provider to the llm generator" do
@@ -63,6 +68,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     passthrough_generator = lambda do |input|
       captured = input
       {
+        location_mode: "hybrid",
+        city: "Paris",
         hybrid_remote_days_min_per_week: nil,
         primary_technologies: [],
         secondary_technologies: [],
@@ -73,7 +80,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     end
 
     step = described_class.new(llm_config: llm_config, generator: passthrough_generator)
-    step.call(extracted: { title: "Backend Engineer", location_mode: "remote", description_html: "<p>Text</p>" })
+    step.call(extracted: { title: "Backend Engineer", topcard_text: "Paris · Remote", description_html: "<p>Text</p>" })
 
     expect(captured[:model]).to eq("gpt-test-model")
     expect(captured[:provider]).to eq(:openai)

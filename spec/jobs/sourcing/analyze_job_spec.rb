@@ -3,6 +3,16 @@ require_relative "shared_version_checking_examples"
 
 class MockAnalyzeStep
   VERSION = 1
+  PERSISTED_ATTRIBUTES = %i[
+    title
+    company
+    employment_type
+    description_html
+    salary_min_minor
+    salary_max_minor
+    salary_currency
+    posted_at
+  ].freeze
 
   def call(source:, url:, url_hash:, html_content:)
     {
@@ -68,8 +78,8 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
     offer.reload
     expect(offer.title).to eq("Backend Engineer")
-    expect(offer.city).to eq("Nantes")
-    expect(offer.location_mode).to eq("hybrid")
+    expect(offer.city).to be_nil
+    expect(offer.location_mode).to be_nil
     expect(offer.employment_type).to eq("permanent")
     expect(offer.employment_type_before_type_cast).to eq("PERMANENT")
     expect(offer.steps_details["analyze"]).to include("version" => 1)

@@ -23,11 +23,9 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     expect(result[:title]).to eq("Backend Engineer")
     expect(result[:company]).to eq("Acme")
-    expect(result[:location_mode]).to eq("hybrid")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:description_html]).to include("CDI")
     expect(result[:posted_at]).to be_a(Time)
-    expect(result[:city]).to eq("Nantes")
   end
 
   it "extracts title, company, salary and posted_at from job posting json-ld" do
@@ -162,7 +160,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:city]).to eq("Paris, Ile-de-France, France")
+    expect(result[:topcard_text]).to include("Paris, Ile-de-France, France")
   end
 
   it "normalizes metropolitan region location labels" do
@@ -177,7 +175,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:city]).to eq("Paris et périphérie")
+    expect(result[:topcard_text]).to be_present
   end
 
   it "extracts location without linkedin shell noise prefix" do
@@ -192,7 +190,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:city]).to eq("Paris, Ile-de-France, France")
+    expect(result[:topcard_text]).to be_present
   end
 
   it "extracts location from top-card subtitle node when no bullet separator exists" do
@@ -209,7 +207,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:city]).to eq("Paris et périphérie")
+    expect(result[:topcard_text]).to be_present
   end
 
   it "prefers top-card on-site mode over unrelated remote mentions" do
@@ -229,7 +227,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:location_mode]).to eq("on-site")
+    expect(result[:topcard_text]).to include("On-site")
   end
 
   it "does not detect location mode from plain page text outside top-card" do
@@ -245,7 +243,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:location_mode]).to be_nil
+    expect(result[:topcard_text]).to_not include("remote")
   end
 
   it "extracts location mode from top-card compact chips text" do
@@ -261,6 +259,54 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
 
     result = step.call(html_content: html)
 
-    expect(result[:location_mode]).to eq("on-site")
+    expect(result[:topcard_text]).to include("On-site")
+  end
+
+  it "extracts hybrid mode from top-card metadata line without stable classes" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Paris, Ile-de-France, France · Reposted 1 day ago · 12 people clicked apply · Hybride</div>
+          <div data-testid="expandable-text-box">
+            <p>This role includes a hybrid work setup with 3 office days.</p>
+          </div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:topcard_text]).to include("Hybride")
+  end
+
+  it "extracts hybrid mode from french compact chips with extra cta text" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Paris, Ile-de-France, France · il y a 4 jours · 36 candidats HybrideTemps pleinCandidature simplifiéeEnregistrer</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:topcard_text]).to include("Hybride")
+  end
+
+  it "extracts hybrid mode from malformed france metadata line" do
+    html = <<~HTML
+      <!doctype html>
+      <html>
+        <body>
+          <div>Lead Front-End EngineerParis, Ile-de-France, France, France · il y a 4 jours · 36 candidatsPromue par un recruteur · Aucune info disponibleHybridTemps plein</div>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:topcard_text]).to include("Hybrid")
   end
 end

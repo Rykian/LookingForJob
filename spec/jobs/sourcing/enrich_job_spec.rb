@@ -3,9 +3,21 @@ require_relative "shared_version_checking_examples"
 
 class MockEnrichStep
   VERSION = 1
+  PERSISTED_ATTRIBUTES = %i[
+    location_mode
+    city
+    hybrid_remote_days_min_per_week
+    primary_technologies
+    secondary_technologies
+    offer_language
+    normalized_seniority
+    english_level_required
+  ].freeze
 
   def call(source:, url:, url_hash:, html_content:, extracted:)
     {
+      location_mode: "hybrid",
+      city: "Nantes",
       hybrid_remote_days_min_per_week: 3,
       primary_technologies: ["Ruby on Rails"],
       secondary_technologies: ["Redis"],
@@ -65,6 +77,8 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     described_class.perform_now(offer.id)
 
     offer.reload
+    expect(offer.location_mode).to eq("hybrid")
+    expect(offer.city).to eq("Nantes")
     expect(offer.hybrid_remote_days_min_per_week).to eq(3)
     expect(offer.primary_technologies).to eq(["Ruby on Rails"])
     expect(offer.normalized_seniority).to eq("senior")

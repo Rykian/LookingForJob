@@ -7,6 +7,17 @@ module Sourcing
       class EnrichStep < Sourcing::EnrichStep
         VERSION = 1
 
+        PERSISTED_ATTRIBUTES = %i[
+          location_mode
+          city
+          hybrid_remote_days_min_per_week
+          primary_technologies
+          secondary_technologies
+          offer_language
+          normalized_seniority
+          english_level_required
+        ].freeze
+
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for job offers.
           Return ONLY a valid JSON object matching the provided schema.
@@ -18,6 +29,13 @@ module Sourcing
           schema: {
             type: "object",
             properties: {
+              location_mode: {
+                type: ["string", "null"],
+                enum: ["remote", "hybrid", "on-site", nil],
+              },
+              city: {
+                type: ["string", "null"],
+              },
               hybrid_remote_days_min_per_week: {
                 type: ["integer", "null"],
                 minimum: 1,
@@ -45,6 +63,8 @@ module Sourcing
               },
             },
             required: %w[
+              location_mode
+              city
               hybrid_remote_days_min_per_week
               primary_technologies
               secondary_technologies
@@ -76,11 +96,14 @@ module Sourcing
 
         def build_user_prompt(extracted)
           plain_description = description_html_to_text(extracted[:description_html])
+          topcard_text = extracted[:topcard_text] || ""
 
           <<~PROMPT
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
-            Location mode: #{extracted[:location_mode] || "unknown"}
+
+            Top card metadata:
+            #{topcard_text}
 
             Job description text:
             #{plain_description}
@@ -90,8 +113,13 @@ module Sourcing
         def normalize_payload(payload, extracted)
           data = super(payload, extracted).transform_keys(&:to_sym)
 
+          # Only capture hybrid_remote_days if LLM identified hybrid mode
+          hybrid_days = data[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil
+
           {
-            hybrid_remote_days_min_per_week: extracted[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
+            location_mode: data[:location_mode],
+            city: data[:city],
+            hybrid_remote_days_min_per_week: hybrid_days,
             primary_technologies: technology_labels(data[:primary_technologies]),
             secondary_technologies: technology_labels(data[:secondary_technologies]),
             offer_language: data[:offer_language],

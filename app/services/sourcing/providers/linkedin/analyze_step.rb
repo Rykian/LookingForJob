@@ -6,7 +6,18 @@ module Sourcing
   module Providers
     module Linkedin
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 2
+        VERSION = 3
+
+        PERSISTED_ATTRIBUTES = %i[
+          title
+          company
+          employment_type
+          description_html
+          salary_min_minor
+          salary_max_minor
+          salary_currency
+          posted_at
+        ].freeze
 
         TITLE_SELECTORS = [
           ".job-details-jobs-unified-top-card__job-title h1",
@@ -85,23 +96,54 @@ module Sourcing
           company = extract_company(doc, job_posting)
           page_text = normalize_whitespace(doc.text)
           salary = extract_salary(doc, page_text, job_posting)
-          location_mode = extract_location_mode(doc, page_text)
+          topcard_text = extract_topcard_text(doc)
 
           {
             title: title,
             company: company,
-            location_mode: location_mode,
             employment_type: map_employment_type(page_text),
             description_html: extract_description_html(doc),
             salary_min_minor: salary[:salary_min_minor],
             salary_max_minor: salary[:salary_max_minor],
             salary_currency: salary[:salary_currency],
             posted_at: extract_posted_at(doc, job_posting, page_text),
-            city: extract_city(doc, page_text),
+            topcard_text: topcard_text,
           }
         end
 
         private
+
+        def extract_topcard_text(doc)
+          # Extract top-card metadata for enrich step.
+          topcard_texts = []
+          LOCATION_SELECTORS.each do |selector|
+            doc.css(selector).each do |node|
+              text = normalize_whitespace(node.text)
+              topcard_texts << text if text && !text.empty?
+            end
+          end
+
+          if topcard_texts.empty?
+            page_text = normalize_whitespace(doc.text)
+
+            # Typical shell snapshot with metadata bullets:
+            # "Paris, Ile-de-France, France · ... · On-siteFull-time..."
+            match = page_text.match(/((?:Greater\s+)?[A-Za-zÀ-ÿ'\- ]+\s+Metropolitan\s+Region|[A-Za-zÀ-ÿ'\- ]+,\s*[A-Za-zÀ-ÿ'\- ]+,\s*France)\s*[·•|\-]\s*(.{0,300})/i)
+            if match
+              metadata = normalize_whitespace(match[2])
+              metadata = metadata.sub(/\b(test technique|process:)\b.*$/i, "").strip
+              topcard_texts << normalize_whitespace("#{match[1]} · #{metadata}")
+            else
+              location = extract_french_location_triplet(page_text)
+              topcard_texts << location if location
+
+              metro = page_text.match(/((?:Greater\s+)?[A-Za-zÀ-ÿ'\- ]+\s+Metropolitan\s+Region)/i)
+              topcard_texts << normalize_whitespace(metro[1]) if topcard_texts.empty? && metro
+            end
+          end
+
+          topcard_texts.join(" | ") unless topcard_texts.empty?
+        end
 
         def extract_first_text(doc, selectors)
           selectors.each do |selector|
@@ -182,9 +224,22 @@ module Sourcing
           return map_remote(match[1]) if match
 
           # Another top-card variant appears as compact chips:
-          # "On-siteFull-timeApply" or "HybridFull-timeApply"
-          compact = page_text.match(/\b(on\s*-\s*site|hybrid|remote)\s*(?:full\s*-?\s*time|part\s*-?\s*time)?\s*(?:applysave|apply|save|see how you compare)\b/i)
+          # "On-siteFull-timeApply", "HybridFull-timeApply", or French variants.
+          compact = page_text.match(/\b(on\s*-\s*site|hybrid|hybride|remote|sur site|pr[ée]sentiel|teletravail|t[ée]l[ée]travail|a distance|à distance)\s*(?:full\s*-?\s*time|part\s*-?\s*time|temps\s+plein|temps\s+partiel)?\s*(?:easy\s+apply|candidature\s+simplifi[ée]e)?\s*(?:applysave|apply|save|postuler|enregistrer|see how you compare)/i)
           return map_remote(compact[1]) if compact
+
+          # LinkedIn can render a plain metadata row without stable top-card classes:
+          # "Paris, Ile-de-France, France · 1 day ago · ... · Hybrid"
+          # Keep this constrained to location lines with bullet-like separators
+          # to avoid matching generic description text.
+          line = page_text.match(/(?:[A-Za-zÀ-ÿ'\- ]+?,\s*[A-Za-zÀ-ÿ'\- ]+,\s*France|[A-Za-zÀ-ÿ'\- ]+\s+Metropolitan\s+Region)\s*[·•|\-]\s*.{0,800}?(on\s*-\s*site|hybrid|hybride|remote|sur site|pr[ée]sentiel|teletravail|t[ée]l[ée]travail|a distance|à distance)/i)
+          return map_remote(line[1]) if line
+
+          # Some LinkedIn payloads duplicate country labels in shell text
+          # (e.g. "..., France, France · ... Hybrid"). Keep a looser fallback
+          # constrained to France metadata lines only.
+          france_line = page_text.match(/France\s*[·•|\-]\s*.{0,800}?(on\s*-\s*site|hybrid|hybride|remote|sur site|pr[ée]sentiel|teletravail|t[ée]l[ée]travail|a distance|à distance)/i)
+          return map_remote(france_line[1]) if france_line
 
           nil
         end
@@ -582,7 +637,7 @@ module Sourcing
         def normalize_whitespace(value)
           return "" if value.nil?
 
-          value.to_s.gsub(/\s+/, " ").strip
+          value.to_s.tr("\u00A0\u202F", "  ").gsub(/\s+/, " ").strip
         end
 
         def blank_to_nil(value)

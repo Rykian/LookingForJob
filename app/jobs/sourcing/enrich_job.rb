@@ -3,7 +3,7 @@ module Sourcing
     include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 
-    ENRICHED_ATTRIBUTES = %i[
+    DEFAULT_ENRICHED_ATTRIBUTES = %i[
       hybrid_remote_days_min_per_week
       primary_technologies
       secondary_technologies
@@ -33,9 +33,9 @@ module Sourcing
         extracted: offer.attributes.symbolize_keys.slice(
           :title,
           :company,
-          :location_mode,
           :employment_type,
           :description_html,
+          :topcard_text,
           :salary_min_minor,
           :salary_max_minor,
           :salary_currency,
@@ -45,7 +45,7 @@ module Sourcing
 
       now = Time.current
       offer.update!(
-        enrichment.slice(*ENRICHED_ATTRIBUTES).merge(
+        enrichment.slice(*enriched_attributes(provider)).merge(
           steps_details: offer.steps_details.merge("enrich" => {
             "at" => now.iso8601,
             "version" => current_version,
@@ -53,6 +53,15 @@ module Sourcing
         )
       )
       Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ENRICHED, offer_id: offer.id, force:)
+    end
+
+    private
+
+    def enriched_attributes(provider)
+      step_class = provider.enrich_step.class
+      return DEFAULT_ENRICHED_ATTRIBUTES unless step_class.const_defined?(:PERSISTED_ATTRIBUTES, false)
+
+      step_class.const_get(:PERSISTED_ATTRIBUTES)
     end
   end
 end
