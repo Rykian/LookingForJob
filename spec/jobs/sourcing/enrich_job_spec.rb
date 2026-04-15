@@ -94,6 +94,28 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect { described_class.perform_now(-1) }.not_to raise_error
   end
 
+  it "returns early when offer is already rejected" do
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/rejected-enrich",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/rejected-enrich"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
+      rejected: true
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html>content</html>"),
+      filename: "rejected-enrich.html",
+      content_type: "text/html"
+    )
+
+    expect(enrich_step).not_to receive(:call)
+
+    described_class.perform_now(offer.id)
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::ScoringJob }
+    expect(queued).to be_empty
+  end
+
   describe "version checking behavior" do
     let(:step_name) { "enrich" }
     let(:next_job_class) { Sourcing::ScoringJob }

@@ -230,6 +230,47 @@ RSpec.describe "GraphQL API", type: :request do
       expect(node).to be_present
       expect(node["locationMode"]).to eq("ON_SITE")
     end
+
+    it "excludes rejected offers by default" do
+      visible_offer = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/visible",
+        url_hash: "hash-visible",
+        last_seen_at: Time.current,
+        rejected: false
+      )
+
+      JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/rejected",
+        url_hash: "hash-rejected",
+        last_seen_at: Time.current,
+        rejected: true
+      )
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!) {
+          jobOffers(page: $page, perPage: $perPage) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(
+        query: query,
+        variables: {
+          page: 1,
+          perPage: 25,
+        }
+      )
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
+      expect(result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }).to eq([visible_offer.id.to_s])
+    end
   end
 
   describe "query dashboardMetrics" do
@@ -390,6 +431,29 @@ RSpec.describe "GraphQL API", type: :request do
       expect(steps["discovery"]).to eq("at" => "2026-03-24T10:00:00Z", "version" => 1)
       expect(steps["fetch"]).to eq("at" => "2026-03-24T10:30:00Z", "version" => 1)
       expect(steps["analyze"]).to be_nil
+    end
+
+    it "returns nil for rejected offer on jobOffer query" do
+      offer = JobOffer.create!(
+        source: "linkedin",
+        url: "https://example.com/offers/rejected-single",
+        url_hash: "hash-rejected-single",
+        last_seen_at: Time.current,
+        rejected: true
+      )
+
+      query = <<~GRAPHQL
+        query JobOffer($id: ID!) {
+          jobOffer(id: $id) {
+            id
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: query, variables: { id: offer.id })
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffer")).to be_nil
     end
   end
 

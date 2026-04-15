@@ -39,7 +39,7 @@ module Types
       end
 
       def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil)
-        scope = JobOffer.all
+        scope = JobOffer.where(rejected: false)
         scope = scope.where(source: source) if source.present?
         scope = scope.where(location_mode: location_modes) if location_modes.present?
 
@@ -90,7 +90,7 @@ module Types
       end
 
       def job_offer(id:)
-        JobOffer.find_by(id: id)
+        JobOffer.where(rejected: false).find_by(id: id)
       end
 
       private

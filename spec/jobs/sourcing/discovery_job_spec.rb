@@ -73,6 +73,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     expect(queued.first[:args].second).to include("force" => false)
     expect(offer.steps_details["discovery"]).to include("version" => 1)
     expect(offer.steps_details.dig("discovery", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
+    expect(offer.keywords).to eq(["ruby"])
   end
 
   it "propagates force to the fetch job through the event subscriber" do

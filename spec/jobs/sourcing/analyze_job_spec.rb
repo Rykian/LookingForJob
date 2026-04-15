@@ -102,6 +102,52 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     expect { described_class.perform_now(offer.id) }.not_to raise_error
   end
 
+  it "marks offer as rejected and stops pipeline when keywords do not match" do
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/irrelevant",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/irrelevant"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
+      keywords: ["ruby"]
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html><body>Senior Java Engineer</body></html>"),
+      filename: "irrelevant.html",
+      content_type: "text/html"
+    )
+
+    described_class.perform_now(offer.id)
+
+    offer.reload
+    expect(offer.rejected).to eq(true)
+    expect(offer.steps_details["analyze"]).to be_nil
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::EnrichJob }
+    expect(queued).to be_empty
+  end
+
+  it "returns early when offer is already rejected" do
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/rejected",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/rejected"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
+      rejected: true
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html>content</html>"),
+      filename: "rejected.html",
+      content_type: "text/html"
+    )
+
+    expect(analyze_step).not_to receive(:call)
+
+    described_class.perform_now(offer.id)
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::EnrichJob }
+    expect(queued).to be_empty
+  end
+
   describe "version checking behavior" do
     let(:step_name) { "analyze" }
     let(:next_job_class) { Sourcing::EnrichJob }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_27_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_15_084239) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,12 +50,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_27_100000) do
     t.string "employment_type"
     t.string "english_level_required"
     t.integer "hybrid_remote_days_min_per_week"
+    t.string "keywords", default: [], null: false, array: true
     t.datetime "last_seen_at", null: false
     t.string "location_mode"
     t.string "normalized_seniority"
     t.string "offer_language"
     t.datetime "posted_at"
     t.string "primary_technologies", default: [], null: false, array: true
+    t.boolean "rejected", default: false, null: false
     t.string "salary_currency"
     t.integer "salary_max_minor"
     t.integer "salary_min_minor"

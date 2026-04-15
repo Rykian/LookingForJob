@@ -20,6 +20,14 @@ module Sourcing
       force = extract_force(options)
       offer = find_offer(offer_id)
       return unless offer&.html_file&.attached?
+      return if offer.rejected?
+
+      html_content = offer.html_file.download
+
+      if offer.keywords.present? && !Sourcing::RelevanceChecker.new.call(offer.keywords, html_content)
+        offer.update!(rejected: true)
+        return
+      end
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.analyze_step.class::VERSION
@@ -33,7 +41,7 @@ module Sourcing
         source: offer.source,
         url: offer.url,
         url_hash: offer.url_hash,
-        html_content: offer.html_file.download
+        html_content: html_content
       )
 
       offer.update!(extracted.slice(*analyzed_attributes(provider)).merge(

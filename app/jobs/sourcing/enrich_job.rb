@@ -16,6 +16,7 @@ module Sourcing
       force = extract_force(options)
       offer = find_offer(offer_id)
       return unless offer&.html_file&.attached?
+      return if offer.rejected?
 
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.enrich_step.class::VERSION
