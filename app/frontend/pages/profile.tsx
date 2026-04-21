@@ -66,7 +66,9 @@ export default function ProfilePage() {
     <div className="space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold">Scoring Profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Edit the file-backed JSON scoring profile (v1).</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Edit the file-backed JSON scoring profile (v1).
+        </p>
       </div>
 
       <Card>
@@ -88,7 +90,9 @@ export default function ProfilePage() {
           </div>
 
           {parseError ? <p className="text-sm text-destructive">{parseError}</p> : null}
-          {saveError ? <p className="text-sm text-destructive">Failed to save scoring profile.</p> : null}
+          {saveError ? (
+            <p className="text-sm text-destructive">Failed to save scoring profile.</p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

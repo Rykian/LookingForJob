@@ -70,7 +70,10 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-2">
               {metrics.topSources.map((entry) => (
-                <li key={entry.source} className="flex items-center justify-between rounded-md border px-3 py-2">
+                <li
+                  key={entry.source}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
                   <span className="font-medium">{entry.source}</span>
                   <span className="text-sm text-muted-foreground">{entry.count} offers</span>
                 </li>

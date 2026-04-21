@@ -22,17 +22,20 @@ const RECOMPUTE_OFFER_SCORES_MUTATION = gql`
 `
 
 export default function SourcingPage() {
-  const [launchDiscovery, { loading, error, data }] = useMutation<LaunchDiscoveryMutation>(
-    LAUNCH_DISCOVERY_MUTATION,
-  )
-  const [recomputeOfferScores, { loading: recomputeLoading, error: recomputeError, data: recomputeData }] =
-    useMutation<RecomputeOfferScoresMutation>(RECOMPUTE_OFFER_SCORES_MUTATION)
+  const [launchDiscovery, { loading, error, data }] =
+    useMutation<LaunchDiscoveryMutation>(LAUNCH_DISCOVERY_MUTATION)
+  const [
+    recomputeOfferScores,
+    { loading: recomputeLoading, error: recomputeError, data: recomputeData },
+  ] = useMutation<RecomputeOfferScoresMutation>(RECOMPUTE_OFFER_SCORES_MUTATION)
 
   return (
     <div className="space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold">Sourcing</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Trigger a full discovery run over configured keywords and sources.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Trigger a full discovery run over configured keywords and sources.
+        </p>
       </div>
 
       <Card className="max-w-2xl">
@@ -51,16 +54,16 @@ export default function SourcingPage() {
             <p className="text-sm text-green-700">{data.launchDiscovery.message}</p>
           ) : null}
 
-          {error ? <p className="text-sm text-destructive">Failed to enqueue discovery job.</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive">Failed to enqueue discovery job.</p>
+          ) : null}
         </CardContent>
       </Card>
 
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Recompute Scores</CardTitle>
-          <CardDescription>
-            This enqueues one scoring job for each existing offer.
-          </CardDescription>
+          <CardDescription>This enqueues one scoring job for each existing offer.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button disabled={recomputeLoading} onClick={() => recomputeOfferScores()}>
@@ -71,7 +74,9 @@ export default function SourcingPage() {
             <p className="text-sm text-green-700">{recomputeData.recomputeOfferScores.message}</p>
           ) : null}
 
-          {recomputeError ? <p className="text-sm text-destructive">Failed to enqueue scoring jobs.</p> : null}
+          {recomputeError ? (
+            <p className="text-sm text-destructive">Failed to enqueue scoring jobs.</p>
+          ) : null}
         </CardContent>
       </Card>
     </div>
