@@ -468,7 +468,10 @@ export default function OffersPage() {
                   <tr key={offer.id} className="border-b last:border-0">
                     <td className="px-3 py-2 font-medium">
                       <div className="space-y-1">
-                        <Link className="hover:underline" to={`/offers/${offer.id}`}>
+                        <Link
+                          className="text-primary visited:text-muted-foreground hover:underline"
+                          to={`/offers/${offer.id}`}
+                        >
                           {offer.title || 'Untitled role'}
                         </Link>
                       </div>
