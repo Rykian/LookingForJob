@@ -69,7 +69,8 @@ export const SearchInteraction: Story = {
     await expect(option).toBeVisible()
 
     await userEvent.clear(input)
+    await userEvent.type(input, 'zzzz')
     const noResult = await canvas.findByText('No results')
-    await expect(noResult).not.toBeVisible()
+    await expect(noResult).toBeVisible()
   },
 }

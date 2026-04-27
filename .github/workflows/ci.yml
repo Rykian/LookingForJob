@@ -76,3 +76,79 @@ jobs:
       - name: Build frontend assets
         run: bundle exec rake vite:build
 
+  test_frontend_unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Vitest unit tests
+        run: npm run test:unit
+
+  test_frontend_storybook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Storybook tests
+        run: npm run test:storybook
+
+  test_backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: looking_for_job
+          POSTGRES_PASSWORD: looking_for_job
+          POSTGRES_DB: looking_for_job_test
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd="pg_isready -U looking_for_job"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      RAILS_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: looking_for_job
+      DB_PASSWORD: looking_for_job
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Prepare test database
+        run: bundle exec rails db:prepare
+
+      - name: Run RSpec
+        run: bundle exec rspec
+

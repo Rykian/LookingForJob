@@ -22,6 +22,7 @@ const config: StorybookConfig = {
     }
     return config
   },
+  addons: ['@storybook/addon-vitest'],
 }
 
 export default config
