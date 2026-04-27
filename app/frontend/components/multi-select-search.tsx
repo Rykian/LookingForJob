@@ -1,5 +1,5 @@
 // Simple multi-select with search for technologies
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 interface MultiSelectSearchProps {
   options: string[]

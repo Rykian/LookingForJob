@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
 import { gql } from '@apollo/client'
 import { useMutation, useQuery } from '@apollo/client/react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
+import type {
   ScoringProfileQuery,
   UpdateScoringProfileMutation,
   UpdateScoringProfileMutationVariables,

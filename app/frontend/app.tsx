@@ -1,10 +1,10 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import AppShell from '@/components/layout/app-shell'
 import DashboardPage from '@/pages/dashboard'
-import OffersPage from '@/pages/offers/index'
 import OfferDetailPage from '@/pages/offers/detail'
-import SourcingPage from '@/pages/sourcing'
+import OffersPage from '@/pages/offers/index'
 import ProfilePage from '@/pages/profile'
+import SourcingPage from '@/pages/sourcing'
 
 const router = createBrowserRouter([
   {
