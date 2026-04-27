@@ -6,7 +6,7 @@ module Sourcing
   module Providers
     module Cadremploi
       class SessionNotFoundError < StandardError
-        def initialize(msg = "Cadremploi session not found. Set CADREMPLOI_STORAGE_STATE_PATH or create data/cadremploi_session.json")
+        def initialize(msg = "Cadremploi session not found. Create data/cadremploi_session.json")
           super
         end
       end
@@ -16,14 +16,11 @@ module Sourcing
         REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
 
         def self.path
-          custom = ENV["CADREMPLOI_STORAGE_STATE_PATH"].to_s.strip
-          return Pathname.new(custom) unless custom.empty?
-
           SESSION_PATH
         end
 
         def self.exists?
-          File.exist?(path)
+          File.exist?(SESSION_PATH)
         end
 
         def self.require_session?
@@ -32,22 +29,22 @@ module Sourcing
 
         def self.save(storage_state)
           validate_storage_state!(storage_state)
-          File.write(path, JSON.generate(storage_state))
+          File.write(SESSION_PATH, JSON.generate(storage_state))
         end
 
         def self.load
           raise SessionNotFoundError unless exists?
 
-          storage_state = JSON.parse(File.read(path))
+          storage_state = JSON.parse(File.read(SESSION_PATH))
           validate_storage_state!(storage_state)
           storage_state
         rescue JSON::ParserError
-          raise SessionNotFoundError, "Cadremploi session file is invalid JSON at #{path}"
+          raise SessionNotFoundError, "Cadremploi session file is invalid JSON at #{SESSION_PATH}"
         end
 
         def self.validate_storage_state!(storage_state)
           unless storage_state.is_a?(Hash)
-            raise SessionNotFoundError, "Cadremploi session file is invalid at #{path}"
+            raise SessionNotFoundError, "Cadremploi session file is invalid at #{SESSION_PATH}"
           end
 
           missing_keys = REQUIRED_ROOT_KEYS.reject { |key| storage_state.key?(key) }

@@ -22,6 +22,7 @@ module Sourcing
 
         BLOCKED_PAGE_PATTERN = /(checkpoint|challenge|captcha|authwall|login|sign in|security verification)/i
         MIN_BODY_TEXT_LENGTH = 400
+        JOB_MARKER_TIMEOUT_MS = 12_000
 
         def initialize(fetcher: nil)
           @fetcher = fetcher || method(:fetch_with_playwright)
@@ -51,11 +52,10 @@ module Sourcing
         end
 
         def wait_for_job_markers(page_obj)
-          timeout_ms = ENV.fetch("LINKEDIN_FETCH_MARKER_TIMEOUT_MS", "12000").to_i
           found = wait_for_any_selector(
             page_obj: page_obj,
             selectors: JOB_MARKER_SELECTORS,
-            timeout_ms: timeout_ms,
+            timeout_ms: JOB_MARKER_TIMEOUT_MS,
             wait_options: { state: "attached" }
           )
           return if found
