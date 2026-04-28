@@ -63,6 +63,14 @@ Don't:
   - Background reliability: Sidekiq retry/dead set
   - Complex validation: dry-schema / dry-validation
 
+## Frontend File Organization Rules
+
+- Group frontend code by feature under `app/frontend/features/<feature>/`.
+- Keep feature-local UI in `components/`, hooks in `hooks/`, queries in `queries/`, and helpers in `utils/`.
+- Avoid repeating the feature name in file names within that feature folder.
+- Prefer concise component names inside feature folders (for example `filters-panel.tsx` instead of `offers-filters-panel.tsx`).
+- Keep route wiring in `app/frontend/app.tsx`, importing page components from feature folders.
+
 ## Commit Policy
 
 - Use Conventional Commits for all commits.

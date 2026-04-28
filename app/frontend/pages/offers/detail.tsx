@@ -4,8 +4,8 @@ import { ExternalLink } from 'lucide-react'
 import { useParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatLocationMode } from '@/features/offers/utils/location-mode'
 import type { JobOfferQuery, JobOfferQueryVariables } from '@/graphql/generated'
-import { formatLocationMode } from '@/lib/location-mode'
 
 const JOB_OFFER_QUERY = gql`
   query JobOffer($id: ID!) {

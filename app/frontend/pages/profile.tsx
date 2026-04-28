@@ -1,27 +1,15 @@
-import { gql } from '@apollo/client'
 import { useMutation, useQuery } from '@apollo/client/react'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Editor } from '@/features/profile/components/editor'
+import { useScoringProfileForm } from '@/features/profile/hooks/use-form'
+import {
+  SCORING_PROFILE_QUERY,
+  UPDATE_SCORING_PROFILE_MUTATION,
+} from '@/features/profile/queries/documents'
 import type {
   ScoringProfileQuery,
   UpdateScoringProfileMutation,
   UpdateScoringProfileMutationVariables,
 } from '@/graphql/generated'
-
-const SCORING_PROFILE_QUERY = gql`
-  query ScoringProfile {
-    scoringProfile
-  }
-`
-
-const UPDATE_SCORING_PROFILE_MUTATION = gql`
-  mutation UpdateScoringProfile($profile: JSON!) {
-    updateScoringProfile(input: { profile: $profile }) {
-      profile
-    }
-  }
-`
 
 export default function ProfilePage() {
   const { data, loading, error } = useQuery<ScoringProfileQuery>(SCORING_PROFILE_QUERY)
@@ -32,27 +20,13 @@ export default function ProfilePage() {
     refetchQueries: [SCORING_PROFILE_QUERY],
     awaitRefetchQueries: true,
   })
-  const [text, setText] = useState('')
-  const [parseError, setParseError] = useState<string | null>(null)
-  const [savedMessage, setSavedMessage] = useState('')
 
-  useEffect(() => {
-    if (data?.scoringProfile) {
-      setText(JSON.stringify(data.scoringProfile, null, 2))
-    }
-  }, [data])
-
-  const handleSave = async () => {
-    setParseError(null)
-    setSavedMessage('')
-    try {
-      const parsed = JSON.parse(text) as Record<string, unknown>
-      await save({ variables: { profile: parsed } })
-      setSavedMessage('Scoring profile updated.')
-    } catch {
-      setParseError('Invalid JSON. Please fix parsing errors before saving.')
-    }
-  }
+  const { text, setText, parseError, savedMessage, handleSave } = useScoringProfileForm({
+    initialProfile: data?.scoringProfile,
+    onSave: async (profile) => {
+      await save({ variables: { profile } })
+    },
+  })
 
   if (loading) {
     return <div className="p-8 text-muted-foreground">Loading profile...</div>
@@ -71,30 +45,15 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile JSON</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <textarea
-            className="min-h-[520px] w-full rounded-md border bg-background p-3 font-mono text-xs leading-5"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-          />
-
-          <div className="flex items-center gap-3">
-            <Button disabled={saving} onClick={handleSave}>
-              {saving ? 'Saving...' : 'Save Profile'}
-            </Button>
-            {savedMessage ? <span className="text-sm text-green-700">{savedMessage}</span> : null}
-          </div>
-
-          {parseError ? <p className="text-sm text-destructive">{parseError}</p> : null}
-          {saveError ? (
-            <p className="text-sm text-destructive">Failed to save scoring profile.</p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <Editor
+        text={text}
+        saving={saving}
+        parseError={parseError}
+        saveError={Boolean(saveError)}
+        savedMessage={savedMessage}
+        onTextChange={setText}
+        onSave={handleSave}
+      />
     </div>
   )
 }

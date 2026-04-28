@@ -1,33 +1,17 @@
-import { gql } from '@apollo/client'
-import { useMutation } from '@apollo/client/react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ActionCard } from '@/features/sourcing/components/action-card'
+import { useMutationWithFeedback } from '@/features/sourcing/hooks/use-mutation'
+import {
+  LAUNCH_DISCOVERY_MUTATION,
+  RECOMPUTE_OFFER_SCORES_MUTATION,
+} from '@/features/sourcing/queries/documents'
 import type { LaunchDiscoveryMutation, RecomputeOfferScoresMutation } from '@/graphql/generated'
 
-const LAUNCH_DISCOVERY_MUTATION = gql`
-  mutation LaunchDiscovery {
-    launchDiscovery(input: {}) {
-      message
-    }
-  }
-`
-
-const RECOMPUTE_OFFER_SCORES_MUTATION = gql`
-  mutation RecomputeOfferScores {
-    recomputeOfferScores(input: {}) {
-      message
-      enqueuedCount
-    }
-  }
-`
-
 export default function SourcingPage() {
-  const [launchDiscovery, { loading, error, data }] =
-    useMutation<LaunchDiscoveryMutation>(LAUNCH_DISCOVERY_MUTATION)
-  const [
-    recomputeOfferScores,
-    { loading: recomputeLoading, error: recomputeError, data: recomputeData },
-  ] = useMutation<RecomputeOfferScoresMutation>(RECOMPUTE_OFFER_SCORES_MUTATION)
+  const launchDiscovery =
+    useMutationWithFeedback<LaunchDiscoveryMutation>(LAUNCH_DISCOVERY_MUTATION)
+  const recomputeOfferScores = useMutationWithFeedback<RecomputeOfferScoresMutation>(
+    RECOMPUTE_OFFER_SCORES_MUTATION,
+  )
 
   return (
     <div className="space-y-6 p-8">
@@ -38,47 +22,33 @@ export default function SourcingPage() {
         </p>
       </div>
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Launch Discovery</CardTitle>
-          <CardDescription>
-            This enqueues one discovery job per source x keyword x work mode combination.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Button disabled={loading} onClick={() => launchDiscovery()}>
-            {loading ? 'Launching...' : 'Launch Discovery'}
-          </Button>
+      <ActionCard
+        title="Launch Discovery"
+        description="This enqueues one discovery job per source x keyword x work mode combination."
+        actionLabel="Launch Discovery"
+        pendingLabel="Launching..."
+        loading={launchDiscovery.loading}
+        error={launchDiscovery.error}
+        successMessage={launchDiscovery.data?.launchDiscovery?.message}
+        errorMessage="Failed to enqueue discovery job."
+        onTrigger={() => {
+          void launchDiscovery.trigger()
+        }}
+      />
 
-          {data?.launchDiscovery?.message ? (
-            <p className="text-sm text-green-700">{data.launchDiscovery.message}</p>
-          ) : null}
-
-          {error ? (
-            <p className="text-sm text-destructive">Failed to enqueue discovery job.</p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Recompute Scores</CardTitle>
-          <CardDescription>This enqueues one scoring job for each existing offer.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Button disabled={recomputeLoading} onClick={() => recomputeOfferScores()}>
-            {recomputeLoading ? 'Recomputing...' : 'Recompute All Scores'}
-          </Button>
-
-          {recomputeData?.recomputeOfferScores?.message ? (
-            <p className="text-sm text-green-700">{recomputeData.recomputeOfferScores.message}</p>
-          ) : null}
-
-          {recomputeError ? (
-            <p className="text-sm text-destructive">Failed to enqueue scoring jobs.</p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <ActionCard
+        title="Recompute Scores"
+        description="This enqueues one scoring job for each existing offer."
+        actionLabel="Recompute All Scores"
+        pendingLabel="Recomputing..."
+        loading={recomputeOfferScores.loading}
+        error={recomputeOfferScores.error}
+        successMessage={recomputeOfferScores.data?.recomputeOfferScores?.message}
+        errorMessage="Failed to enqueue scoring jobs."
+        onTrigger={() => {
+          void recomputeOfferScores.trigger()
+        }}
+      />
     </div>
   )
 }
