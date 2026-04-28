@@ -1,5 +1,5 @@
 module Sourcing
-  class LaunchDiscoveryJob < ApplicationJob
+  class LaunchDiscoveryJob < BaseJob
     WORK_MODE_UNSUPPORTED_SOURCES = %w[france_travail].freeze
     SUPPORTED_WORK_MODES = %w[remote hybrid on-site].freeze
 

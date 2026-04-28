@@ -1,5 +1,5 @@
 module Sourcing
-  class FetchJob < ApplicationJob
+  class FetchJob < BaseJob
     include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 

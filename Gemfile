@@ -41,6 +41,7 @@ gem "vite_rails"
 
 # GraphQL API
 gem "graphql", "~> 2.3"
+gem "redis" # For subscriptions with Redis adapter
 
 gem "rails-ai-context", group: :development
 

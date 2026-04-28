@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client'
-import { useQuery } from '@apollo/client/react'
+import { useQuery, useSubscription } from '@apollo/client/react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +47,7 @@ import {
   type JobOffersQueryVariables,
   LocationModeEnum,
   type ProvidersQuery,
+  type SourcingStatusSubscription,
 } from '@/graphql/generated'
 import { formatLocationMode } from '@/lib/location-mode'
 
@@ -148,6 +149,19 @@ const JOB_OFFERS_QUERY = gql`
     }
   }
 `
+
+const SOURCING_STATUS_SUBSCRIPTION = gql`
+  subscription SourcingStatus {
+    sourcingStatus {
+      active
+      queuedCount
+      runningCount
+      updatedAt
+    }
+  }
+`
+
+const ACTIVE_SOURCING_POLL_INTERVAL_MS = 5000
 
 export default function OffersPage() {
   // Fetch provider keys (sources) from backend
@@ -253,10 +267,18 @@ export default function OffersPage() {
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
   }
 
+  const { data: sourcingStatusData } = useSubscription<SourcingStatusSubscription>(
+    SOURCING_STATUS_SUBSCRIPTION,
+    { fetchPolicy: 'cache-first' },
+  )
+  const sourcingStatus = sourcingStatusData?.sourcingStatus
+  const isSourcingActive = sourcingStatus?.active ?? false
+
   const { data, loading, error } = useQuery<JobOffersQuery, JobOffersQueryVariables>(
     JOB_OFFERS_QUERY,
     {
       variables,
+      pollInterval: isSourcingActive ? ACTIVE_SOURCING_POLL_INTERVAL_MS : undefined,
     },
   )
 
@@ -408,8 +430,17 @@ export default function OffersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {loading ? 'Loading offers...' : `${data?.jobOffers.totalCount ?? 0} offers`}
+            {loading && !isSourcingActive
+              ? 'Loading offers...'
+              : `${data?.jobOffers.totalCount ?? 0} offers`}
           </CardTitle>
+          {sourcingStatus ? (
+            <p className="text-sm text-muted-foreground">
+              {isSourcingActive
+                ? `Sourcing running (queued: ${sourcingStatus.queuedCount}, running: ${sourcingStatus.runningCount})`
+                : 'Sourcing idle'}
+            </p>
+          ) : null}
         </CardHeader>
         <CardContent>
           {error ? <p className="text-destructive">Failed to load offers.</p> : null}

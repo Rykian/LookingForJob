@@ -1,7 +1,7 @@
 require "digest"
 
 module Sourcing
-  class DiscoveryJob < ApplicationJob
+  class DiscoveryJob < BaseJob
     include ActiveJob::Continuable
 
     # ActiveJob::Continuable's around_perform callback causes Ruby 3+ to receive

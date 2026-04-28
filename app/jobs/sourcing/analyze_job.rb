@@ -1,5 +1,5 @@
 module Sourcing
-  class AnalyzeJob < ApplicationJob
+  class AnalyzeJob < BaseJob
     include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 

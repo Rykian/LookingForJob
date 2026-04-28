@@ -20,6 +20,7 @@ end
 
 Rails.application.routes.draw do
   post "/graphql", to: "graphql#execute"
+  mount ActionCable.server => "/cable"
   get "up" => "rails/health#show", as: :rails_health_check
   mount Sidekiq::Web => "/sidekiq"
 

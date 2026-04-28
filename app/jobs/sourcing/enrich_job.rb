@@ -1,5 +1,5 @@
 module Sourcing
-  class EnrichJob < ApplicationJob
+  class EnrichJob < BaseJob
     include Sourcing::Concerns::OfferJobArguments
     include Sourcing::Concerns::VersionChecking
 
