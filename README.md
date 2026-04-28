@@ -6,7 +6,7 @@ Backend API Rails for the LookingForJob rebuild.
 
 ### Run locally
 
-Use one command to run Rails, Vite, and GraphQL schema/type generation in watch mode:
+Use one command to run Rails, Sidekiq, Vite, and GraphQL schema/type generation in watch mode:
 
 ```bash
 bin/dev
@@ -14,6 +14,7 @@ bin/dev
 
 `Procfile.dev` starts:
 - `web`: Rails server on port 3000
+- `sidekiq`: background jobs worker
 - `vite`: Vite dev server
 - `gql-schema`: watches Ruby GraphQL schema files and refreshes `tmp/schema.graphql`
 - `gql-types`: watches frontend TS/TSX files and regenerates `app/frontend/graphql/generated.ts`
@@ -47,6 +48,7 @@ Generated operation/types output:
 
 - Ruby 4.0+
 - Bundler
+- Node.js + npm
 - Docker + Docker Compose
 
 ## Start PostgreSQL with Docker Compose
@@ -69,6 +71,7 @@ bin/rails db:create db:migrate
 
 ```bash
 bundle exec rspec
+npm run test
 ```
 
 Run type checks:
