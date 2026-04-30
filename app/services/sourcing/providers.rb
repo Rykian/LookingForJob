@@ -16,15 +16,15 @@ module Sourcing
           )
         )
 
-          registry.register(
-            "wttj",
-            Provider.new(
-              discovery_step: Sourcing::Providers::Wttj::DiscoveryStep.new,
-              fetch_step: Sourcing::Providers::Wttj::FetchStep.new,
-              analyze_step: Sourcing::Providers::Wttj::AnalyzeStep.new,
-              enrich_step: Sourcing::Providers::Wttj::EnrichStep.new
-            )
-          )
+          # registry.register(
+          #   "wttj",
+          #   Provider.new(
+          #     discovery_step: Sourcing::Providers::Wttj::DiscoveryStep.new,
+          #     fetch_step: Sourcing::Providers::Wttj::FetchStep.new,
+          #     analyze_step: Sourcing::Providers::Wttj::AnalyzeStep.new,
+          #     enrich_step: Sourcing::Providers::Wttj::EnrichStep.new
+          #   )
+          # )
 
           registry.register(
             "france_travail",
