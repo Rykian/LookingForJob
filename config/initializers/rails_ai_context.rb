@@ -7,7 +7,7 @@ if defined?(RailsAiContext)
     # ── AI Tools ──────────────────────────────────────────────────────
     # Which AI tools to generate context files for (selected during install)
     # Run `rails generate rails_ai_context:install` to change selection
-    config.ai_tools = %i[copilot]
+    config.ai_tools = %i[claude cursor copilot opencode codex]
 
     # Tool invocation mode:
     #   :mcp — MCP primary + CLI fallback (default, requires `rails ai:serve`)
@@ -99,5 +99,40 @@ if defined?(RailsAiContext)
     # ── Frontend Framework Detection ─────────────────────────────────
     # Auto-detected from package.json, config/vite.json, etc. Override only if needed.
     # config.frontend_paths = ["app/frontend", "../web-client"]
+
+    # ── Database Query Tool (rails_query) ─────────────────────────────
+    # Per-query statement timeout in seconds. Default: 5.
+    # config.query_timeout = 5
+
+    # Hard cap on rows returned by a single query (1..1000).
+    # Prevents accidentally pulling a million-row table into the
+    # AI's context. Default: 100.
+    # config.query_row_limit = 100
+
+    # Additional column names whose values are redacted in tool
+    # output. Defaults already cover password_digest,
+    # encrypted_password, *_token, *_secret, *_key, etc.
+    # config.query_redacted_columns += %w[my_app_specific_secret]
+
+    # rails_query is DISABLED in production by default. Setting
+    # this to true is rarely correct — only do so if you have
+    # audit logging + access controls around your AI client.
+    # config.allow_query_in_production = false
+
+
+    # ── Log Reading (rails_read_logs) ─────────────────────────────────
+    # Default tail length when reading a log file. Larger values
+    # surface more context but cost more AI tokens per call.
+    # config.log_lines = 50
+
+
+    # ── Hydration ─────────────────────────────────────────────────────
+    # When enabled, MCP tool responses include schema hints telling
+    # the AI which related tools to call next. Helps agents
+    # traverse the introspection graph efficiently. Default: true.
+    # config.hydration_enabled = true
+
+    # Maximum number of hydration hints embedded per tool response.
+    # config.hydration_max_hints = 5
   end
 end

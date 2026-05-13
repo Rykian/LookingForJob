@@ -1,10 +1,9 @@
 ---
-applyTo: "**/*"
-name: "Rails Project Overview"
-description: "Rails version, database, models, routes, gems, architecture patterns"
+description: "Rails project context for LookingForJob"
+alwaysApply: true
 ---
 
-# LookingForJob — Overview
+# LookingForJob
 
 Rails 8.1.3 | Ruby 4.0.2
 
@@ -17,6 +16,9 @@ Rails 8.1.3 | Ruby 4.0.2
 - files: activestorage, aws-sdk-s3
 - testing: rspec-rails, minitest
 - deploy: kamal, thruster
+- server: puma
+- validation: dry-types
+- utilities: nokogiri, faraday
 - API-only mode (no views/assets)
 - GraphQL API (app/graphql/)
 - Service objects pattern (app/services/)
@@ -26,4 +28,5 @@ Rails 8.1.3 | Ruby 4.0.2
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
 
-Use MCP tools for detailed data. Start with `detail:"summary"`.
+MCP tools available — see rails-mcp-tools.mdc for full reference.
+Always call with detail:"summary" first, then drill into specifics.

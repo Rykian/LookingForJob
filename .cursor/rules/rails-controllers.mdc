@@ -1,0 +1,12 @@
+---
+globs:
+  - "app/controllers/**/*.rb"
+alwaysApply: false
+---
+
+# Controllers (2)
+
+- GraphqlController (1 actions)
+- SpaController (1 actions)
+
+Use `rails_get_controllers` MCP tool with controller:"Name" for full detail.

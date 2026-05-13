@@ -1,0 +1,14 @@
+---
+globs:
+  - "app/models/**/*.rb"
+alwaysApply: false
+---
+
+# Models (1)
+
+Check here first for scopes, constants, associations. Read model files for business logic/methods.
+
+- JobOffer (2 associations, table: job_offers)
+  STEPS_DETAIL_KEYS: discovery, fetch, analyze, enrich, score
+
+Use `rails_get_model_details` MCP tool with model:"Name" for full detail.

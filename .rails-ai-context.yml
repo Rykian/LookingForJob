@@ -1,4 +1,8 @@
 ---
 ai_tools:
+- claude
+- cursor
 - copilot
+- opencode
+- codex
 tool_mode: mcp
