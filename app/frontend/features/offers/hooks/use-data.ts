@@ -1,4 +1,5 @@
 import { useQuery, useSubscription } from '@apollo/client/react'
+import { useEffect, useRef } from 'react'
 import type {
   JobOffersQuery,
   JobOffersQueryVariables,
@@ -28,7 +29,6 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
 
   const { data: sourcingStatusData } = useSubscription<SourcingStatusSubscription>(
     SOURCING_STATUS_SUBSCRIPTION,
-    { fetchPolicy: 'cache-first' },
   )
   const sourcingStatus = sourcingStatusData?.sourcingStatus
   const isSourcingActive = sourcingStatus?.active ?? false
@@ -37,6 +37,14 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
     variables,
     pollInterval: isSourcingActive ? ACTIVE_SOURCING_POLL_INTERVAL_MS : undefined,
   })
+
+  const prevIsSourcingActive = useRef(isSourcingActive)
+  useEffect(() => {
+    if (prevIsSourcingActive.current && !isSourcingActive) {
+      void queryState.refetch()
+    }
+    prevIsSourcingActive.current = isSourcingActive
+  }, [isSourcingActive, queryState.refetch])
 
   return {
     providerKeys,
