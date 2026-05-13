@@ -25,6 +25,7 @@ export const JOB_OFFERS_QUERY = gql`
     $sortBy: String
     $sortDirection: String
     $technologies: [String!]
+    $englishLevelsRequired: [String!]
   ) {
     jobOffers(
       page: $page
@@ -38,6 +39,7 @@ export const JOB_OFFERS_QUERY = gql`
       sortBy: $sortBy
       sortDirection: $sortDirection
       technologies: $technologies
+      englishLevelsRequired: $englishLevelsRequired
     ) {
       totalCount
       totalPages

@@ -14,6 +14,7 @@ export default function OffersPage() {
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
+    selectedEnglishLevels,
     seenField,
     datePreset,
     sortBy,
@@ -66,6 +67,7 @@ export default function OffersPage() {
         selectedTechnologies={selectedTechnologies}
         selectedSources={selectedSources}
         selectedLocationModes={selectedLocationModes}
+        selectedEnglishLevels={selectedEnglishLevels}
         seenField={seenField}
         datePreset={datePreset}
         onChangeTechnologies={(items) => {
@@ -84,6 +86,12 @@ export default function OffersPage() {
           updateSearchParams({
             page: null,
             locationModes: items.length > 0 ? items.join(',') : null,
+          })
+        }}
+        onChangeEnglishLevels={(items) => {
+          updateSearchParams({
+            page: null,
+            englishLevels: items.length > 0 ? items.join(',') : null,
           })
         }}
         onChangeSeenField={(value) => {

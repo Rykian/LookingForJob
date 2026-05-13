@@ -6,11 +6,13 @@ const SEEN_FIELD_VALUES = ['first_seen_at', 'last_seen_at'] as const
 const DATE_PRESET_VALUES = ['today', 'yesterday', 'last_7_days', 'last_30_days'] as const
 const SORT_BY_VALUES = ['first_seen_at', 'last_seen_at', 'score', 'company', 'title'] as const
 const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
+const ENGLISH_LEVEL_VALUES = ['none', 'basic', 'professional', 'fluent'] as const
 
 export type SeenField = (typeof SEEN_FIELD_VALUES)[number]
 export type DatePreset = (typeof DATE_PRESET_VALUES)[number]
 export type SortBy = (typeof SORT_BY_VALUES)[number]
 export type SortDirection = (typeof SORT_DIRECTION_VALUES)[number]
+export type EnglishLevel = (typeof ENGLISH_LEVEL_VALUES)[number]
 
 function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
   return values.includes(value)
@@ -78,6 +80,13 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
         .filter((value): value is LocationModeEnum => isOneOf(value, LOCATION_MODE_VALUES))
     : []
 
+  const englishLevelsParam = searchParams.get('englishLevels') || ''
+  const selectedEnglishLevels = englishLevelsParam
+    ? englishLevelsParam
+        .split(',')
+        .filter((value): value is EnglishLevel => isOneOf(value, ENGLISH_LEVEL_VALUES))
+    : []
+
   const seenFieldParam = searchParams.get('seenField')
   const seenField: SeenField =
     seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
@@ -143,6 +152,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...(selectedLocationModes.length > 0 ? { locationModes: selectedLocationModes } : {}),
     ...seenDateVariables,
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
+    ...(selectedEnglishLevels.length > 0 ? { englishLevelsRequired: selectedEnglishLevels } : {}),
   }
 
   return {
@@ -151,6 +161,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
+    selectedEnglishLevels,
     seenField,
     datePreset,
     sortBy,
@@ -161,3 +172,4 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
 }
 
 export const locationModeValues = LOCATION_MODE_VALUES
+export const englishLevelValues = ENGLISH_LEVEL_VALUES

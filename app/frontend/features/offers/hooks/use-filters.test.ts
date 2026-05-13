@@ -24,6 +24,20 @@ describe('useJobOffersFilters', () => {
     expect(result.current.variables.sortDirection).toBe('asc')
   })
 
+  it('parses English levels from search params', () => {
+    const searchParams = new URLSearchParams('englishLevels=fluent,professional')
+
+    const { result } = renderHook(() =>
+      useJobOffersFilters({
+        searchParams,
+        setSearchParams: vi.fn(),
+      }),
+    )
+
+    expect(result.current.selectedEnglishLevels).toEqual(['fluent', 'professional'])
+    expect(result.current.variables.englishLevelsRequired).toEqual(['fluent', 'professional'])
+  })
+
   it('resets all search params', () => {
     const setSearchParams = vi.fn()
 

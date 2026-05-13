@@ -30,6 +30,8 @@ module Types
             description: "Sort direction: asc or desc."
           argument :technologies, [String], required: false,
             description: "Filter offers by matching any of these technologies (primary or secondary)."
+          argument :english_levels_required, [String], required: false,
+            description: "Filter by required English level (none, basic, professional, fluent)."
         end
 
         field :job_offer, Types::JobOfferType, null: true,
@@ -38,7 +40,7 @@ module Types
         end
       end
 
-      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil)
+      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil)
         scope = JobOffer.where(rejected: false)
         scope = scope.where(source: source) if source.present?
         scope = scope.where(location_mode: location_modes) if location_modes.present?
@@ -53,6 +55,8 @@ module Types
 
         scope = scope.where("last_seen_at >= ?", last_seen_after) if last_seen_after.present?
         scope = scope.where("last_seen_at <= ?", last_seen_before) if last_seen_before.present?
+
+        scope = scope.where(english_level_required: english_levels_required) if english_levels_required.present?
 
         if technologies.present?
           norm_techs = technologies.map { |t| t.downcase.gsub(/[^a-z]/, "") }

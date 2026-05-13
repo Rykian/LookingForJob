@@ -11,8 +11,8 @@ import {
   ComboboxList,
   ComboboxValue,
 } from '@/components/ui/combobox'
-import type { DatePreset, SeenField } from '@/features/offers/hooks/use-filters'
-import { locationModeValues } from '@/features/offers/hooks/use-filters'
+import type { DatePreset, EnglishLevel, SeenField } from '@/features/offers/hooks/use-filters'
+import { englishLevelValues, locationModeValues } from '@/features/offers/hooks/use-filters'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
 
 interface FiltersPanelProps {
@@ -23,11 +23,13 @@ interface FiltersPanelProps {
   selectedTechnologies: string[]
   selectedSources: string[]
   selectedLocationModes: string[]
+  selectedEnglishLevels: EnglishLevel[]
   seenField: SeenField
   datePreset: DatePreset
   onChangeTechnologies: (items: string[]) => void
   onChangeSources: (items: string[]) => void
   onChangeLocationModes: (items: string[]) => void
+  onChangeEnglishLevels: (items: EnglishLevel[]) => void
   onChangeSeenField: (value: string) => void
   onChangeDatePreset: (value: string) => void
   onReset: () => void
@@ -41,11 +43,13 @@ export function FiltersPanel({
   selectedTechnologies,
   selectedSources,
   selectedLocationModes,
+  selectedEnglishLevels,
   seenField,
   datePreset,
   onChangeTechnologies,
   onChangeSources,
   onChangeLocationModes,
+  onChangeEnglishLevels,
   onChangeSeenField,
   onChangeDatePreset,
   onReset,
@@ -127,6 +131,28 @@ export function FiltersPanel({
                 {(item) => (
                   <ComboboxItem key={item} value={item}>
                     {formatLocationMode(item)}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          <Combobox multiple items={englishLevelValues} onValueChange={onChangeEnglishLevels}>
+            <ComboboxChips>
+              <ComboboxValue>
+                {selectedEnglishLevels.map((item) => (
+                  <ComboboxChip key={item}>{item}</ComboboxChip>
+                ))}
+              </ComboboxValue>
+              <ComboboxChipsInput placeholder="Filter by English level..." />
+            </ComboboxChips>
+
+            <ComboboxContent>
+              <ComboboxEmpty>All English levels</ComboboxEmpty>
+              <ComboboxList>
+                {(item) => (
+                  <ComboboxItem key={item} value={item}>
+                    {item}
                   </ComboboxItem>
                 )}
               </ComboboxList>
