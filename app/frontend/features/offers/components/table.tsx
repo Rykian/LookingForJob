@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { SortableColumn } from '@/features/offers/hooks/use-sort'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
+import { TechIcon } from '@/features/offers/utils/tech-icons'
 import type { JobOffersQuery } from '@/graphql/generated'
 
 interface TableProps {
@@ -99,6 +100,13 @@ export function Table({
                       >
                         {offer.title || 'Untitled role'}
                       </Link>
+                      {offer.primaryTechnologies && offer.primaryTechnologies.length > 0 && (
+                        <div className="flex gap-1.5 flex-wrap">
+                          {offer.primaryTechnologies.slice(0, 6).map((tech) => (
+                            <TechIcon key={tech} name={tech} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-2">{offer.company || '-'}</td>

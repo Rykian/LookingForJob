@@ -51,6 +51,7 @@ export const JOB_OFFERS_QUERY = gql`
         locationMode
         score
         firstSeenAt
+        primaryTechnologies
       }
     }
   }
