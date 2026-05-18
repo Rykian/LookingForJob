@@ -35,16 +35,18 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
 
   const queryState = useQuery<JobOffersQuery, JobOffersQueryVariables>(JOB_OFFERS_QUERY, {
     variables,
-    pollInterval: isSourcingActive ? ACTIVE_SOURCING_POLL_INTERVAL_MS : undefined,
   })
 
   const prevIsSourcingActive = useRef(isSourcingActive)
   useEffect(() => {
-    if (prevIsSourcingActive.current && !isSourcingActive) {
+    if (isSourcingActive && !prevIsSourcingActive.current) {
+      queryState.startPolling(ACTIVE_SOURCING_POLL_INTERVAL_MS)
+    } else if (!isSourcingActive && prevIsSourcingActive.current) {
+      queryState.stopPolling()
       void queryState.refetch()
     }
     prevIsSourcingActive.current = isSourcingActive
-  }, [isSourcingActive, queryState.refetch])
+  }, [isSourcingActive, queryState])
 
   return {
     providerKeys,
