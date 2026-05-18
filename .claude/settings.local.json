@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mise exec *)"
+      "Bash(mise exec *)",
+      "mcp__rails-ai-context__rails_analyze_feature",
+      "mcp__rails-ai-context__rails_get_frontend_stack"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "rails-ai-context"
+  ]
 }
