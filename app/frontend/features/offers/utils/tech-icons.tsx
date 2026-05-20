@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react'
+import { DiJava } from 'react-icons/di'
 import type { SimpleIcon } from 'simple-icons'
 import {
   siAngular,
@@ -5,6 +7,8 @@ import {
   siDjango,
   siDocker,
   siElasticsearch,
+  siElixir,
+  siElm,
   siExpress,
   siFirebase,
   siGit,
@@ -30,6 +34,8 @@ import {
   siRuby,
   siRubyonrails,
   siRust,
+  siScala,
+  siSidekiq,
   siSolid,
   siSupabase,
   siSvelte,
@@ -41,12 +47,23 @@ import {
   siVuedotjs,
 } from 'simple-icons'
 
+interface ReactIconEntry {
+  Component: ComponentType<{ size?: number; color?: string; title?: string }>
+  hex: string
+}
+
+const REACT_ICONS: Record<string, ReactIconEntry> = {
+  java: { Component: DiJava, hex: '007396' },
+}
+
 const ICON_MAP: Record<string, SimpleIcon> = {
   angular: siAngular,
   astro: siAstro,
   django: siDjango,
   docker: siDocker,
   elasticsearch: siElasticsearch,
+  elixir: siElixir,
+  elm: siElm,
   express: siExpress,
   expressjs: siExpress,
   firebase: siFirebase,
@@ -67,6 +84,7 @@ const ICON_MAP: Record<string, SimpleIcon> = {
   nestjs: siNestjs,
   nextjs: siNextdotjs,
   nginx: siNginx,
+  node: siNodedotjs,
   nodejs: siNodedotjs,
   php: siPhp,
   postgresql: siPostgresql,
@@ -80,6 +98,8 @@ const ICON_MAP: Record<string, SimpleIcon> = {
   rails: siRubyonrails,
   rubyonrails: siRubyonrails,
   rust: siRust,
+  scala: siScala,
+  sidekiq: siSidekiq,
   solid: siSolid,
   solidjs: siSolid,
   supabase: siSupabase,
@@ -97,6 +117,13 @@ const ICON_MAP: Record<string, SimpleIcon> = {
 
 export function TechIcon({ name }: { name: string }) {
   const key = name.toLowerCase().replace(/[\s.]/g, '')
+
+  const reactIcon = REACT_ICONS[key]
+  if (reactIcon) {
+    const { Component, hex } = reactIcon
+    return <Component size={14} color={`#${hex}`} title={name} />
+  }
+
   const icon = ICON_MAP[key]
   if (!icon) return null
   return (

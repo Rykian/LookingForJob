@@ -95,6 +95,11 @@ describe('TechIcon', () => {
       'php',
       'django',
       'tailwindcss',
+      'java',
+      'elixir',
+      'elm',
+      'scala',
+      'sidekiq',
     ]
 
     supportedTechs.forEach((tech) => {
