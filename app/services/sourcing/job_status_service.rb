@@ -42,8 +42,21 @@ module Sourcing
 
       def running_count
         Sidekiq::Workers.new.count do |_process_id, _thread_id, work|
-          payload = work.is_a?(Hash) ? work["payload"] : nil
+          payload = extract_payload(work)
           sourcing_job_class?(extract_job_class(payload))
+        end
+      end
+
+      def extract_payload(work)
+        # Sidekiq::Work#job.item returns parsed payload hash; work#payload is JSON string
+        if work.respond_to?(:job)
+          work.job.item
+        elsif work.respond_to?(:payload)
+          work.payload
+        elsif work.is_a?(Hash)
+          work["payload"]
+        else
+          nil
         end
       end
 
