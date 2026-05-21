@@ -19,16 +19,7 @@ module Sourcing
           "[class*='offer-title']",
         ].freeze
 
-        def initialize(fetcher: nil)
-          @fetcher = fetcher || method(:fetch_with_playwright)
-        end
-
-        def call(input)
-          url = input.fetch(:url)
-          @fetcher.call(url: url)
-        end
-
-        private
+        protected
 
         def fetch_with_playwright(url:)
           session = Sourcing::Providers::Cadremploi::SessionManager.load_if_required!

@@ -16,16 +16,7 @@ module Sourcing
         INVALID_PAGE_PATTERN = /(erreur 404|page non trouv[ée]e|not found)/i
         MIN_BODY_TEXT_LENGTH = 400
 
-        def initialize(fetcher: nil)
-          @fetcher = fetcher || method(:fetch_with_playwright)
-        end
-
-        def call(input)
-          url = input.fetch(:url)
-          @fetcher.call(url: url)
-        end
-
-        private
+        protected
 
         def fetch_with_playwright(url:)
           with_playwright_page(url: url, locale: "fr-FR") do |page_obj|
