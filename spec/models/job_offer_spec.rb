@@ -2,14 +2,7 @@ require "rails_helper"
 
 RSpec.describe JobOffer, type: :model do
   def build_job_offer(**attrs)
-    described_class.new(
-      {
-        source: "linkedin",
-        url: "https://example.com/jobs/1",
-        url_hash: "hash-1",
-        last_seen_at: Time.current,
-      }.merge(attrs)
-    )
+    build(:job_offer, **attrs)
   end
 
   describe "enum declarations" do

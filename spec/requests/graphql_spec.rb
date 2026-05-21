@@ -8,28 +8,18 @@ RSpec.describe "GraphQL API", type: :request do
 
   describe "query jobOffers" do
     it "returns paginated offers and applies filters" do
-      discovery_at = 2.days.ago.iso8601
-      first_offer = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/1",
-        url_hash: "hash-1",
+      first_offer = create(:job_offer, :remote,
         last_seen_at: 2.days.ago,
-        location_mode: "remote",
         title: "Backend Engineer",
         steps_details: {
-          "discovery" => { "at" => discovery_at, "version" => 1 },
+          "discovery" => { "at" => 2.days.ago.iso8601, "version" => 1 },
           "score" => { "at" => Time.current.iso8601, "version" => 2 },
-        }
-      )
+        })
 
-      JobOffer.create!(
+      create(:job_offer, :hybrid,
         source: "welcome_to_the_jungle",
-        url: "https://example.com/offers/2",
-        url_hash: "hash-2",
         last_seen_at: 1.day.ago,
-        location_mode: "hybrid",
-        title: "Frontend Engineer"
-      )
+        title: "Frontend Engineer")
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!, $source: String, $locationModes: [LocationModeEnum!]) {
@@ -67,25 +57,8 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "filters offers by firstSeenAt range" do
-      in_range = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/first-seen-in-range",
-        url_hash: "hash-first-seen-in-range",
-        last_seen_at: Time.current,
-        steps_details: {
-          "discovery" => { "at" => 2.days.ago.iso8601, "version" => 1 },
-        }
-      )
-
-      JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/first-seen-old",
-        url_hash: "hash-first-seen-old",
-        last_seen_at: Time.current,
-        steps_details: {
-          "discovery" => { "at" => 20.days.ago.iso8601, "version" => 1 },
-        }
-      )
+      in_range = create(:job_offer, :with_discovery_step, discovered_at: 2.days.ago)
+      create(:job_offer, :with_discovery_step, discovered_at: 20.days.ago)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!, $firstSeenAfter: ISO8601DateTime, $firstSeenBefore: ISO8601DateTime) {
@@ -114,19 +87,8 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "filters offers by lastSeenAt range" do
-      in_range = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/last-seen-in-range",
-        url_hash: "hash-last-seen-in-range",
-        last_seen_at: 1.day.ago
-      )
-
-      JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/last-seen-old",
-        url_hash: "hash-last-seen-old",
-        last_seen_at: 20.days.ago
-      )
+      in_range = create(:job_offer, last_seen_at: 1.day.ago)
+      create(:job_offer, last_seen_at: 20.days.ago)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!, $lastSeenAfter: ISO8601DateTime, $lastSeenBefore: ISO8601DateTime) {
@@ -155,21 +117,8 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "sorts offers by score in descending order" do
-      low = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/sort-low",
-        url_hash: "hash-sort-low",
-        last_seen_at: 2.days.ago,
-        score: 10
-      )
-
-      high = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/sort-high",
-        url_hash: "hash-sort-high",
-        last_seen_at: 1.day.ago,
-        score: 90
-      )
+      low = create(:job_offer, :with_score, value: 10, last_seen_at: 2.days.ago)
+      high = create(:job_offer, :with_score, value: 90, last_seen_at: 1.day.ago)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!, $sortBy: String, $sortDirection: String) {
@@ -198,13 +147,7 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "serializes on-site location mode as ON_SITE" do
-      offer = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/on-site",
-        url_hash: "hash-on-site",
-        last_seen_at: Time.current,
-        location_mode: "on_site"
-      )
+      offer = create(:job_offer, :on_site)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!) {
@@ -217,13 +160,7 @@ RSpec.describe "GraphQL API", type: :request do
         }
       GRAPHQL
 
-      result = post_graphql(
-        query: query,
-        variables: {
-          page: 1,
-          perPage: 25,
-        }
-      )
+      result = post_graphql(query: query, variables: { page: 1, perPage: 25 })
 
       expect(result["errors"]).to be_nil
       node = result.dig("data", "jobOffers", "nodes").find { |n| n["id"] == offer.id.to_s }
@@ -232,21 +169,8 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "excludes rejected offers by default" do
-      visible_offer = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/visible",
-        url_hash: "hash-visible",
-        last_seen_at: Time.current,
-        rejected: false
-      )
-
-      JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/rejected",
-        url_hash: "hash-rejected",
-        last_seen_at: Time.current,
-        rejected: true
-      )
+      visible_offer = create(:job_offer)
+      create(:job_offer, :rejected)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!) {
@@ -259,13 +183,7 @@ RSpec.describe "GraphQL API", type: :request do
         }
       GRAPHQL
 
-      result = post_graphql(
-        query: query,
-        variables: {
-          page: 1,
-          perPage: 25,
-        }
-      )
+      result = post_graphql(query: query, variables: { page: 1, perPage: 25 })
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
@@ -275,18 +193,12 @@ RSpec.describe "GraphQL API", type: :request do
 
   describe "query dashboardMetrics" do
     it "returns counts and source aggregates" do
-      JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/3",
-        url_hash: "hash-3",
-        last_seen_at: Time.current,
-        score: 80,
+      create(:job_offer, :with_score, value: 80,
         steps_details: {
           "fetch"  => { "at" => Time.current.iso8601, "version" => 1 },
           "enrich" => { "at" => Time.current.iso8601, "version" => 1 },
           "score"  => { "at" => Time.current.iso8601, "version" => 1 },
-        }
-      )
+        })
 
       query = <<~GRAPHQL
         query DashboardMetrics {
@@ -401,16 +313,10 @@ RSpec.describe "GraphQL API", type: :request do
 
   describe "steps_details field" do
     it "exposes typed step metadata on a job offer" do
-      offer = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/steps-1",
-        url_hash: "hash-steps-1",
-        last_seen_at: Time.current,
-        steps_details: {
-          "discovery" => { "at" => "2026-03-24T10:00:00Z", "version" => 1 },
-          "fetch" => { "at" => "2026-03-24T10:30:00Z", "version" => 1 },
-        }
-      )
+      offer = create(:job_offer, steps_details: {
+        "discovery" => { "at" => "2026-03-24T10:00:00Z", "version" => 1 },
+        "fetch" => { "at" => "2026-03-24T10:30:00Z", "version" => 1 },
+      })
 
       query = <<~GRAPHQL
         query JobOffer($id: ID!) {
@@ -434,13 +340,7 @@ RSpec.describe "GraphQL API", type: :request do
     end
 
     it "returns nil for rejected offer on jobOffer query" do
-      offer = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/rejected-single",
-        url_hash: "hash-rejected-single",
-        last_seen_at: Time.current,
-        rejected: true
-      )
+      offer = create(:job_offer, :rejected)
 
       query = <<~GRAPHQL
         query JobOffer($id: ID!) {
@@ -459,19 +359,8 @@ RSpec.describe "GraphQL API", type: :request do
 
   describe "mutation recomputeOfferScores" do
     it "enqueues one scoring job per offer" do
-      first = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/recompute-1",
-        url_hash: "hash-recompute-1",
-        last_seen_at: Time.current
-      )
-
-      second = JobOffer.create!(
-        source: "linkedin",
-        url: "https://example.com/offers/recompute-2",
-        url_hash: "hash-recompute-2",
-        last_seen_at: Time.current
-      )
+      first = create(:job_offer)
+      second = create(:job_offer)
 
       allow(Sourcing::ScoringJob).to receive(:perform_later)
 
