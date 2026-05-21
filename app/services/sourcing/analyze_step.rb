@@ -4,10 +4,8 @@ module Sourcing
       raise NotImplementedError, "Sourcing::AnalyzeStep is a contract"
     end
 
-    protected
-
     # Removes style and class attributes from all elements in an HTML string.
-    def clean_attributes(html_string)
+    def self.clean_attributes(html_string)
       return html_string if html_string.nil? || (html_string.respond_to?(:blank?) && html_string.blank?)
 
       doc = Nokogiri::HTML.fragment(html_string)
@@ -16,6 +14,12 @@ module Sourcing
         elem.delete("class")
       end
       doc.to_html.strip
+    end
+
+    protected
+
+    def clean_attributes(html_string)
+      Sourcing::AnalyzeStep.clean_attributes(html_string)
     end
   end
 end
