@@ -2,7 +2,7 @@
 
 module Types
   module Queries
-    module ScoringProfileQuery
+    module ScoringProfile
       extend ActiveSupport::Concern
 
       included do

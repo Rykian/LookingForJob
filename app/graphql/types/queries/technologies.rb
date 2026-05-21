@@ -2,7 +2,7 @@
 
 module Types
   module Queries
-    module TechnologiesQuery
+    module Technologies
       extend ActiveSupport::Concern
 
       included do

@@ -2,7 +2,7 @@
 
 module Types
   module Queries
-    module ProvidersQuery
+    module Providers
       extend ActiveSupport::Concern
 
       included do

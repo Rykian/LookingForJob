@@ -2,7 +2,7 @@
 
 module Types
   module Queries
-    module DashboardMetricsQuery
+    module DashboardMetrics
       extend ActiveSupport::Concern
 
       included do
@@ -11,13 +11,13 @@ module Types
       end
 
       def dashboard_metrics
-        total = JobOffer.count
-        fetched = JobOffer.where("steps_details ? 'fetch'").count
-        enriched = JobOffer.where("steps_details ? 'enrich'").count
-        scored = JobOffer.where("steps_details ? 'score'").count
-        avg_score = JobOffer.where.not(score: nil).average(:score)&.to_f&.round(1)
+        total = ::JobOffer.count
+        fetched = ::JobOffer.where("steps_details ? 'fetch'").count
+        enriched = ::JobOffer.where("steps_details ? 'enrich'").count
+        scored = ::JobOffer.where("steps_details ? 'score'").count
+        avg_score = ::JobOffer.where.not(score: nil).average(:score)&.to_f&.round(1)
 
-        top_sources = JobOffer
+        top_sources = ::JobOffer
           .group(:source)
           .order(Arel.sql("COUNT(*) DESC"))
           .limit(5)

@@ -2,11 +2,12 @@
 
 module Types
   class QueryType < Types::BaseObject
-    include Types::Queries::DashboardMetricsQuery
-    include Types::Queries::JobOffersQuery
-    include Types::Queries::ProvidersQuery
-    include Types::Queries::ScoringProfileQuery
-    include Types::Queries::TechnologiesQuery
+    include Types::Queries::DashboardMetrics
+    include Types::Queries::JobOffer
+    include Types::Queries::JobOffers
+    include Types::Queries::Providers
+    include Types::Queries::ScoringProfile
+    include Types::Queries::Technologies
 
     field :node, Types::NodeType, null: true, description: "Fetches an object given its ID." do
       argument :id, ID, required: true, description: "ID of the object."

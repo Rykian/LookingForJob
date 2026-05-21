@@ -2,7 +2,7 @@
 
 module Types
   module Queries
-    module JobOffersQuery
+    module JobOffers
       extend ActiveSupport::Concern
 
       included do
@@ -33,15 +33,10 @@ module Types
           argument :english_levels_required, [String], required: false,
             description: "Filter by required English level (none, basic, professional, fluent)."
         end
-
-        field :job_offer, Types::JobOfferType, null: true,
-          description: "Find a single job offer by ID." do
-          argument :id, GraphQL::Types::ID, required: true, description: "Job offer ID."
-        end
       end
 
       def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil)
-        scope = JobOffer.where(rejected: false)
+        scope = ::JobOffer.where(rejected: false)
         scope = scope.where(source: source) if source.present?
         scope = scope.where(location_mode: location_modes) if location_modes.present?
 
@@ -91,10 +86,6 @@ module Types
           total_count: total_count,
           total_pages: total_pages,
         }
-      end
-
-      def job_offer(id:)
-        JobOffer.where(rejected: false).find_by(id: id)
       end
 
       private
