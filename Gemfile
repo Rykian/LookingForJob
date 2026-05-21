@@ -67,4 +67,5 @@ end
 group :test do
   gem "rspec-sidekiq"
   gem "shoulda-matchers"
+  gem "simplecov", require: false
 end
