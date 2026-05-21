@@ -133,6 +133,4 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:posted_at]).to eq("last month")
     expect(result[:description_html]).to include("Backend job description")
   end
-
-  # TODO: Add integration tests for analyzing WTTJ job details
 end

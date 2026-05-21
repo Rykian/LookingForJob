@@ -33,6 +33,4 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
     expect(result[:normalized_seniority]).to eq("junior")
     expect(result[:english_level_required]).to eq("professional")
   end
-
-  # TODO: Add integration tests for enriching WTTJ job details
 end

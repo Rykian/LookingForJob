@@ -6,8 +6,6 @@ RSpec.describe Sourcing::Providers::Wttj::FetchStep do
   it "inherits from Sourcing::FetchStep" do
     expect(step).to be_a(Sourcing::FetchStep)
   end
-
-  # TODO: Add integration tests for fetching WTTJ job details
 end
 
 RSpec.describe "Sourcing::Providers::Wttj::FetchStep integration", :integration do
