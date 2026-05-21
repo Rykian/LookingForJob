@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "strict": true,
     "useDefineForClassFields": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
@@ -7,8 +8,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@/*": ["./app/frontend/*"]

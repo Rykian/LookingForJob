@@ -133,9 +133,9 @@ export function TechIcon({ name }: { name: string }) {
       viewBox="0 0 24 24"
       fill={`#${icon.hex}`}
       aria-label={name}
-      title={name}
       role="img"
     >
+      <title>{name}</title>
       <path d={icon.path} />
     </svg>
   )

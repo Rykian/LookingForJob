@@ -9,7 +9,7 @@ describe('TechIcon', () => {
 
     expect(svg).toBeTruthy()
     expect(svg).toHaveAttribute('viewBox', '0 0 24 24')
-    expect(svg).toHaveAttribute('title', 'React')
+    expect(svg?.querySelector('title')?.textContent).toBe('React')
     expect(svg).toHaveAttribute('role', 'img')
   })
 

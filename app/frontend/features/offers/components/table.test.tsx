@@ -112,7 +112,7 @@ describe('Table', () => {
     svgs.forEach((svg) => {
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24')
       expect(svg).toHaveAttribute('fill')
-      expect(svg).toHaveAttribute('title')
+      expect(svg.querySelector('title')?.textContent).toBeTruthy()
       expect(svg).toHaveAttribute('aria-label')
     })
   })
@@ -126,8 +126,7 @@ describe('Table', () => {
 
     const svgs = container.querySelectorAll('svg[role="img"]')
     const firstIcon = svgs[0]
-    expect(firstIcon).toHaveAttribute('title')
-    const title = firstIcon?.getAttribute('title')
+    const title = firstIcon?.querySelector('title')?.textContent
     expect(['React', 'TypeScript', 'Node.js']).toContain(title)
   })
 
