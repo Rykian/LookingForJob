@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_15_084239) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -70,7 +70,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_084239) do
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.string "url_hash", null: false
+    t.index "(((steps_details -> 'discovery'::text) ->> 'at'::text))", name: "index_job_offers_on_discovery_at"
     t.index ["city"], name: "index_job_offers_on_city"
+    t.index ["last_seen_at"], name: "index_job_offers_on_last_seen_at"
+    t.index ["location_mode"], name: "index_job_offers_on_location_mode"
+    t.index ["score"], name: "index_job_offers_on_score"
+    t.index ["source"], name: "index_job_offers_on_source"
     t.index ["url"], name: "index_job_offers_on_url", unique: true
     t.index ["url_hash"], name: "index_job_offers_on_url_hash", unique: true
   end
