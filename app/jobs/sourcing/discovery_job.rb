@@ -55,53 +55,32 @@ module Sourcing
 
     def upsert_offer_url(source:, url:, now:, keyword:)
       url_hash = Digest::SHA256.hexdigest(url)
-      offer = JobOffer.find_or_initialize_by(url_hash: url_hash)
+      discovery_payload = { "at" => now.iso8601, "version" => @discovery_step.class::VERSION }
 
-      offer.source = source
-      offer.url = url
-      merge_keyword!(offer, keyword)
-      if offer.steps_details&.dig("discovery").nil?
-        offer.steps_details = (offer.steps_details || {}).merge(
-          "discovery" => {
-            "at" => now.iso8601,
-            "version" => @discovery_step.class::VERSION,
-          }
+      JobOffer.upsert(
+        {
+          source: source,
+          url: url,
+          url_hash: url_hash,
+          last_seen_at: now,
+          steps_details: { "discovery" => discovery_payload },
+        },
+        unique_by: :url_hash,
+        on_duplicate: Arel.sql(
+          "last_seen_at = GREATEST(job_offers.last_seen_at, EXCLUDED.last_seen_at)"
         )
-      end
-      offer.last_seen_at = now
-      offer.save!
+      )
 
+      offer = JobOffer.find_by!(url_hash: url_hash)
+
+      changed = false
+      if offer.steps_details["discovery"].nil?
+        offer.steps_details = offer.steps_details.merge("discovery" => discovery_payload)
+        changed = true
+      end
+      changed = true if merge_keyword!(offer, keyword)
+      offer.save! if changed
       offer
-    rescue ActiveRecord::RecordNotUnique
-      existing_offer = JobOffer.find_by!(url_hash: url_hash)
-      updated = false
-      if existing_offer.last_seen_at.nil? || existing_offer.last_seen_at < now
-        existing_offer.last_seen_at = now
-        updated = true
-      end
-      updated ||= merge_keyword!(existing_offer, keyword)
-      existing_offer.save! if updated
-      existing_offer
-    rescue ActiveRecord::RecordInvalid => e
-      unless uniqueness_validation_error?(e.record)
-        raise
-      end
-
-      existing_offer = JobOffer.find_by(url_hash: url_hash) || JobOffer.find_by(url: url)
-      raise unless existing_offer
-
-      updated = false
-      if existing_offer.last_seen_at.nil? || existing_offer.last_seen_at < now
-        existing_offer.last_seen_at = now
-        updated = true
-      end
-      updated ||= merge_keyword!(existing_offer, keyword)
-      existing_offer.save! if updated
-      existing_offer
-    end
-
-    def uniqueness_validation_error?(record)
-      record.errors.added?(:url, :taken) || record.errors.added?(:url_hash, :taken)
     end
 
     def merge_keyword!(offer, keyword)
