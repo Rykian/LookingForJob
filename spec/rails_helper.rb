@@ -48,6 +48,10 @@ RSpec.configure do |config|
 
   config.include FactoryBot::Syntax::Methods
 
+  # Skip :integration specs (which hit real provider sites) unless explicitly enabled.
+  # The .github/workflows/scrapers-nightly.yml workflow sets INTEGRATION=true on a schedule.
+  config.filter_run_excluding(integration: true) unless ENV["INTEGRATION"] == "true"
+
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.

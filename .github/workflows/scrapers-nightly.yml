@@ -1,0 +1,67 @@
+name: Scrapers nightly smoke
+
+on:
+  schedule:
+    # 03:17 UTC daily — off-peak to avoid hammering provider sites and CI runners.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrapers_smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: looking_for_job
+          POSTGRES_PASSWORD: looking_for_job
+          POSTGRES_DB: looking_for_job_test
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd="pg_isready -U looking_for_job"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      RAILS_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: looking_for_job
+      DB_PASSWORD: looking_for_job
+      INTEGRATION: 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare test database
+        run: bundle exec rails db:prepare
+
+      - name: Run :integration tagged specs
+        run: bundle exec rspec --tag integration
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Scrapers nightly smoke failed on ${new Date().toISOString().slice(0, 10)}`,
+              body: `The scheduled \`scrapers-nightly\` workflow failed at ${context.runId}.\n\nThis usually means a provider site changed its selectors or markup. Re-run the failing spec locally with \`INTEGRATION=true bundle exec rspec --tag integration\` and update the affected provider.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['bug', 'scraper-drift']
+            })
