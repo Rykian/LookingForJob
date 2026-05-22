@@ -3,15 +3,15 @@ require "rails_helper"
 class MockDiscoveryStep
   VERSION = 1
 
-  def initialize_playwright(input:)
+  def setup(input:)
     { mode: :crawler }
   end
 
-  def crawl_page(input:, playwright_runtime:, page:)
+  def crawl_page(input:, runtime:, page:)
     { discovered_urls: [], has_next_page: false }
   end
 
-  def close_playwright(playwright_runtime:)
+  def teardown(runtime:)
   end
 end
 
@@ -53,9 +53,9 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     }
     runtime = { mode: :crawler }
 
-    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
     allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(result)
-    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
 
     expect do
       described_class.perform_now(
@@ -78,11 +78,11 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "propagates force to the fetch job through the event subscriber" do
     runtime = { mode: :crawler }
-    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
     allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
       { discovered_urls: ["https://example.com/jobs/force"], has_next_page: false }
     )
-    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
 
     described_class.perform_now(
       source: "linkedin",
@@ -98,9 +98,9 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "does not enqueue further discovery jobs (pagination is internal to the step)" do
     runtime = { mode: :crawler }
-    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
     allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return({ discovered_urls: [], has_next_page: false })
-    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
 
     described_class.perform_now(
       source: "linkedin",
@@ -114,11 +114,11 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
   it "uses page number as cursor while crawling" do
     runtime = { mode: :crawler }
-    allow_any_instance_of(MockDiscoveryStep).to receive(:initialize_playwright).and_return(runtime)
-    allow_any_instance_of(MockDiscoveryStep).to receive(:close_playwright)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
 
     page_calls = []
-    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page) do |input: nil, playwright_runtime: nil, page: nil|
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page) do |input: nil, runtime: nil, page: nil|
       page_calls << page
       if page == 1
         { discovered_urls: ["https://example.com/jobs/1"], has_next_page: true }

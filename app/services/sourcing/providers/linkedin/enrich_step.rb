@@ -1,15 +1,23 @@
+# frozen_string_literal: true
+
 require "nokogiri"
 require "ruby_llm"
 
 module Sourcing
   module Providers
     module Linkedin
+      # LLM-backed inference of fields LinkedIn guest pages do not expose:
+      # location_mode (remote/hybrid/on-site), salary, technologies, language,
+      # normalized seniority, English level. Mirrors the cadremploi enrich schema
+      # for consistency across providers.
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 1
+        VERSION = 2
 
+        # LinkedIn guest pages don't expose location_mode, so we infer it here in addition
+        # to the default enriched attributes. EnrichJob reads this constant when slicing
+        # which fields to persist.
         PERSISTED_ATTRIBUTES = %i[
           location_mode
-          city
           hybrid_remote_days_min_per_week
           primary_technologies
           secondary_technologies
@@ -19,7 +27,7 @@ module Sourcing
         ].freeze
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
-          You are a structured data extractor for job offers.
+          You are a structured data extractor for LinkedIn job offers.
           Return ONLY a valid JSON object matching the provided schema.
           Do not include markdown, prose, or explanations.
         PROMPT
@@ -32,9 +40,6 @@ module Sourcing
               location_mode: {
                 type: ["string", "null"],
                 enum: ["remote", "hybrid", "on-site", nil],
-              },
-              city: {
-                type: ["string", "null"],
               },
               hybrid_remote_days_min_per_week: {
                 type: ["integer", "null"],
@@ -64,7 +69,6 @@ module Sourcing
             },
             required: %w[
               location_mode
-              city
               hybrid_remote_days_min_per_week
               primary_technologies
               secondary_technologies
@@ -77,16 +81,14 @@ module Sourcing
           strict: true,
         }.freeze
 
-        # Inherit initialize and generate_with_ruby_llm from parent
-
         def call(input)
           extracted = input.fetch(:extracted)
           payload = @generator.call(
-            model: @llm_config.model,
+            model:    @llm_config.model,
             provider: @llm_config.provider,
-            schema: RESPONSE_SCHEMA,
-            system: SYSTEM_PROMPT,
-            prompt: build_user_prompt(extracted)
+            schema:   RESPONSE_SCHEMA,
+            system:   SYSTEM_PROMPT,
+            prompt:   build_user_prompt(extracted)
           )
 
           normalize_payload(payload, extracted)
@@ -96,14 +98,12 @@ module Sourcing
 
         def build_user_prompt(extracted)
           plain_description = description_html_to_text(extracted[:description_html])
-          topcard_text = extracted[:topcard_text] || ""
 
           <<~PROMPT
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
-
-            Top card metadata:
-            #{topcard_text}
+            City: #{extracted[:city] || "unknown"}
+            Employment type: #{extracted[:employment_type] || "unknown"}
 
             Job description text:
             #{plain_description}
@@ -112,29 +112,18 @@ module Sourcing
 
         def normalize_payload(payload, extracted)
           data = super(payload, extracted).transform_keys(&:to_sym)
-
-          # Only capture hybrid_remote_days if LLM identified hybrid mode
-          hybrid_days = data[:location_mode] == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil
+          # LLM is the source of truth for location_mode on LinkedIn (guest HTML doesn't expose it).
+          location_mode = data[:location_mode]
 
           {
-            location_mode: data[:location_mode],
-            city: data[:city],
-            hybrid_remote_days_min_per_week: hybrid_days,
-            primary_technologies: technology_labels(data[:primary_technologies]),
-            secondary_technologies: technology_labels(data[:secondary_technologies]),
-            offer_language: data[:offer_language],
-            normalized_seniority: data[:normalized_seniority],
-            english_level_required: data[:english_level_required],
+            location_mode:                   location_mode || "on-site",
+            hybrid_remote_days_min_per_week: location_mode == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
+            primary_technologies:            normalize_techs(data[:primary_technologies]),
+            secondary_technologies:          normalize_techs(data[:secondary_technologies]),
+            offer_language:                  data[:offer_language],
+            normalized_seniority:            data[:normalized_seniority],
+            english_level_required:          data[:english_level_required],
           }
-        end
-
-        def technology_labels(values)
-          Array(values).filter_map do |value|
-            next value unless value.is_a?(String)
-
-            label = value.strip
-            label unless label.empty?
-          end.uniq
         end
       end
     end

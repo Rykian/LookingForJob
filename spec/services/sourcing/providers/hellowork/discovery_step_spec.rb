@@ -20,7 +20,7 @@ RSpec.describe Sourcing::Providers::Hellowork::DiscoveryStep do
     end
 
     let(:crawler) do
-      lambda do |input:, playwright_runtime:, page:|
+      lambda do |input:, runtime:, page:|
         { discovered_urls: stub_urls, has_next_page: false }
       end
     end
@@ -50,7 +50,7 @@ RSpec.describe Sourcing::Providers::Hellowork::DiscoveryStep do
     it "stops pagination gracefully when a later page has no job links" do
       allow(step).to receive(:wait_for_any_selector).and_return(nil)
 
-      result = step.crawl_page(input: { keyword: "ruby" }, playwright_runtime: runtime, page: 3)
+      result = step.crawl_page(input: { keyword: "ruby" }, runtime: runtime, page: 3)
 
       expect(result).to eq(discovered_urls: [], has_next_page: false)
     end
@@ -59,7 +59,7 @@ RSpec.describe Sourcing::Providers::Hellowork::DiscoveryStep do
       allow(step).to receive(:wait_for_any_selector).and_return(nil)
 
       expect do
-        step.crawl_page(input: { keyword: "ruby" }, playwright_runtime: runtime, page: 1)
+        step.crawl_page(input: { keyword: "ruby" }, runtime: runtime, page: 1)
       end.to raise_error(RuntimeError, /found no job links/)
     end
   end

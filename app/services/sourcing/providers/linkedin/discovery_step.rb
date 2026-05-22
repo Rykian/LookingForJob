@@ -1,216 +1,120 @@
+# frozen_string_literal: true
+
+require "faraday"
+require "faraday-cookie_jar"
+require "nokogiri"
 require "uri"
 
 module Sourcing
   module Providers
     module Linkedin
-      class DiscoveryContentError < StandardError; end
+      # Discovers LinkedIn job URLs via the public guest API.
+      # No authentication, no Playwright. Pure HTTP + DOM parsing.
+      #
+      # Endpoint: https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search
+      # Returns an HTML fragment with 10 job cards per call, paginated by `start=`.
       class DiscoveryStep < Sourcing::DiscoveryStep
         VERSION = 1
 
-        PAGE_SIZE = 25
-        MAX_PAGES = 10
-        JOB_CARD_SELECTOR = "li.scaffold-layout__list-item[data-occludable-job-id]"
-        JOB_LINK_SELECTOR = "a[href*='/jobs/view/']"
-        NEXT_PAGE_SELECTORS = [
-          "button[aria-label*='Next']",
-          "button[aria-label*='Suivant']",
-          "button.jobs-search-pagination__button--next",
-        ].freeze
+        SEARCH_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+        RESULTS_PER_PAGE = 10
+        MAX_PAGES = 40
+        DEFAULT_LOCATION = "France"
+        USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " \
+                     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        ACCEPT_LANGUAGE = "fr-FR,fr;q=0.9,en;q=0.8"
+        REQUEST_DELAY_RANGE = (1.5..3.0).freeze
 
-        # +crawler+ is an optional callable used in tests. It receives the same
-        # keyword args as the real per-page crawl and must return
-        # { discovered_urls: [...], has_next_page: true/false }.
-        def initialize(crawler: nil)
-          @crawler = crawler
+        # LinkedIn work-type filter param (f_WT): 1=onsite, 2=remote, 3=hybrid.
+        WORK_MODE_PARAM = {
+          "onsite"  => "1",
+          "on-site" => "1",
+          "remote"  => "2",
+          "hybrid"  => "3",
+        }.freeze
+
+        def initialize(connection: nil)
+          @injected_connection = connection
         end
 
-        def initialize_playwright(input:)
-          return { mode: :crawler } if @crawler
+        def setup(input:)
+          # No Playwright runtime — guest endpoints serve full content over plain HTTP.
+          # Returning a hash keeps the contract intact with DiscoveryStep base class.
+          { connection: build_connection }
+        end
 
-          require "playwright"
+        def crawl_page(input:, runtime:, page:)
+          connection = runtime.fetch(:connection)
+          throttle! if page > 1
+          url = build_search_url(keyword: input[:keyword], work_mode: input[:work_mode], page: page)
+          Rails.logger.info("LinkedIn Discovery: GET #{url}")
 
-          session = Sourcing::Providers::Linkedin::SessionManager.load
-          execution = Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path)
-          browser = execution.playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
-          context = browser.new_context(storageState: session)
+          response = connection.get(url)
+          raise "LinkedIn discovery returned HTTP #{response.status} for #{url}" unless response.success?
+
+          discovered_urls = extract_urls(response.body.to_s)
+          Rails.logger.info("LinkedIn Discovery: page=#{page} found=#{discovered_urls.size}")
 
           {
-            mode: :playwright,
-            execution: execution,
-            browser: browser,
-            context: context,
-            closed: false,
-          }
-        rescue Sourcing::Providers::Linkedin::SessionNotFoundError
-          raise
-        rescue StandardError => e
-          source = input[:source]
-          work_mode = input[:work_mode]
-          raise "LinkedIn discovery initialization failed for source=#{source} work_mode=#{work_mode}: #{e.message}"
-        end
-
-        def crawl_every_pages(input:, playwright_runtime:)
-          super
-        end
-
-        def crawl_page(input:, playwright_runtime:, page:)
-          source = input.fetch(:source)
-          keyword = input.fetch(:keyword)
-          work_mode = input.fetch(:work_mode)
-
-          raw = if playwright_runtime[:mode] == :crawler
-            @crawler.call(source: source, keyword: keyword, work_mode: work_mode, page: page)
-          else
-            crawl_page_with_context(
-              context: playwright_runtime.fetch(:context),
-              source: source,
-              keyword: keyword,
-              work_mode: work_mode,
-              page: page
-            )
-          end
-
-          urls = Array(raw[:discovered_urls]).map { |u| clean_url(u) }.uniq
-          has_next_page = raw.fetch(:has_next_page, urls.any? && page < MAX_PAGES) && page < MAX_PAGES
-
-          {
-            discovered_urls: urls,
-            has_next_page: has_next_page,
+            discovered_urls: discovered_urls,
+            has_next_page: !discovered_urls.empty? && page < MAX_PAGES,
           }
         end
 
-        def close_playwright(playwright_runtime:)
-          return if playwright_runtime.nil?
-          return if playwright_runtime[:closed]
-          return if playwright_runtime[:mode] == :crawler
-
-          playwright_runtime[:context]&.close
-          playwright_runtime[:browser]&.close
-          playwright_runtime[:execution]&.stop
-        ensure
-          playwright_runtime[:closed] = true
-        end
-
-        def clean_url(url)
-          uri = URI.parse(url)
-          uri.query = nil
-          uri.fragment = nil
-          uri.to_s
+        def teardown(runtime:)
+          # Faraday connections don't require explicit teardown.
         end
 
         private
 
-        def crawl_page_with_context(context:, source:, keyword:, work_mode:, page:)
-          url = build_search_url(keyword: keyword, work_mode: work_mode, page: page)
-          result = { discovered_urls: [], has_next_page: false }
-
-          page_obj = context.new_page
-
-          begin
-            page_obj.goto(url, waitUntil: "domcontentloaded")
-
-            # Diagnostics for shell/login/challenge/interstitial
-            title = page_obj.title.to_s
-            current_url = page_obj.url.to_s
-            body_text_length = page_obj.evaluate(<<~JS)
-              () => {
-                const body = document && document.body ? document.body.innerText : "";
-                return (body || "").trim().length;
-              }
-            JS
-            html = page_obj.content.to_s
-            compact_html = html.downcase.gsub(/\s+/, "")
-            blocked_pattern = /(checkpoint|challenge|captcha|authwall|login|sign in|security verification)/i
-            if compact_html == "<html><head></head><body></body></html>" || compact_html == "<html><body></body></html>"
-              raise DiscoveryContentError, "LinkedIn discovery produced shell_html for url=#{url}"
-            end
-            if "#{current_url} #{title}".downcase.match?(blocked_pattern)
-              raise DiscoveryContentError, "LinkedIn discovery reached challenge_or_login_page for url=#{url} current_url=#{current_url} title=#{title.inspect}"
-            end
-
-            cards_found = begin
-              page_obj.wait_for_selector(JOB_CARD_SELECTOR, timeout: 15_000, state: "attached")
-              true
-            rescue => e
-              Rails.logger.warn("LinkedIn discovery: no job cards for source=#{source} page=#{page}: #{e.message}")
-              false
-            end
-
-            if !cards_found
-              raise DiscoveryContentError, "LinkedIn discovery found no job cards for url=#{url} title=#{title.inspect} body_text_length=#{body_text_length}"
-            end
-
-            hydrate_search_results(page_obj)
-
-            hrefs = page_obj.evaluate(<<~JS, arg: { card: JOB_CARD_SELECTOR, link: JOB_LINK_SELECTOR })
-              ({ card, link }) => {
-                const base = window.location.origin;
-                const seen = new Set();
-                const urls = [];
-                for (const item of document.querySelectorAll(card)) {
-                  const anchor = item.querySelector(link);
-                  if (anchor && anchor.href) {
-                    if (!seen.has(anchor.href)) { seen.add(anchor.href); urls.push(anchor.href); }
-                  } else {
-                    const jobId = item.getAttribute("data-occludable-job-id");
-                    if (jobId) {
-                      const url = base + "/jobs/view/" + jobId + "/";
-                      if (!seen.has(url)) { seen.add(url); urls.push(url); }
-                    }
-                  }
-                }
-                return urls;
-              }
-            JS
-
-            result[:discovered_urls] = Array(hrefs).uniq
-            result[:has_next_page] = next_page_available?(page_obj) && page < MAX_PAGES
-          ensure
-            page_obj.close rescue nil
+        def build_connection
+          @injected_connection || Faraday.new do |conn|
+            conn.headers["User-Agent"] = USER_AGENT
+            conn.headers["Accept"] = "text/html,*/*"
+            conn.headers["Accept-Language"] = ACCEPT_LANGUAGE
+            conn.use :cookie_jar
+            conn.adapter Faraday.default_adapter
+            conn.options.timeout = 15
+            conn.options.open_timeout = 5
           end
+        end
 
-          result
+        # Jittered pause between LinkedIn requests to stay under guest-endpoint
+        # rate limits. Stubbed in specs.
+        def throttle!
+          sleep(rand(REQUEST_DELAY_RANGE))
         end
 
         def build_search_url(keyword:, work_mode:, page:)
+          start = [(page.to_i - 1) * RESULTS_PER_PAGE, 0].max
           params = {
-            keywords: keyword,
-            start: (page - 1) * PAGE_SIZE,
+            "keywords" => keyword.to_s,
+            "location" => DEFAULT_LOCATION,
+            "start"    => start.to_s,
           }
-
-          # LinkedIn remote/hybrid filter (f_WT) is passed from WORK_MODE.
-          params[:f_WT] = case work_mode
-          when "remote" then "2"
-          when "hybrid" then "3"
-          when "on-site" then "1"
-          else nil
+          if (wt = WORK_MODE_PARAM[work_mode.to_s.downcase])
+            params["f_WT"] = wt
           end
-
-          "https://www.linkedin.com/jobs/search/?#{URI.encode_www_form(params)}"
+          "#{SEARCH_URL}?#{URI.encode_www_form(params)}"
         end
 
-        def hydrate_search_results(page_obj)
-          page_obj.wait_for_timeout(rand(1_000..2_000))
-
-          page_obj.evaluate(<<~JS, arg: JOB_CARD_SELECTOR)
-            async (selector) => {
-              const items = Array.from(document.querySelectorAll(selector));
-              for (const item of items) {
-                item.scrollIntoView({ block: "center" });
-                await new Promise((r) => window.setTimeout(r, 120));
-              }
-            }
-          JS
-
-          page_obj.wait_for_timeout(rand(300..700))
+        def extract_urls(body)
+          doc = Nokogiri::HTML.fragment(body)
+          doc.css("a.base-card__full-link, a.job-search-card__title")
+             .filter_map { |a| canonicalize(a["href"]) }
+             .uniq
         end
 
-        def next_page_available?(page_obj)
-          selector = NEXT_PAGE_SELECTORS.join(", ")
-          btn = page_obj.query_selector(selector)
-          return false unless btn
+        def canonicalize(href)
+          return nil if href.nil? || href.empty?
 
-          btn.get_attribute("disabled").nil?
+          uri = URI.parse(href)
+          # LinkedIn job paths: /jobs/view/<slug>-<id>?... or /jobs/view/<id>/
+          return nil unless uri.path =~ %r{/jobs/view/(?:[^/]*-)?(\d+)/?\z}
+
+          "https://www.linkedin.com/jobs/view/#{Regexp.last_match(1)}/"
+        rescue URI::InvalidURIError
+          nil
         end
       end
     end

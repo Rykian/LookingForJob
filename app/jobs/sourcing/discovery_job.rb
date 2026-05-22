@@ -19,7 +19,7 @@ module Sourcing
 
       @provider = Sourcing::Providers.registry.fetch(source)
       @discovery_step = @provider.discovery_step
-      @playwright_runtime = @discovery_step.initialize_playwright(input: input)
+      @runtime = @discovery_step.setup(input: input)
 
       step :crawl do |job_step|
         page = Integer(job_step.cursor || input.fetch(:page, 1))
@@ -27,7 +27,7 @@ module Sourcing
         loop do
           result = @discovery_step.crawl_page(
             input: input,
-            playwright_runtime: @playwright_runtime,
+            runtime: @runtime,
             page: page
           )
           enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls), keyword: keyword, force: force)
@@ -39,7 +39,7 @@ module Sourcing
         end
       end
 
-      @discovery_step.close_playwright(playwright_runtime: @playwright_runtime)
+      @discovery_step.teardown(runtime: @runtime)
     end
 
     private

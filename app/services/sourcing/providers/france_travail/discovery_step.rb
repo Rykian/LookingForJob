@@ -17,7 +17,7 @@ module Sourcing
 
         # --------------- DiscoveryStep contract ---------------
 
-        def initialize_playwright(input:)
+        def setup(input:)
           return { mode: :crawler } if @crawler
 
           require "playwright"
@@ -36,15 +36,15 @@ module Sourcing
           raise "FranceTravail discovery initialization failed: #{e.message}"
         end
 
-        def crawl_every_pages(input:, playwright_runtime:)
-          discovered_urls = crawl_all_urls(input: input, playwright_runtime: playwright_runtime)
+        def crawl_every_pages(input:, runtime:)
+          discovered_urls = crawl_all_urls(input: input, runtime: runtime)
           { discovered_urls: discovered_urls.uniq }
         end
 
         # DiscoveryJob expects crawl_page with has_next_page. FranceTravail uses
         # load-more on a single URL, so we return all discovered URLs in one pass.
-        def crawl_page(input:, playwright_runtime:, page:)
-          discovered_urls = crawl_all_urls(input: input, playwright_runtime: playwright_runtime)
+        def crawl_page(input:, runtime:, page:)
+          discovered_urls = crawl_all_urls(input: input, runtime: runtime)
 
           {
             discovered_urls: discovered_urls.uniq,
@@ -52,13 +52,13 @@ module Sourcing
           }
         end
 
-        def crawl_all_urls(input:, playwright_runtime:)
+        def crawl_all_urls(input:, runtime:)
           if @crawler
-            result = @crawler.call(input: input, playwright_runtime: playwright_runtime)
+            result = @crawler.call(input: input, runtime: runtime)
             return Array(result[:discovered_urls])
           end
 
-          context = playwright_runtime[:context]
+          context = runtime[:context]
           page_obj = context.new_page
           discovered_urls = []
           clicks = 0
@@ -99,13 +99,13 @@ module Sourcing
           page_obj&.close
         end
 
-        def close_playwright(playwright_runtime:)
-          return if playwright_runtime[:mode] == :crawler
-          return if playwright_runtime[:closed]
+        def teardown(runtime:)
+          return if runtime[:mode] == :crawler
+          return if runtime[:closed]
 
-          playwright_runtime[:browser]&.close
-          playwright_runtime[:execution]&.stop
-          playwright_runtime[:closed] = true
+          runtime[:browser]&.close
+          runtime[:execution]&.stop
+          runtime[:closed] = true
         end
 
         private

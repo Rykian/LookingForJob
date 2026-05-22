@@ -6,20 +6,20 @@ module Sourcing
       true
     end
 
-    def initialize_playwright(input:)
-      raise NotImplementedError, "Sourcing::DiscoveryStep#initialize_playwright must be implemented"
+    def setup(input:)
+      raise NotImplementedError, "Sourcing::DiscoveryStep#setup must be implemented"
     end
 
-    def crawl_page(input:, playwright_runtime:, page:)
+    def crawl_page(input:, runtime:, page:)
       raise NotImplementedError, "Sourcing::DiscoveryStep#crawl_page must be implemented"
     end
 
-    def crawl_every_pages(input:, playwright_runtime:)
+    def crawl_every_pages(input:, runtime:)
       page = Integer(input.fetch(:page, 1))
       discovered_urls = []
 
       loop do
-        result = crawl_page(input: input, playwright_runtime: playwright_runtime, page: page)
+        result = crawl_page(input: input, runtime: runtime, page: page)
         discovered_urls.concat(Array(result[:discovered_urls]))
 
         break unless result.fetch(:has_next_page, false)
@@ -29,17 +29,17 @@ module Sourcing
       { discovered_urls: discovered_urls.uniq }
     end
 
-    def close_playwright(playwright_runtime:)
-      raise NotImplementedError, "Sourcing::DiscoveryStep#close_playwright must be implemented"
+    def teardown(runtime:)
+      raise NotImplementedError, "Sourcing::DiscoveryStep#teardown must be implemented"
     end
 
     def call(input)
-      runtime = initialize_playwright(input: input)
+      runtime = setup(input: input)
 
       begin
-        crawl_every_pages(input: input, playwright_runtime: runtime)
+        crawl_every_pages(input: input, runtime: runtime)
       ensure
-        close_playwright(playwright_runtime: runtime)
+        teardown(runtime: runtime)
       end
     end
   end

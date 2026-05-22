@@ -20,6 +20,7 @@ gem "solid_cache"
 gem "solid_cable"
 gem "sidekiq"
 gem "playwright-ruby-client"
+gem "faraday-cookie_jar"
 gem "ruby_llm"
 gem "dry-schema"
 gem "aws-sdk-s3", require: false

@@ -23,7 +23,7 @@ module Sourcing
           @crawler = crawler
         end
 
-        def initialize_playwright(input:)
+        def setup(input:)
           return { mode: :crawler } if @crawler
 
           require "playwright"
@@ -43,10 +43,10 @@ module Sourcing
           raise "Apec discovery initialization failed: #{e.message}"
         end
 
-        def crawl_page(input:, playwright_runtime:, page:)
-          return @crawler.call(input: input, playwright_runtime: playwright_runtime, page: page) if @crawler
+        def crawl_page(input:, runtime:, page:)
+          return @crawler.call(input: input, runtime: runtime, page: page) if @crawler
 
-          context = playwright_runtime[:context]
+          context = runtime[:context]
           page_obj = context.new_page
           url = build_search_url(keyword: input[:keyword], work_mode: input[:work_mode], page: page)
 
@@ -90,13 +90,13 @@ module Sourcing
           page_obj&.close
         end
 
-        def close_playwright(playwright_runtime:)
-          return if playwright_runtime[:mode] == :crawler
-          return if playwright_runtime[:closed]
+        def teardown(runtime:)
+          return if runtime[:mode] == :crawler
+          return if runtime[:closed]
 
-          playwright_runtime[:browser]&.close
-          playwright_runtime[:execution]&.stop
-          playwright_runtime[:closed] = true
+          runtime[:browser]&.close
+          runtime[:execution]&.stop
+          runtime[:closed] = true
         end
 
         private

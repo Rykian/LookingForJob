@@ -16,7 +16,7 @@ RSpec.describe Sourcing::Providers::Cadremploi::DiscoveryStep do
     end
 
     let(:crawler) do
-      lambda do |input:, playwright_runtime:, page:|
+      lambda do |input:, runtime:, page:|
         { discovered_urls: stub_urls, has_next_page: false }
       end
     end

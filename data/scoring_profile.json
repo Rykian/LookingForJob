@@ -1,7 +1,13 @@
 {
   "$schema": "./scoring_profile.schema.json",
   "technology": {
-    "primary": ["ruby", "nodejs"],
+    "primary": [
+      "ruby",
+      "nodejs",
+      "java",
+      "scala",
+      "elixir"
+    ],
     "secondary": [
       "react",
       "postgresql",
@@ -20,8 +26,16 @@
     ]
   },
   "location": {
-    "preference": ["remote", "hybrid"],
-    "city": ["Nantes", "Rennes", "Laval", "Angers"],
+    "preference": [
+      "remote",
+      "hybrid"
+    ],
+    "city": [
+      "Nantes",
+      "Rennes",
+      "Laval",
+      "Angers"
+    ],
     "hybrid": {
       "remote_days_min_per_week": 2
     }

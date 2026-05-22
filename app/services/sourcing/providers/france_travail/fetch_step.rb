@@ -11,7 +11,7 @@ module Sourcing
 
         protected
 
-        def fetch_with_playwright(url:)
+        def fetch_page(url:)
           with_playwright_page(url: url, locale: "fr-FR") do |page_obj|
             found = wait_for_any_selector(page_obj: page_obj, selectors: [CONTENT_SELECTOR], timeout_ms: 10_000)
             raise "FranceTravail fetch: content did not load for #{url}" unless found

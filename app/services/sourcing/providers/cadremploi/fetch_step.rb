@@ -21,7 +21,7 @@ module Sourcing
 
         protected
 
-        def fetch_with_playwright(url:)
+        def fetch_page(url:)
           session = Sourcing::Providers::Cadremploi::SessionManager.load_if_required!
 
           with_playwright_page(url: url, locale: "fr-FR", storage_state: session) do |page_obj|

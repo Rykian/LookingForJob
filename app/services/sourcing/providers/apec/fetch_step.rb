@@ -19,7 +19,7 @@ module Sourcing
 
         protected
 
-        def fetch_with_playwright(url:)
+        def fetch_page(url:)
           with_playwright_page(url: url, locale: "fr-FR") do |page_obj|
             found = wait_for_any_selector(
               page_obj: page_obj,

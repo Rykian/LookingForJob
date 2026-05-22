@@ -3,7 +3,7 @@ module Sourcing
     include PlaywrightSupport
 
     def initialize(fetcher: nil)
-      @fetcher = fetcher || method(:fetch_with_playwright)
+      @fetcher = fetcher || method(:fetch_page)
     end
 
     def call(input)
@@ -12,8 +12,8 @@ module Sourcing
 
     protected
 
-    def fetch_with_playwright(url:)
-      raise NotImplementedError, "Sourcing::FetchStep subclasses must implement #fetch_with_playwright"
+    def fetch_page(url:)
+      raise NotImplementedError, "Sourcing::FetchStep subclasses must implement #fetch_page"
     end
   end
 end

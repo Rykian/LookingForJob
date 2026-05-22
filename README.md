@@ -62,7 +62,7 @@ Six providers behind a uniform four-step contract
 | [Cadremploi](app/services/sourcing/providers/cadremploi/README.md)                | French job board, session-based crawling         |
 | [France Travail](app/services/sourcing/providers/france_travail/README.md)        | French public employment service                 |
 | [Hellowork](app/services/sourcing/providers/hellowork/README.md)                  | General French job board                         |
-| [LinkedIn](app/services/sourcing/providers/linkedin/README.md)                    | Login-gated; Playwright session reuse            |
+| [LinkedIn](app/services/sourcing/providers/linkedin/README.md)                    | Public guest endpoints over plain HTTP (no auth) |
 | [Welcome to the Jungle](app/services/sourcing/providers/wttj/README.md)           | Tech-leaning French board                        |
 
 Adding a new provider = drop four files under `app/services/sourcing/providers/<name>/`
