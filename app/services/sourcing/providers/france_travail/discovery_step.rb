@@ -67,7 +67,15 @@ module Sourcing
           Rails.logger.info("FranceTravail Discovery: navigating to #{url}")
           page_obj.goto(url, waitUntil: "domcontentloaded")
           handle_cookie_consent(page_obj)
-          page_obj.wait_for_selector(RESULTS_SELECTOR, timeout: 10_000)
+
+          # Wait for results list; if it doesn't appear within timeout, assume no results found
+          # (e.g., searching for "Elixir" when no jobs match the criteria)
+          begin
+            page_obj.wait_for_selector(RESULTS_SELECTOR, timeout: 5_000)
+          rescue StandardError => e
+            Rails.logger.info("FranceTravail Discovery: no results found for keyword=#{input[:keyword]}")
+            return []
+          end
 
           loop do
             batch = page_obj.eval_on_selector_all(

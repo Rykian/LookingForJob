@@ -41,4 +41,18 @@ RSpec.describe Sourcing::Providers::FranceTravail::DiscoveryStep do
       expect { step.teardown(runtime: { mode: :crawler }) }.not_to raise_error
     end
   end
+
+  describe "empty search results" do
+    it "returns empty array when no results found" do
+      empty_crawler = ->(input:, runtime:) do
+        # Simulate France Travail returning no results (e.g., searching for "Elixir")
+        { discovered_urls: [] }
+      end
+      step = described_class.new(crawler: empty_crawler)
+      runtime = step.setup(input: {})
+      result = step.crawl_every_pages(input: {}, runtime: runtime)
+
+      expect(result[:discovered_urls]).to eq([])
+    end
+  end
 end
