@@ -19,6 +19,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "solid_cache"
 gem "solid_cable"
 gem "sidekiq"
+gem "sidekiq-throttled"
 gem "playwright-ruby-client"
 gem "faraday-cookie_jar"
 gem "ruby_llm"

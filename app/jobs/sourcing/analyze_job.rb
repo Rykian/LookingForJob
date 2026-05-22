@@ -33,7 +33,11 @@ module Sourcing
       current_version = provider.analyze_step.class::VERSION
 
       if should_skip_step?(offer, "analyze", current_version, force:)
-        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ANALYZED, offer_id: offer.id, force:)
+        Sourcing::PipelineEvents.notify(
+          Sourcing::PipelineEvents::OFFER_ANALYZED,
+          offer_id:,
+          **options
+        )
         return
       end
 
@@ -51,7 +55,11 @@ module Sourcing
         })
       ))
 
-      Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ANALYZED, offer_id: offer.id, force:)
+      Sourcing::PipelineEvents.notify(
+        Sourcing::PipelineEvents::OFFER_ANALYZED,
+        offer_id:,
+        **options
+      )
     end
 
     private

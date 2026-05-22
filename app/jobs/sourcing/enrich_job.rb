@@ -22,7 +22,11 @@ module Sourcing
       current_version = provider.enrich_step.class::VERSION
 
       if should_skip_step?(offer, "enrich", current_version, force:)
-        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ENRICHED, offer_id: offer.id, force:)
+        Sourcing::PipelineEvents.notify(
+          Sourcing::PipelineEvents::OFFER_ENRICHED,
+          offer_id:,
+          **options
+        )
         return
       end
 
@@ -53,7 +57,11 @@ module Sourcing
           })
         )
       )
-      Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_ENRICHED, offer_id: offer.id, force:)
+      Sourcing::PipelineEvents.notify(
+        Sourcing::PipelineEvents::OFFER_ENRICHED,
+        offer_id:,
+        **options
+      )
     end
 
     private

@@ -23,7 +23,7 @@ module Sourcing
         USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " \
                      "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
         ACCEPT_LANGUAGE = "fr-FR,fr;q=0.9,en;q=0.8"
-        REQUEST_DELAY_RANGE = (1.5..3.0).freeze
+        REQUEST_DELAY_RANGE = (1.5..10).freeze
 
         # LinkedIn work-type filter param (f_WT): 1=onsite, 2=remote, 3=hybrid.
         WORK_MODE_PARAM = {

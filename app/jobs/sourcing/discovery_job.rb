@@ -49,7 +49,10 @@ module Sourcing
 
       discovered_urls.each do |url|
         offer = upsert_offer_url(source: source, url: url, now: discovered_at, keyword:)
-        Sourcing::PipelineEvents.notify(Sourcing::PipelineEvents::OFFER_DISCOVERED, offer_id: offer.id, force:)
+        Sourcing::PipelineEvents.notify(
+          Sourcing::PipelineEvents::OFFER_DISCOVERED,
+          offer_id: offer.id, source:, force:
+        )
       end
     end
 

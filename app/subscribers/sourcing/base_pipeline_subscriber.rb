@@ -2,7 +2,11 @@ module Sourcing
   class BasePipelineSubscriber
     def emit(event)
       payload = event.fetch(:payload)
-      job_class.perform_later(payload.fetch(:offer_id), force: payload.fetch(:force, false))
+      job_class.perform_later(
+        payload.fetch(:offer_id),
+        source: payload[:source],
+        force: payload.fetch(:force, false)
+      )
     end
 
     private

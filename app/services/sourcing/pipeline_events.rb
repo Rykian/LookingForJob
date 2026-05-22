@@ -7,8 +7,8 @@ module Sourcing
 
     module_function
 
-    def notify(name, offer_id:, force: false)
-      Rails.event.notify(name, offer_id:, force:)
+    def notify(name, offer_id:, force: false, **options)
+      Rails.event.notify(name, offer_id:, force:, **options)
     end
   end
 end
