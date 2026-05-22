@@ -42,7 +42,7 @@ gem "thruster", require: false
 gem "vite_rails"
 
 # GraphQL API
-gem "graphql", "~> 2.3"
+gem "graphql", "~> 2.6"
 gem "redis" # For subscriptions with Redis adapter
 
 gem "rails-ai-context", group: :development
