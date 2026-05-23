@@ -20,6 +20,7 @@ module Sourcing
       @provider = Sourcing::Providers.registry.fetch(source)
       @discovery_step = @provider.discovery_step
       @runtime = @discovery_step.setup(input: input)
+      @seen_url_hashes = Set.new
 
       step :crawl do |job_step|
         page = Integer(job_step.cursor || input.fetch(:page, 1))
@@ -48,16 +49,15 @@ module Sourcing
       discovered_at = Time.current
 
       discovered_urls.each do |url|
-        offer = upsert_offer_url(source: source, url: url, now: discovered_at, keyword:)
-        Sourcing::PipelineEvents.notify(
-          Sourcing::PipelineEvents::OFFER_DISCOVERED,
-          offer_id: offer.id, source:, force:
-        )
+        url_hash = Digest::SHA256.hexdigest(url)
+        next unless @seen_url_hashes.add?(url_hash)
+
+        offer = upsert_offer_url(source: source, url: url, url_hash: url_hash, now: discovered_at, keyword:)
+        Sourcing::Pipeline.advance(offer, force: force)
       end
     end
 
-    def upsert_offer_url(source:, url:, now:, keyword:)
-      url_hash = Digest::SHA256.hexdigest(url)
+    def upsert_offer_url(source:, url:, url_hash:, now:, keyword:)
       discovery_payload = { "at" => now.iso8601, "version" => @discovery_step.class::VERSION }
 
       JobOffer.upsert(

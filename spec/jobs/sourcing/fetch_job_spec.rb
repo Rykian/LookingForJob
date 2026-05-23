@@ -53,7 +53,9 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "fetches html and stores it on the offer" do
+  it "fetches html and stores it on the offer, then advances the pipeline" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/123",
@@ -69,16 +71,19 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     expect(offer.steps_details["fetch"]).to include("version" => 1)
     expect(offer.steps_details.dig("fetch", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
-    expect(queued.size).to eq(1)
-    expect(queued.first[:args].first).to eq(offer.id)
+    expect(Sourcing::Pipeline).to have_received(:advance).with(
+      satisfy { |o| o.id == offer.id },
+      force: false
+    )
   end
 
   it "returns when offer is missing" do
     expect { described_class.perform_now(-1) }.not_to raise_error
   end
 
-  it "fails loudly and does not enqueue analyze when provider raises fetch content error" do
+  it "fails loudly and does not advance pipeline when provider raises fetch content error" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     error_registry = Sourcing::ProviderRegistry.new
     error_registry.register(
       "linkedin",
@@ -105,8 +110,7 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     offer.reload
     expect(offer.html_file).not_to be_attached
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::AnalyzeJob }
-    expect(queued).to be_empty
+    expect(Sourcing::Pipeline).not_to have_received(:advance)
   end
 
   describe "version checking behavior" do

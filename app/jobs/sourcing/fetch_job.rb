@@ -1,7 +1,6 @@
 module Sourcing
   class FetchJob < BaseJob
     include Sourcing::Concerns::OfferJobArguments
-    include Sourcing::Concerns::VersionChecking
     include Sidekiq::Throttled::Job
 
     sidekiq_throttle(
@@ -19,12 +18,8 @@ module Sourcing
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.fetch_step.class::VERSION
 
-      if should_skip_step?(offer, "fetch", current_version, force:)
-        Sourcing::PipelineEvents.notify(
-          Sourcing::PipelineEvents::OFFER_FETCHED,
-          offer_id:,
-          **options,
-        )
+      if Sourcing::Pipeline.should_skip?(offer, "fetch", force:)
+        Sourcing::Pipeline.advance(offer, force:)
         return
       end
 
@@ -52,11 +47,7 @@ module Sourcing
         })
       )
 
-      Sourcing::PipelineEvents.notify(
-        Sourcing::PipelineEvents::OFFER_FETCHED,
-        offer_id:,
-        **options,
-      )
+      Sourcing::Pipeline.advance(offer, force:)
     end
   end
 end

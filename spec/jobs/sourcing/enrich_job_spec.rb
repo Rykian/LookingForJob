@@ -59,7 +59,9 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "stores enrichment fields" do
+  it "stores enrichment fields and advances the pipeline" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/123",
@@ -85,9 +87,10 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect(offer.steps_details["enrich"]).to include("version" => 1)
     expect(offer.steps_details.dig("enrich", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::ScoringJob }
-    expect(queued.size).to eq(1)
-    expect(queued.first[:args].first).to eq(offer.id)
+    expect(Sourcing::Pipeline).to have_received(:advance).with(
+      satisfy { |o| o.id == offer.id },
+      force: false
+    )
   end
 
   it "returns when offer is missing or has no html" do
@@ -95,6 +98,8 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
   end
 
   it "returns early when offer is already rejected" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/rejected-enrich",
@@ -112,8 +117,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
 
     described_class.perform_now(offer.id)
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::ScoringJob }
-    expect(queued).to be_empty
+    expect(Sourcing::Pipeline).not_to have_received(:advance)
   end
 
   describe "version checking behavior" do

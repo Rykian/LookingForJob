@@ -1,7 +1,6 @@
 module Sourcing
   class EnrichJob < BaseJob
     include Sourcing::Concerns::OfferJobArguments
-    include Sourcing::Concerns::VersionChecking
 
     DEFAULT_ENRICHED_ATTRIBUTES = %i[
       hybrid_remote_days_min_per_week
@@ -21,12 +20,8 @@ module Sourcing
       provider = Sourcing::Providers.registry.fetch(offer.source)
       current_version = provider.enrich_step.class::VERSION
 
-      if should_skip_step?(offer, "enrich", current_version, force:)
-        Sourcing::PipelineEvents.notify(
-          Sourcing::PipelineEvents::OFFER_ENRICHED,
-          offer_id:,
-          **options
-        )
+      if Sourcing::Pipeline.should_skip?(offer, "enrich", force:)
+        Sourcing::Pipeline.advance(offer, force:)
         return
       end
 
@@ -57,11 +52,7 @@ module Sourcing
           })
         )
       )
-      Sourcing::PipelineEvents.notify(
-        Sourcing::PipelineEvents::OFFER_ENRICHED,
-        offer_id:,
-        **options
-      )
+      Sourcing::Pipeline.advance(offer, force:)
     end
 
     private

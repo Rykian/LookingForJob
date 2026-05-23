@@ -46,7 +46,9 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     ActiveJob::Base.queue_adapter = previous_adapter
   end
 
-  it "upserts all discovered urls and enqueues fetch jobs" do
+  it "upserts all discovered urls and advances each one" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     result = {
       discovered_urls: ["https://example.com/jobs/1", "https://example.com/jobs/2"],
       has_next_page: false,
@@ -65,18 +67,21 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
       )
     end.to change(JobOffer, :count).by(2)
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
-    expect(queued.size).to eq(2)
-
     offer = JobOffer.find_by(url: "https://example.com/jobs/1")
-    expect(queued.map { |job| job[:args].first }).to include(offer.id)
-    expect(queued.first[:args].second).to include("force" => false)
     expect(offer.steps_details["discovery"]).to include("version" => 1)
     expect(offer.steps_details.dig("discovery", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
     expect(offer.keywords).to eq(["ruby"])
+
+    expect(Sourcing::Pipeline).to have_received(:advance).exactly(2).times
+    expect(Sourcing::Pipeline).to have_received(:advance).with(
+      satisfy { |o| o.url == "https://example.com/jobs/1" },
+      force: false
+    )
   end
 
-  it "propagates force to the fetch job through the event subscriber" do
+  it "propagates force when advancing the pipeline" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     runtime = { mode: :crawler }
     allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
     allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
@@ -91,9 +96,26 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
       force: true
     )
 
-    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::FetchJob }
-    expect(queued.size).to eq(1)
-    expect(queued.first[:args].second).to include("force" => true)
+    expect(Sourcing::Pipeline).to have_received(:advance).with(anything, force: true).once
+  end
+
+  it "deduplicates urls returned across pages within a single run" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
+    runtime = { mode: :crawler }
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page) do |input: nil, runtime: nil, page: nil|
+      if page == 1
+        { discovered_urls: ["https://example.com/jobs/dup", "https://example.com/jobs/unique-1"], has_next_page: true }
+      else
+        { discovered_urls: ["https://example.com/jobs/dup", "https://example.com/jobs/unique-2"], has_next_page: false }
+      end
+    end
+
+    described_class.perform_now(source: "linkedin", keyword: "ruby", work_mode: "remote")
+
+    expect(Sourcing::Pipeline).to have_received(:advance).exactly(3).times
   end
 
   it "does not enqueue further discovery jobs (pagination is internal to the step)" do
@@ -113,6 +135,8 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
   end
 
   it "uses page number as cursor while crawling" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
     runtime = { mode: :crawler }
     allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return(runtime)
     allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
