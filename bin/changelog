@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Generate or preview the changelog using git-cliff.
+#
+# Usage:
+#   bin/changelog              # preview unreleased changes
+#   bin/changelog --save       # write to CHANGELOG.md
+#   bin/changelog --tag v1.2.0 # preview for a specific release tag
+#   bin/changelog --bump       # auto-detect next version and write CHANGELOG.md
+
+set -euo pipefail
+
+if ! command -v git-cliff &>/dev/null; then
+  echo "git-cliff not found. Install with: brew install git-cliff" >&2
+  exit 1
+fi
+
+case "${1:-}" in
+  --save)
+    git cliff --output CHANGELOG.md
+    echo "CHANGELOG.md updated."
+    ;;
+  --bump)
+    git cliff --bump --output CHANGELOG.md
+    echo "CHANGELOG.md updated (version auto-bumped)."
+    ;;
+  --tag)
+    git cliff --tag "${2:?Usage: bin/changelog --tag v1.2.0}"
+    ;;
+  *)
+    git cliff
+    ;;
+esac
