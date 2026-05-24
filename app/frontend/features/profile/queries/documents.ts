@@ -13,3 +13,11 @@ export const UPDATE_SCORING_PROFILE_MUTATION = gql`
     }
   }
 `
+
+export const RELOAD_SCORING_PROFILE_MUTATION = gql`
+  mutation ReloadScoringProfile {
+    reloadScoringProfile(input: {}) {
+      profile
+    }
+  }
+`

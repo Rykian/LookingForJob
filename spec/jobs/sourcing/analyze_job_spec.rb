@@ -88,6 +88,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
+      "analyze",
       force: false
     )
   end
@@ -155,8 +156,27 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
 
   describe "version checking behavior" do
     let(:step_name) { "analyze" }
-    let(:next_job_class) { Sourcing::EnrichJob }
-    let(:mock_step_class) { MockAnalyzeStep }
+    let(:current_version) { 1 }
+    let(:extra_offer_attrs) { {} }
+
+    def prepare_offer(offer)
+      offer.html_file.attach(
+        io: StringIO.new("<html>content</html>"),
+        filename: "html_content.html",
+        content_type: "text/html"
+      )
+    end
+
+    def stub_step_not_to_be_called
+      expect_any_instance_of(MockAnalyzeStep).not_to receive(:call)
+    end
+
+    def stub_step_to_be_called_once
+      expect_any_instance_of(MockAnalyzeStep).to receive(:call).once.and_return(
+        title: "Senior Backend Engineer",
+        company: "NewCorp"
+      )
+    end
 
     it_behaves_like "skippable sourcing job with version checking"
   end

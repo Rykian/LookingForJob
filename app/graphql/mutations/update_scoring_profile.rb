@@ -15,6 +15,7 @@ module Mutations
       Sourcing::ScoringProfile.validate!(profile.deep_stringify_keys)
       json = JSON.pretty_generate(profile.deep_stringify_keys)
       File.write(Sourcing::ScoringProfile::PROFILE_PATH, json)
+      Sourcing::ScoringProfile.reload!
       { profile: profile }
     rescue RuntimeError => e
       raise GraphQL::ExecutionError, e.message

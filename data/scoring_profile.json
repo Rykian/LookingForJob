@@ -30,14 +30,13 @@
       "remote",
       "hybrid"
     ],
-    "city": [
-      "Nantes",
-      "Rennes",
-      "Laval",
-      "Angers"
-    ],
     "hybrid": {
       "remote_days_min_per_week": 2
+    },
+    "commute": {
+      "origin_city": "Moisdon-la-Rivière",
+      "max_minutes": 90,
+      "mode": "driving"
     }
   }
 }

@@ -20,6 +20,11 @@ module Sourcing
         version: ->(provider) { provider.enrich_step.class::VERSION },
       },
       {
+        name: "commute",
+        job: Sourcing::CommuteJob,
+        version: ->(_provider) { Sourcing::CommuteStep::VERSION },
+      },
+      {
         name: "score",
         job: Sourcing::ScoringJob,
         version: ->(_provider) { Sourcing::ScoreStep::VERSION },
@@ -32,9 +37,20 @@ module Sourcing
     # VERSION. Returns the step name that was enqueued, or nil when the offer is
     # already current. force is forwarded to the enqueued job; it does not
     # affect step selection (a step is only enqueued when it's outdated).
-    def advance(offer, force: false)
+    #
+    # current_step: when supplied with only_forward: true, restricts the search
+    # to steps after current_step. Jobs that call advance as a hand-off use this
+    # to guarantee they never re-enqueue a step they just completed.
+    def advance(offer, current_step, force: false, only_forward: true)
       provider = Sourcing::Providers.registry.fetch(offer.source)
-      step = STEPS.find { |s| outdated?(offer, s, provider) }
+
+      steps = STEPS
+      if only_forward && current_step
+        idx = steps.index { |s| s[:name] == current_step.to_s }
+        steps = steps[(idx + 1)..] if idx
+      end
+
+      step = steps.find { |s| outdated?(offer, s, provider) }
       return nil unless step
 
       step[:job].perform_later(offer.id, source: offer.source, force: force)

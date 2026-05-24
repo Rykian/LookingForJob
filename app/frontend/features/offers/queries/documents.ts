@@ -52,6 +52,8 @@ export const JOB_OFFERS_QUERY = gql`
         city
         locationMode
         score
+        commuteDurationMinutes
+        commuteWithinMax
         firstSeenAt
         primaryTechnologies
       }

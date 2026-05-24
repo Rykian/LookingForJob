@@ -11,7 +11,7 @@ module Types
       end
 
       def scoring_profile
-        Sourcing::ScoringProfile.load
+        context[:scoring_profile] || Sourcing::ScoringProfile.load
       end
     end
   end

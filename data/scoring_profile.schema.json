@@ -50,15 +50,6 @@
           "description": "Ordered list of preferred work modes, ranked from most to least preferred. Rank 0 is most preferred (100 points), rank 1 deducts 20 points, rank 2 deducts 40 points. Modes not in this list score 0 points.",
           "examples": [["remote", "hybrid", "on-site"]]
         },
-        "city": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "description": "Default allowed cities (case-insensitive substring matching). Used for all work modes unless overridden. Required if any work mode depends on location (hybrid or on-site).",
-          "examples": [["Nantes", "Rennes", "Laval"]]
-        },
         "hybrid": {
           "type": "object",
           "description": "Specific constraints and preferences for hybrid roles.",
@@ -71,31 +62,32 @@
               "maximum": 5,
               "description": "Minimum acceptable remote days per week. Offers with fewer remote days score 0. Offers with more remote days deduct (5 - offer_days) * 10 points as a preference penalty.",
               "examples": [3]
-            },
-            "city": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              },
-              "description": "Optional: Allowed cities for hybrid offers (case-insensitive substring matching). Overrides location.city if provided. If omitted, falls back to location.city.",
-              "examples": [["Nantes", "Rennes"]]
             }
           }
         },
-        "on_site": {
+        "commute": {
           "type": "object",
-          "description": "Specific constraints and preferences for on-site roles.",
+          "description": "Optional commute filter. When present, every non-remote offer is geocoded and travel time from origin_city is computed; offers above max_minutes lose 100 points.",
+          "required": ["origin_city", "max_minutes", "mode"],
           "additionalProperties": false,
           "properties": {
-            "city": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              },
-              "description": "Optional: Allowed cities for on-site offers (case-insensitive substring matching). Overrides location.city if provided. If omitted, falls back to location.city.",
-              "examples": [["Paris", "Lyon"]]
+            "origin_city": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Home city used as the commute origin. Geocoded once via Mapbox.",
+              "examples": ["Moisdon-la-Rivière"]
+            },
+            "max_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum acceptable one-way commute in minutes. Offers above this lose 100 points.",
+              "examples": [90]
+            },
+            "mode": {
+              "type": "string",
+              "enum": ["driving", "cycling", "walking"],
+              "description": "Mapbox Directions profile. Mapbox has no public transit routing.",
+              "examples": ["driving"]
             }
           }
         }

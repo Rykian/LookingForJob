@@ -89,6 +89,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
 
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
+      "enrich",
       force: false
     )
   end
@@ -122,8 +123,27 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
 
   describe "version checking behavior" do
     let(:step_name) { "enrich" }
-    let(:next_job_class) { Sourcing::ScoringJob }
-    let(:mock_step_class) { MockEnrichStep }
+    let(:current_version) { 1 }
+    let(:extra_offer_attrs) { {} }
+
+    def prepare_offer(offer)
+      offer.html_file.attach(
+        io: StringIO.new("<html>content</html>"),
+        filename: "html_content.html",
+        content_type: "text/html"
+      )
+    end
+
+    def stub_step_not_to_be_called
+      expect_any_instance_of(MockEnrichStep).not_to receive(:call)
+    end
+
+    def stub_step_to_be_called_once
+      expect_any_instance_of(MockEnrichStep).to receive(:call).once.and_return(
+        normalized_seniority: "staff",
+        primary_technologies: ["Rust", "Go"]
+      )
+    end
 
     it_behaves_like "skippable sourcing job with version checking"
   end

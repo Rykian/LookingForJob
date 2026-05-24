@@ -53,7 +53,7 @@ module Sourcing
         next unless @seen_url_hashes.add?(url_hash)
 
         offer = upsert_offer_url(source: source, url: url, url_hash: url_hash, now: discovered_at, keyword:)
-        Sourcing::Pipeline.advance(offer, force: force)
+        Sourcing::Pipeline.advance(offer, "discovery", force:)
       end
     end
 

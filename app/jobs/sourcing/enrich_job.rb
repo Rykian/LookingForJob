@@ -21,7 +21,7 @@ module Sourcing
       current_version = provider.enrich_step.class::VERSION
 
       if Sourcing::Pipeline.should_skip?(offer, "enrich", force:)
-        Sourcing::Pipeline.advance(offer, force:)
+        Sourcing::Pipeline.advance(offer, "enrich", force:)
         return
       end
 
@@ -52,7 +52,7 @@ module Sourcing
           })
         )
       )
-      Sourcing::Pipeline.advance(offer, force:)
+      Sourcing::Pipeline.advance(offer, "enrich", force:)
     end
 
     private

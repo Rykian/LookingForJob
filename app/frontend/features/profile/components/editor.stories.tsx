@@ -31,11 +31,15 @@ export const Default: Story = {
   args: {
     text: sampleJson,
     saving: false,
+    reloading: false,
     parseError: null,
     saveError: false,
+    reloadError: false,
     savedMessage: '',
+    reloadedMessage: '',
     onTextChange: () => {},
     onSave: () => {},
+    onReload: () => {},
   },
 }
 
@@ -43,6 +47,13 @@ export const SaveSuccess: Story = {
   args: {
     ...Default.args,
     savedMessage: 'Scoring profile updated.',
+  },
+}
+
+export const ReloadSuccess: Story = {
+  args: {
+    ...Default.args,
+    reloadedMessage: 'Profile reloaded from file.',
   },
 }
 

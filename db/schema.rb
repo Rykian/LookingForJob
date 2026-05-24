@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_23_155947) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,8 +42,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "commute_cities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "geocoded_at"
+    t.decimal "latitude", precision: 9, scale: 6
+    t.decimal "longitude", precision: 9, scale: 6
+    t.string "name", null: false
+    t.string "normalized_name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["normalized_name"], name: "index_commute_cities_on_normalized_name", unique: true
+  end
+
+  create_table "commute_durations", force: :cascade do |t|
+    t.datetime "computed_at", null: false
+    t.datetime "created_at", null: false
+    t.bigint "destination_city_id", null: false
+    t.integer "duration_minutes", null: false
+    t.string "mode", null: false
+    t.bigint "origin_city_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["destination_city_id"], name: "index_commute_durations_on_destination_city_id"
+    t.index ["origin_city_id", "destination_city_id", "mode"], name: "idx_commute_durations_triplet", unique: true
+    t.index ["origin_city_id"], name: "index_commute_durations_on_origin_city_id"
+  end
+
   create_table "job_offers", force: :cascade do |t|
     t.string "city"
+    t.bigint "commute_city_id"
     t.string "company"
     t.datetime "created_at", null: false
     t.text "description_html"
@@ -72,6 +97,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
     t.string "url_hash", null: false
     t.index "(((steps_details -> 'discovery'::text) ->> 'at'::text))", name: "index_job_offers_on_discovery_at"
     t.index ["city"], name: "index_job_offers_on_city"
+    t.index ["commute_city_id"], name: "index_job_offers_on_commute_city_id"
     t.index ["last_seen_at"], name: "index_job_offers_on_last_seen_at"
     t.index ["location_mode"], name: "index_job_offers_on_location_mode"
     t.index ["score"], name: "index_job_offers_on_score"
@@ -82,4 +108,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "commute_durations", "commute_cities", column: "destination_city_id"
+  add_foreign_key "commute_durations", "commute_cities", column: "origin_city_id"
+  add_foreign_key "job_offers", "commute_cities"
 end

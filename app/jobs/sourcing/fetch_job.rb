@@ -19,7 +19,7 @@ module Sourcing
       current_version = provider.fetch_step.class::VERSION
 
       if Sourcing::Pipeline.should_skip?(offer, "fetch", force:)
-        Sourcing::Pipeline.advance(offer, force:)
+        Sourcing::Pipeline.advance(offer, "fetch", force:)
         return
       end
 
@@ -47,7 +47,7 @@ module Sourcing
         })
       )
 
-      Sourcing::Pipeline.advance(offer, force:)
+      Sourcing::Pipeline.advance(offer, "fetch", force:)
     end
   end
 end

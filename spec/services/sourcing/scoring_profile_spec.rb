@@ -12,29 +12,9 @@ RSpec.describe Sourcing::ScoringProfile do
           },
           "location": {
             "preference": ["remote", "hybrid", "on-site"],
-            "city": ["Nantes"],
             "hybrid": {
-              "city": ["Nantes"],
               "remote_days_min_per_week": 3
-            },
-            "on_site": {
-              "city": ["Paris"]
             }
-          },
-          "penalties": {
-            "unknown_primary_required": 20,
-            "preference_rank_step": 40,
-            "not_in_preference": 100,
-            "city_not_allowed": 100
-          },
-          "bonuses": {
-            "secondary_match": 10,
-            "secondary_on_primary_match": 10
-          },
-          "weights": {
-            "technology": 70,
-            "location_mode": 20,
-            "location_city": 10
           }
         }
       JSON
@@ -44,8 +24,7 @@ RSpec.describe Sourcing::ScoringProfile do
       expect(profile[:technology][:primary]).to eq(["ruby"])
       expect(profile[:technology][:secondary]).to eq(["postgresql"])
       expect(profile[:location][:preference]).to eq(["remote", "hybrid", "on-site"])
-      expect(profile[:location][:hybrid][:city]).to eq(["Nantes"])
-      expect(profile[:weights][:technology]).to eq(70)
+      expect(profile[:location][:hybrid][:remote_days_min_per_week]).to eq(3)
     ensure
       File.delete(path) if File.exist?(path)
     end
@@ -88,28 +67,54 @@ RSpec.describe Sourcing::ScoringProfile do
             "primary": ["ruby"],
             "secondary": ["postgresql"]
           },
-          "location": {
-            "city": ["Nantes"]
-          },
-          "penalties": {
-            "unknown_primary_required": 20,
-            "preference_rank_step": 40,
-            "not_in_preference": 100,
-            "city_not_allowed": 100
-          },
-          "bonuses": {
-            "secondary_match": 10,
-            "secondary_on_primary_match": 10
-          },
-          "weights": {
-            "technology": 70,
-            "location_mode": 20,
-            "location_city": 10
-          }
+          "location": {}
         }
       JSON
 
       expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing location.preference/)
+    ensure
+      File.delete(path) if File.exist?(path)
+    end
+
+    it "accepts a valid commute section nested under location" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_commute_valid.json")
+      File.write(path, <<~JSON)
+        {
+          "technology": { "primary": ["ruby"], "secondary": [] },
+          "location": { "preference": ["remote"], "commute": { "origin_city": "Nantes", "max_minutes": 45, "mode": "driving" } }
+        }
+      JSON
+
+      profile = described_class.load(path)
+      expect(profile.dig(:location, :commute)).to eq({ origin_city: "Nantes", max_minutes: 45, mode: "driving" })
+    ensure
+      File.delete(path) if File.exist?(path)
+    end
+
+    it "raises when commute mode is invalid" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_commute_bad_mode.json")
+      File.write(path, <<~JSON)
+        {
+          "technology": { "primary": ["ruby"], "secondary": [] },
+          "location": { "preference": ["remote"], "commute": { "origin_city": "Nantes", "max_minutes": 45, "mode": "transit" } }
+        }
+      JSON
+
+      expect { described_class.load(path) }.to raise_error(RuntimeError, /Invalid commute.mode/)
+    ensure
+      File.delete(path) if File.exist?(path)
+    end
+
+    it "raises when commute.max_minutes is missing or non-positive" do
+      path = Rails.root.join("tmp", "scoring_profile_spec_commute_no_max.json")
+      File.write(path, <<~JSON)
+        {
+          "technology": { "primary": ["ruby"], "secondary": [] },
+          "location": { "preference": ["remote"], "commute": { "origin_city": "Nantes", "max_minutes": 0, "mode": "driving" } }
+        }
+      JSON
+
+      expect { described_class.load(path) }.to raise_error(RuntimeError, /Missing commute.max_minutes/)
     ensure
       File.delete(path) if File.exist?(path)
     end
@@ -124,24 +129,7 @@ RSpec.describe Sourcing::ScoringProfile do
           },
           "location": {
             "preference": ["remote", "office"],
-            "hybrid": {
-              "remote_days_min_per_week": 3
-            }
-          },
-          "penalties": {
-            "unknown_primary_required": 20,
-            "preference_rank_step": 40,
-            "not_in_preference": 100,
-            "city_not_allowed": 100
-          },
-          "bonuses": {
-            "secondary_match": 10,
-            "secondary_on_primary_match": 10
-          },
-          "weights": {
-            "technology": 70,
-            "location_mode": 20,
-            "location_city": 10
+            "hybrid": { "remote_days_min_per_week": 3 }
           }
         }
       JSON

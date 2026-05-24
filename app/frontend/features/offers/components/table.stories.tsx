@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MemoryRouter } from 'react-router'
-import { expect } from 'vitest'
+import { expect } from 'storybook/test'
 
 import { LocationModeEnum } from '@/graphql/generated'
 import { Table } from './table'
@@ -34,6 +34,8 @@ const offers = [
     score: 87,
     firstSeenAt: new Date().toISOString(),
     primaryTechnologies: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'] as string[],
+    commuteDurationMinutes: 25,
+    commuteWithinMax: true,
   },
   {
     id: '2',
@@ -46,6 +48,8 @@ const offers = [
     score: 79,
     firstSeenAt: new Date().toISOString(),
     primaryTechnologies: ['Ruby', 'Rails', 'PostgreSQL'] as string[],
+    commuteDurationMinutes: null,
+    commuteWithinMax: null,
   },
   {
     id: '3',
@@ -58,6 +62,8 @@ const offers = [
     score: 65,
     firstSeenAt: new Date().toISOString(),
     primaryTechnologies: null,
+    commuteDurationMinutes: 120,
+    commuteWithinMax: false,
   },
   {
     id: '4',
@@ -79,6 +85,8 @@ const offers = [
       'Docker',
       'Kubernetes',
     ] as string[],
+    commuteDurationMinutes: 45,
+    commuteWithinMax: true,
   },
 ] as const
 

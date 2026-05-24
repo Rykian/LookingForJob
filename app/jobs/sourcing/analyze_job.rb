@@ -32,7 +32,7 @@ module Sourcing
       current_version = provider.analyze_step.class::VERSION
 
       if Sourcing::Pipeline.should_skip?(offer, "analyze", force:)
-        Sourcing::Pipeline.advance(offer, force:)
+        Sourcing::Pipeline.advance(offer, "analyze", force:)
         return
       end
 
@@ -50,7 +50,7 @@ module Sourcing
         })
       ))
 
-      Sourcing::Pipeline.advance(offer, force:)
+      Sourcing::Pipeline.advance(offer, "analyze", force:)
     end
 
     private

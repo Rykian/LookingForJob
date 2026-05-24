@@ -52,6 +52,10 @@ RSpec.configure do |config|
   # The .github/workflows/scrapers-nightly.yml workflow sets INTEGRATION=true on a schedule.
   config.filter_run_excluding(integration: true) unless ENV["INTEGRATION"] == "true"
 
+  # ScoringProfile.load memoizes at process level; reset between specs so the
+  # updateScoringProfile mutation spec (which stubs PROFILE_PATH) doesn't leak.
+  config.before(:each) { Sourcing::ScoringProfile.instance_variable_set(:@cached, nil) }
+
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.

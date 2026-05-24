@@ -111,7 +111,18 @@ export function Table({
                   </td>
                   <td className="px-3 py-2">{offer.company || '-'}</td>
                   <td className="px-3 py-2">{offer.source}</td>
-                  <td className="px-3 py-2">{offer.city || '-'}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span>{offer.city || '-'}</span>
+                      {offer.commuteDurationMinutes != null ? (
+                        <Badge
+                          variant={offer.commuteWithinMax === false ? 'destructive' : 'secondary'}
+                        >
+                          {offer.commuteDurationMinutes} min
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-3 py-2">
                     <Badge variant="outline">{formatLocationMode(offer.locationMode)}</Badge>
                   </td>

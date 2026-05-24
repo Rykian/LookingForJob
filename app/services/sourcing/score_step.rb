@@ -1,6 +1,6 @@
 module Sourcing
   class ScoreStep
-    VERSION = 2
+    VERSION = 4
 
     # Returns [score, breakdown]
     def self.call(offer:, profile:)
@@ -8,11 +8,13 @@ module Sourcing
 
       score, tech_details = tech_score(offer, profile, score)
       score, location_details = location_score(offer, profile, score)
+      score, commute_details = commute_score(offer, profile, score)
       score = bounded_score(score)
 
       [ score, {
         technology: tech_details,
         location: location_details,
+        commute: commute_details,
       }, ]
     end
 
@@ -57,18 +59,6 @@ module Sourcing
         return [ score, details ]
       end
 
-      if %w[hybrid on-site].include?(mode)
-        city = (offer.city || "").downcase
-        profile_cities = resolved_city_preferences(profile, mode)
-        # If the offer is in a mode that requires location matching,
-        # but the city doesn't match any of the allowed cities, apply a penalty
-        if profile_cities&.none? { |allowed| city.include?(allowed) }
-          details = { mode:, city:, allowed_cities: profile_cities, penalty_reason: "city_not_allowed" }
-          score = score - 100
-          return [ score, details ]
-        end
-      end
-
       details = {}
 
       if mode == "hybrid"
@@ -95,20 +85,32 @@ module Sourcing
       [score, details]
     end
 
-    def self.resolved_city_preferences(profile, mode)
-      location = profile[:location] || {}
-      default_cities = Array(location[:city]).map(&:downcase)
+    # Reads commute_durations purely — no Mapbox calls. CommuteStep is the
+    # producer; if the offer was never enriched (no commute_city_id) or no row
+    # matches the current origin+mode, the penalty is skipped.
+    def self.commute_score(offer, profile, score)
+      commute_cfg = profile.dig(:location, :commute)
+      return [score, { skipped: true, reason: "no_profile_commute" }] if commute_cfg.blank?
+      return [score, { skipped: true, reason: "offer_has_no_commute_city" }] if offer.commute_city_id.nil?
 
-      override = case mode
-      when "hybrid"
-        location.dig(:hybrid, :city)
-      when "on-site"
-        location.dig(:on_site, :city)
+      origin = Commute::City.find_by(normalized_name: Commute::City.normalize(commute_cfg[:origin_city]))
+      return [score, { skipped: true, reason: "origin_not_geocoded" }] if origin.nil?
+
+      duration = Commute::Duration.find_by(
+        origin_city_id: origin.id,
+        destination_city_id: offer.commute_city_id,
+        mode: commute_cfg[:mode]
+      )
+      return [score, { skipped: true, reason: "no_duration_row" }] if duration.nil?
+
+      minutes = duration.duration_minutes
+      max = commute_cfg[:max_minutes].to_i
+
+      if minutes > max
+        [score - 100, { minutes: minutes, max_minutes: max, mode: commute_cfg[:mode], penalty_reason: "over_max_commute" }]
       else
-        nil
+        [score, { minutes: minutes, max_minutes: max, mode: commute_cfg[:mode], within_max: true }]
       end
-
-      Array(override || default_cities).map(&:downcase)
     end
 
     def self.bounded_score(value)

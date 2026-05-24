@@ -1,7 +1,7 @@
 require "dry/schema"
 
 class JobOffer < ApplicationRecord
-  STEPS_DETAIL_KEYS = %w[discovery fetch analyze enrich score].freeze
+  STEPS_DETAIL_KEYS = %w[discovery fetch analyze enrich commute score].freeze
   ISO8601_TIMESTAMP_REGEX = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})\z/.freeze
 
   STEP_PAYLOAD_SCHEMA = Dry::Schema.Params do
@@ -18,6 +18,7 @@ class JobOffer < ApplicationRecord
     optional(:fetch).hash(STEP_PAYLOAD_SCHEMA)
     optional(:analyze).hash(STEP_PAYLOAD_SCHEMA)
     optional(:enrich).hash(STEP_PAYLOAD_SCHEMA)
+    optional(:commute).hash(STEP_PAYLOAD_SCHEMA)
     optional(:score).hash(STEP_PAYLOAD_SCHEMA)
   end
 
@@ -61,6 +62,8 @@ class JobOffer < ApplicationRecord
   }.freeze
 
   has_one_attached :html_file
+
+  belongs_to :commute_city, class_name: "Commute::City", optional: true, inverse_of: :job_offers
 
   enum :location_mode, LOCATION_MODE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true

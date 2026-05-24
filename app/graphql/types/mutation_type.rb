@@ -8,5 +8,7 @@ module Types
       description: "Enqueue score recomputation for every stored offer."
     field :update_scoring_profile, mutation: Mutations::UpdateScoringProfile,
       description: "Replace the scoring profile JSON used by scoring jobs."
+    field :reload_scoring_profile, mutation: Mutations::ReloadScoringProfile,
+      description: "Reload the scoring profile from disk (drops the in-memory cache)."
   end
 end
