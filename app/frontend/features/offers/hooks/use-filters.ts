@@ -18,7 +18,7 @@ function isOneOf<T extends readonly string[]>(value: string, values: T): value i
   return values.includes(value)
 }
 
-function getPresetRange(preset: DatePreset): { after: string; before: string } {
+function getPresetRange(preset: DatePreset): { after?: string; before?: string } {
   const now = new Date()
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
@@ -26,7 +26,6 @@ function getPresetRange(preset: DatePreset): { after: string; before: string } {
     case 'today': {
       return {
         after: startOfToday.toISOString(),
-        before: now.toISOString(),
       }
     }
     case 'yesterday': {
@@ -44,7 +43,6 @@ function getPresetRange(preset: DatePreset): { after: string; before: string } {
       start.setDate(start.getDate() - 6)
       return {
         after: start.toISOString(),
-        before: now.toISOString(),
       }
     }
     case 'last_30_days': {
@@ -52,7 +50,6 @@ function getPresetRange(preset: DatePreset): { after: string; before: string } {
       start.setDate(start.getDate() - 29)
       return {
         after: start.toISOString(),
-        before: now.toISOString(),
       }
     }
   }
