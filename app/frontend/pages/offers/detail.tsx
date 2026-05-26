@@ -144,7 +144,7 @@ export default function OfferDetailPage() {
             <CardTitle className="text-lg">Score Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="max-h-[420px] overflow-auto rounded-md bg-muted p-3 text-xs leading-5">
+            <pre className="max-h-105 overflow-auto rounded-md bg-muted p-3 text-xs leading-5">
               {JSON.stringify(offer.scoreBreakdown || {}, null, 2)}
             </pre>
           </CardContent>

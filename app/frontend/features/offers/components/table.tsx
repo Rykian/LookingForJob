@@ -45,7 +45,7 @@ export function Table({
         ) : null}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-215 text-left text-sm">
             <thead>
               <tr className="border-b text-muted-foreground">
                 <th className="px-3 py-2 font-medium">

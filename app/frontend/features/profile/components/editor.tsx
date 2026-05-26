@@ -35,7 +35,7 @@ export function Editor({
       </CardHeader>
       <CardContent className="space-y-3">
         <textarea
-          className="min-h-[520px] w-full rounded-md border bg-background p-3 font-mono text-xs leading-5"
+          className="min-h-130 w-full rounded-md border bg-background p-3 font-mono text-xs leading-5"
           value={text}
           onChange={(event) => onTextChange(event.target.value)}
         />
