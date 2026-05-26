@@ -152,6 +152,8 @@ export enum ProviderEnum {
   FranceTravail = 'france_travail',
   /** Provider: hellowork */
   Hellowork = 'hellowork',
+  /** Provider: indeed */
+  Indeed = 'indeed',
   /** Provider: linkedin */
   Linkedin = 'linkedin'
 }

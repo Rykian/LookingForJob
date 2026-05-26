@@ -185,6 +185,7 @@ Repository guide for coding agents.
   - `Sourcing::EnrichStep`
 - When provider behavior changes, update the matching provider doc in `app/services/sourcing/providers/<provider>/README.md`.
 - LinkedIn crawling is brittle: fail explicitly with context.
+- Indeed crawling is Cloudflare-protected from cloud IPs: provide a trusted session via `bin/rails indeed:login` and fail explicitly on challenge pages.
 - LLM enrichment requires env-backed keys (`OPENAI_API_KEY` or `LLM_API_KEY`).
 - On quota/rate-limit issues, fail loudly with actionable details.
 

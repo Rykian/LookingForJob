@@ -53,7 +53,7 @@ and re-runnable independently of the rest of the pipeline.
 
 ## Sources
 
-Six providers behind a uniform four-step contract
+Seven providers behind a uniform four-step contract
 (`Sourcing::DiscoveryStep / FetchStep / AnalyzeStep / EnrichStep`):
 
 | Provider                                                                          | Notes                                            |
@@ -62,6 +62,7 @@ Six providers behind a uniform four-step contract
 | [Cadremploi](app/services/sourcing/providers/cadremploi/README.md)                | French job board, session-based crawling         |
 | [France Travail](app/services/sourcing/providers/france_travail/README.md)        | French public employment service                 |
 | [Hellowork](app/services/sourcing/providers/hellowork/README.md)                  | General French job board                         |
+| [Indeed](app/services/sourcing/providers/indeed/README.md)                        | Aggregator, Cloudflare-protected, optional session |
 | [LinkedIn](app/services/sourcing/providers/linkedin/README.md)                    | Public guest endpoints over plain HTTP (no auth) |
 | [Welcome to the Jungle](app/services/sourcing/providers/wttj/README.md)           | Tech-leaning French board                        |
 

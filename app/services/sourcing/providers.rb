@@ -66,6 +66,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "indeed",
+            Provider.new(
+              discovery_step: Sourcing::Providers::Indeed::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::Indeed::FetchStep.new,
+              analyze_step:   Sourcing::Providers::Indeed::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::Indeed::EnrichStep.new
+            )
+          )
+
         registry
       end
     end
