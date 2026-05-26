@@ -1,14 +1,10 @@
 import { ActionCard } from '@/features/sourcing/components/action-card'
+import { LaunchDiscovery } from '@/features/sourcing/components/launch-discovery'
 import { useMutationWithFeedback } from '@/features/sourcing/hooks/use-mutation'
-import {
-  LAUNCH_DISCOVERY_MUTATION,
-  RECOMPUTE_OFFER_SCORES_MUTATION,
-} from '@/features/sourcing/queries/documents'
-import type { LaunchDiscoveryMutation, RecomputeOfferScoresMutation } from '@/graphql/generated'
+import { RECOMPUTE_OFFER_SCORES_MUTATION } from '@/features/sourcing/queries/documents'
+import type { RecomputeOfferScoresMutation } from '@/graphql/generated'
 
 export default function SourcingPage() {
-  const launchDiscovery =
-    useMutationWithFeedback<LaunchDiscoveryMutation>(LAUNCH_DISCOVERY_MUTATION)
   const recomputeOfferScores = useMutationWithFeedback<RecomputeOfferScoresMutation>(
     RECOMPUTE_OFFER_SCORES_MUTATION,
   )
@@ -22,19 +18,7 @@ export default function SourcingPage() {
         </p>
       </div>
 
-      <ActionCard
-        title="Launch Discovery"
-        description="This enqueues one discovery job per source x keyword x work mode combination."
-        actionLabel="Launch Discovery"
-        pendingLabel="Launching..."
-        loading={launchDiscovery.loading}
-        error={launchDiscovery.error}
-        successMessage={launchDiscovery.data?.launchDiscovery?.message}
-        errorMessage="Failed to enqueue discovery job."
-        onTrigger={() => {
-          void launchDiscovery.trigger()
-        }}
-      />
+      <LaunchDiscovery />
 
       <ActionCard
         title="Recompute Scores"

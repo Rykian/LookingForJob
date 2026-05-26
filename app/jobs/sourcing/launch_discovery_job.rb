@@ -3,17 +3,18 @@ module Sourcing
     WORK_MODE_UNSUPPORTED_SOURCES = %w[france_travail].freeze
     SUPPORTED_WORK_MODES = %w[remote hybrid on-site].freeze
 
-    def perform(force: false)
+    def perform(keywords: nil, providers: nil, force: false)
       profile = Sourcing::ScoringProfile.load
-      keywords = parse_env_list("KEYWORDS") || parse_profile_list!(profile: profile, path: %i[technology primary], label: "technology.primary")
+      resolved_keywords = keywords.presence || parse_env_list("KEYWORDS") || parse_profile_list!(profile: profile, path: %i[technology primary], label: "technology.primary")
+      resolved_sources = providers.presence || Sourcing::Providers.registry.sources
       work_modes = parse_env_list("WORK_MODE") || parse_profile_list!(profile: profile, path: %i[location preference], label: "location.preference")
       validate_work_modes!(work_modes)
 
-      Sourcing::Providers.registry.sources.each do |source|
+      resolved_sources.each do |source|
         provider = Sourcing::Providers.registry.fetch(source)
         modes_for_source = supports_work_mode_filter_for_source?(source: source, provider: provider) ? work_modes : [work_modes.first]
 
-        keywords.each do |keyword|
+        resolved_keywords.each do |keyword|
           modes_for_source.each do |work_mode|
             DiscoveryJob.perform_later(source:, keyword:, work_mode:, force:)
           end

@@ -141,4 +141,53 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
       described_class.perform_now
     end.to raise_error(ArgumentError, "Environment variable WORK_MODE must contain at least one value")
   end
+
+  it "uses provided keywords when passed as parameter" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return(nil)
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    described_class.perform_now(keywords: ["elixir", "scala"])
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    normalized_args = queued.map do |job|
+      job[:args].first.deep_symbolize_keys.slice(:keyword)
+    end
+
+    # 2 keywords x (2 work modes for linkedin + 1 for france_travail) = 6 jobs
+    expect(normalized_args.map { |a| a[:keyword] }).to match_array(["elixir", "scala", "elixir", "scala", "elixir", "scala"])
+  end
+
+  it "uses provided providers when passed as parameter" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return(nil)
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    described_class.perform_now(providers: ["linkedin"])
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    normalized_args = queued.map do |job|
+      job[:args].first.deep_symbolize_keys.slice(:source)
+    end
+
+    # Only linkedin should be used, with 2 keywords x 2 work modes = 4 jobs
+    expect(normalized_args.map { |a| a[:source] }.uniq).to match_array(["linkedin"])
+    expect(queued.count).to eq(4)
+  end
+
+  it "uses provided keywords and providers together" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return(nil)
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return(nil)
+
+    described_class.perform_now(keywords: ["ruby"], providers: ["linkedin"])
+
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    normalized_args = queued.map do |job|
+      job[:args].first.deep_symbolize_keys.slice(:source, :keyword)
+    end
+
+    # 1 keyword x 2 work modes for linkedin = 2 jobs
+    expect(normalized_args).to match_array([
+      { source: "linkedin", keyword: "ruby" },
+      { source: "linkedin", keyword: "ruby" },
+    ])
+  end
 end

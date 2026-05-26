@@ -7,14 +7,12 @@ module Types
 
       included do
         field :technologies, [String], null: false,
-          description: "All technologies from the scoring profile (primary + secondary)."
+          description: "Primary technologies from the scoring profile."
       end
 
       def technologies
         profile = Sourcing::ScoringProfile.load
-        primary = profile.dig(:technology, :primary) || []
-        secondary = profile.dig(:technology, :secondary) || []
-        (primary + secondary).uniq
+        profile.dig(:technology, :primary) || []
       end
     end
   end
