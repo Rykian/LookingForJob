@@ -224,23 +224,63 @@ bin/rails db:create db:migrate
 
 ### Session Manager Pattern
 
-For authenticated crawling, use this pattern:
+For authenticated crawling, use this pattern (see `cadremploi/session_manager.rb` and `indeed/session_manager.rb` for full examples):
 
 ```ruby
 # app/services/sourcing/providers/<provider>/session_manager.rb
+class SessionNotFoundError < StandardError
+  def initialize(msg = "<Provider> session not found. Create data/<provider>_session.json")
+    super
+  end
+end
+
 class SessionManager
-  def self.path
-    # Return path to session storage (file or DB)
+  SESSION_PATH = Rails.root.join("data", "<provider>_session.json").freeze
+  REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
+
+  def self.path = SESSION_PATH
+  def self.exists? = File.exist?(SESSION_PATH)
+  def self.require_session? = ENV.fetch("<PROVIDER>_REQUIRE_SESSION", "false") == "true"
+
+  def self.save(storage_state)
+    validate_storage_state!(storage_state)
+    File.write(SESSION_PATH, JSON.generate(storage_state))
   end
 
   def self.load
-    # Load session state (cookies, localStorage, etc.)
-    # Return nil if not found (graceful fallback)
+    raise SessionNotFoundError unless exists?
+    storage_state = JSON.parse(File.read(SESSION_PATH))
+    validate_storage_state!(storage_state)
+    storage_state
+  rescue JSON::ParserError
+    raise SessionNotFoundError, "<Provider> session file is invalid JSON at #{SESSION_PATH}"
   end
 
+  def self.validate_storage_state!(storage_state)
+    raise SessionNotFoundError, "<Provider> session file is invalid at #{SESSION_PATH}" unless storage_state.is_a?(Hash)
+    missing_keys = REQUIRED_ROOT_KEYS.reject { |key| storage_state.key?(key) }
+    raise SessionNotFoundError, "<Provider> session file missing #{missing_keys.join(', ')} at #{SESSION_PATH}" if missing_keys.any?
+    unless storage_state["cookies"].is_a?(Array) && storage_state["origins"].is_a?(Array)
+      raise SessionNotFoundError, "<Provider> session file is invalid at #{SESSION_PATH}"
+    end
+    true
+  end
+
+  def self.load_if_exists
+    return nil unless exists?
+    load
+  end
+
+  # Session is optional by default; required only when <PROVIDER>_REQUIRE_SESSION=true is set.
   def self.load_if_required!
-    # Load session or raise with helpful guidance
-    load || raise "Session not found. Run: rails <provider>:login"
+    session = load_if_exists
+    return session unless require_session?
+    return session if session
+    raise SessionNotFoundError, "<Provider> trusted session required. Run: bin/rails <provider>:login"
+  end
+
+  def self.clear
+    File.delete(SESSION_PATH) if exists?
   end
 end
 ```
@@ -248,42 +288,45 @@ end
 Then in discovery/fetch:
 
 ```ruby
-session = SessionManager.load_if_required!  # Or load for optional auth
-context = browser.new_context(**default_context_options(storage_state: session))
+session = SessionManager.load_if_required!
+context = browser.new_context(**default_context_options(locale: locale, storage_state: session))
 ```
+
+For login rake tasks, include the shared `Sourcing::Providers::SessionLoginSupport` concern
+(`app/services/sourcing/providers/session_login_support.rb`), which provides:
+- `load_existing_state(session_manager:, not_found_error_class:)` — loads and clears invalid sessions
+- `build_validation_runner(browser:, locale:, validation_url:)` — builds a lambda for post-login validation
 
 ### HTML Sanitization Pattern
 
-In all analyze steps, apply `clean_attributes()` to description HTML:
+`clean_attributes` is already implemented in `Sourcing::AnalyzeStep` — do not reimplement it.
+It is available as both a class method and a protected instance method:
 
 ```ruby
-# app/services/sourcing/analyze_step.rb (parent class)
-protected
-
-def clean_attributes(html_string)
-  return html_string if html_string.nil? || (html_string.respond_to?(:blank?) && html_string.blank?)
-  
-  doc = Nokogiri::HTML.fragment(html_string)
-  doc.css("*").each do |elem|
-    elem.delete("style")
-    elem.delete("class")
-  end
-  doc.to_html.strip
-end
-```
-
-Then in provider analyze steps:
-
-```ruby
+# Call as instance method from within a provider AnalyzeStep#call:
 description_html = clean_attributes(extract_description_html(doc))
+
+# Call as class method when needed outside an instance:
+description_html = Sourcing::AnalyzeStep.clean_attributes(html_string)
 ```
+
+### Shared PlaywrightSupport Helpers
+
+`Sourcing::PlaywrightSupport` (`app/services/sourcing/playwright_support.rb`) provides helpers
+that every crawling provider should reuse — do not duplicate them:
+
+- `with_playwright_page(url:, locale:, storage_state: nil)` — full browser lifecycle (launch, context, page, teardown)
+- `default_context_options(locale:, storage_state: nil)` — standard viewport, user-agent, timezone
+- `wait_for_any_selector(page_obj:, selectors:, timeout_ms:, wait_options: {})` — waits for first matching selector
+- `click_first_selector(page_obj:, selectors:)` — clicks the first selector that exists
+- `ensure_basic_html_content!(provider_name:, url:, html:)` — raises if HTML is empty or a bare shell; use this in every FetchStep before returning
 
 ### Anti-Bot Detection Pattern
 
 ```ruby
 class DiscoveryStep
   BLOCKED_PAGE_PATTERN = /(cloudflare|challenge|captcha|login|security)/i
-  
+
   def challenge_page?(page_obj)
     page_obj.content =~ BLOCKED_PAGE_PATTERN
   end
