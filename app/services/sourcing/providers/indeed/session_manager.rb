@@ -16,7 +16,7 @@ module Sourcing
         REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
 
         def self.path
-          ENV["INDEED_STORAGE_STATE_PATH"]&.then { |p| Pathname.new(p) } || SESSION_PATH
+          SESSION_PATH
         end
 
         def self.exists?
