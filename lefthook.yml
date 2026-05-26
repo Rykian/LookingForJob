@@ -7,4 +7,4 @@ pre-commit:
     biome:
       files: git diff --cached --name-only --diff-filter=ACMR
       glob: "{app/frontend/**/*.{js,jsx,ts,tsx,json},package.json,package-lock.json,tsconfig*.json,biome.json,codegen.ts,graphql.config.ts,vite.config.ts}"
-      run: ./node_modules/.bin/biome check {files}
+      run: ./node_modules/.bin/biome check --no-errors-on-unmatched {files}
