@@ -6,16 +6,27 @@ module Sourcing
   module Providers
     # Shared class-method logic for provider SessionManager classes.
     # Extend this module in each provider's SessionManager and define:
-    #   SESSION_PATH       - Pathname to the session JSON file
-    #   REQUIRE_SESSION_ENV - env var name that gates strict mode (e.g. "INDEED_REQUIRE_SESSION")
-    #   NOT_FOUND_ERROR    - the provider-specific SessionNotFoundError subclass
-    #   LOGIN_COMMAND      - rake task shown in the "run X" guidance string
+    #   NOT_FOUND_ERROR - the provider-specific SessionNotFoundError subclass
+    #
+    # path and login_command are derived automatically from the provider module name:
+    #   Sourcing::Providers::Indeed::SessionManager → data/indeed_session.json, bin/rails indeed:login
     module SessionManagerBase
       REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
 
-      def path = self::SESSION_PATH
+      def provider_name
+        # "Sourcing::Providers::Indeed::SessionManager" → "indeed"
+        self.name.split("::")[2].downcase
+      end
+
+      def path
+        Rails.root.join("data", "#{provider_name}_session.json")
+      end
+
+      def login_command
+        "bin/rails #{provider_name}:login"
+      end
+
       def exists? = File.exist?(path)
-      def require_session? = ENV.fetch(self::REQUIRE_SESSION_ENV, "false") == "true"
 
       def save(storage_state)
         validate_storage_state!(storage_state)
@@ -51,14 +62,6 @@ module Sourcing
         return nil unless exists?
 
         load
-      end
-
-      def load_if_required!
-        session = load_if_exists
-        return session unless require_session?
-        return session if session
-
-        raise self::NOT_FOUND_ERROR, "Trusted session required. Run: #{self::LOGIN_COMMAND}"
       end
 
       def clear

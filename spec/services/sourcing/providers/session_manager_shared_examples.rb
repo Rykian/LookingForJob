@@ -1,14 +1,13 @@
 RSpec.shared_examples "a session manager" do
   # Requires the including context to define:
-  #   let(:manager)            - the SessionManager class
-  #   let(:not_found_error)    - the provider's SessionNotFoundError class
-  #   let(:tmp_path)           - writable tmp path used to stub SESSION_PATH
-  #   let(:require_session_env) - env var name (e.g. "INDEED_REQUIRE_SESSION")
+  #   let(:manager)         - the SessionManager class
+  #   let(:not_found_error) - the provider's SessionNotFoundError class
+  #   let(:tmp_path)        - writable tmp path for the session file
 
   let(:valid_state) { { "cookies" => [], "origins" => [] } }
 
   before do
-    stub_const("#{manager}::SESSION_PATH", tmp_path)
+    allow(manager).to receive(:path).and_return(tmp_path)
     FileUtils.rm_f(tmp_path)
   end
 
@@ -42,17 +41,15 @@ RSpec.shared_examples "a session manager" do
     end
   end
 
-  describe ".load_if_required!" do
-    it "returns nil when strict mode is off and no session exists" do
-      allow(ENV).to receive(:fetch).and_call_original
-      allow(ENV).to receive(:fetch).with(require_session_env, "false").and_return("false")
-      expect(manager.load_if_required!).to be_nil
+  describe ".provider_name" do
+    it "returns the lowercase provider module name" do
+      expect(manager.provider_name).to eq(manager.name.split("::")[2].downcase)
     end
+  end
 
-    it "raises when strict mode is on and no session exists" do
-      allow(ENV).to receive(:fetch).and_call_original
-      allow(ENV).to receive(:fetch).with(require_session_env, "false").and_return("true")
-      expect { manager.load_if_required! }.to raise_error(not_found_error, /required/)
+  describe ".login_command" do
+    it "includes the provider name" do
+      expect(manager.login_command).to eq("bin/rails #{manager.provider_name}:login")
     end
   end
 end

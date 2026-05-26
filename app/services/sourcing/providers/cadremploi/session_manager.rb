@@ -12,10 +12,7 @@ module Sourcing
       class SessionManager
         extend Sourcing::Providers::SessionManagerBase
 
-        SESSION_PATH = Rails.root.join("data", "cadremploi_session.json").freeze
-        REQUIRE_SESSION_ENV = "CADREMPLOI_REQUIRE_SESSION"
         NOT_FOUND_ERROR = SessionNotFoundError
-        LOGIN_COMMAND = "bin/rails cadremploi:login"
       end
     end
   end

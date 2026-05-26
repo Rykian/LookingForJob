@@ -22,7 +22,7 @@ module Sourcing
         protected
 
         def fetch_page(url:)
-          session = Sourcing::Providers::Cadremploi::SessionManager.load_if_required!
+          session = Sourcing::Providers::Cadremploi::SessionManager.load_if_exists
 
           with_playwright_page(url: url, locale: "fr-FR", storage_state: session) do |page_obj|
             click_first_selector(page_obj: page_obj, selectors: COOKIE_CONSENT_SELECTORS)

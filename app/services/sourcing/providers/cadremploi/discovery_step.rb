@@ -28,7 +28,7 @@ module Sourcing
 
           require "playwright"
 
-          session = Sourcing::Providers::Cadremploi::SessionManager.load_if_required!
+          session = Sourcing::Providers::Cadremploi::SessionManager.load_if_exists
           execution = Playwright.create(playwright_cli_executable_path: playwright_cli_executable_path)
           browser = execution.playwright.chromium.launch(headless: ENV.fetch("HEADLESS", "true") == "true")
           context = browser.new_context(**default_context_options(locale: "fr-FR", storage_state: session))
