@@ -19,7 +19,7 @@ module Sourcing
       force = extract_force(options)
       offer = find_offer(offer_id)
       return unless offer&.html_file&.attached?
-      return if offer.rejected?
+      return if offer.rejected? || offer.disabled?
 
       html_content = offer.html_file.download
 
@@ -42,6 +42,11 @@ module Sourcing
         url_hash: offer.url_hash,
         html_content: html_content
       )
+
+      if extracted[:disabled]
+        offer.update!(disabled: true)
+        return
+      end
 
       offer.update!(extracted.slice(*analyzed_attributes(provider)).merge(
         steps_details: offer.steps_details.merge("analyze" => {

@@ -3,9 +3,11 @@ module Sourcing
     include Sourcing::Concerns::OfferJobArguments
     include Sidekiq::Throttled::Job
 
+    SERIALIZED_SOURCES = %w[linkedin wttj].freeze
+
     sidekiq_throttle(
       concurrency: {
-        limit:      ->(_offer_id, opts = {}) { opts["source"] == "linkedin" ? 1 : 1_000 },
+        limit:      ->(_offer_id, opts = {}) { SERIALIZED_SOURCES.include?(opts["source"]) ? 1 : 1_000 },
         key_suffix: ->(_offer_id, opts = {}) { opts["source"] || "unknown" },
       }
     )

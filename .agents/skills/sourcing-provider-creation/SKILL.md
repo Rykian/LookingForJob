@@ -41,9 +41,10 @@ If using Playwright crawling, assess authentication needs:
 
 2. **Implement SessionManager pattern if authentication is needed:**
    - Create `app/services/sourcing/providers/<provider>/session_manager.rb`
-   - Provide methods: `load`, `load_if_required!`, persistence (file or database).
+   - Extend `Sourcing::Providers::SessionManagerBase`; only declare `NOT_FOUND_ERROR`.
+   - `path` and `login_command` are auto-derived from the provider module name.
+   - Sessions are always optional — callers use `load_if_exists` and handle `nil`.
    - Store session state (cookies, localStorage) for browser reuse.
-   - Document exact session path and expected structure.
 
 3. **Provide interactive login task:**
    - Create `lib/tasks/<provider>.rake` with login subtask.
@@ -224,72 +225,55 @@ bin/rails db:create db:migrate
 
 ### Session Manager Pattern
 
-For authenticated crawling, use this pattern (see `cadremploi/session_manager.rb` and `indeed/session_manager.rb` for full examples):
+For authenticated crawling, extend `Sourcing::Providers::SessionManagerBase`. It provides
+`save`, `load`, `load_if_exists`, `clear`, and `validate_storage_state!`, and auto-derives
+`path` (→ `data/<provider>_session.json`) and `login_command` (→ `bin/rails <provider>:login`)
+from the module name. Each provider only needs to declare its `NOT_FOUND_ERROR`:
 
 ```ruby
 # app/services/sourcing/providers/<provider>/session_manager.rb
-class SessionNotFoundError < StandardError
-  def initialize(msg = "<Provider> session not found. Create data/<provider>_session.json")
-    super
-  end
-end
+module Sourcing
+  module Providers
+    module <Provider>
+      class SessionNotFoundError < StandardError
+        def initialize(msg = "<Provider> session not found. Run: bin/rails <provider>:login")
+          super
+        end
+      end
 
-class SessionManager
-  SESSION_PATH = Rails.root.join("data", "<provider>_session.json").freeze
-  REQUIRED_ROOT_KEYS = %w[cookies origins].freeze
+      class SessionManager
+        extend Sourcing::Providers::SessionManagerBase
 
-  def self.path = SESSION_PATH
-  def self.exists? = File.exist?(SESSION_PATH)
-  def self.require_session? = ENV.fetch("<PROVIDER>_REQUIRE_SESSION", "false") == "true"
-
-  def self.save(storage_state)
-    validate_storage_state!(storage_state)
-    File.write(SESSION_PATH, JSON.generate(storage_state))
-  end
-
-  def self.load
-    raise SessionNotFoundError unless exists?
-    storage_state = JSON.parse(File.read(SESSION_PATH))
-    validate_storage_state!(storage_state)
-    storage_state
-  rescue JSON::ParserError
-    raise SessionNotFoundError, "<Provider> session file is invalid JSON at #{SESSION_PATH}"
-  end
-
-  def self.validate_storage_state!(storage_state)
-    raise SessionNotFoundError, "<Provider> session file is invalid at #{SESSION_PATH}" unless storage_state.is_a?(Hash)
-    missing_keys = REQUIRED_ROOT_KEYS.reject { |key| storage_state.key?(key) }
-    raise SessionNotFoundError, "<Provider> session file missing #{missing_keys.join(', ')} at #{SESSION_PATH}" if missing_keys.any?
-    unless storage_state["cookies"].is_a?(Array) && storage_state["origins"].is_a?(Array)
-      raise SessionNotFoundError, "<Provider> session file is invalid at #{SESSION_PATH}"
+        NOT_FOUND_ERROR = SessionNotFoundError
+      end
     end
-    true
-  end
-
-  def self.load_if_exists
-    return nil unless exists?
-    load
-  end
-
-  # Session is optional by default; required only when <PROVIDER>_REQUIRE_SESSION=true is set.
-  def self.load_if_required!
-    session = load_if_exists
-    return session unless require_session?
-    return session if session
-    raise SessionNotFoundError, "<Provider> trusted session required. Run: bin/rails <provider>:login"
-  end
-
-  def self.clear
-    File.delete(SESSION_PATH) if exists?
   end
 end
 ```
 
-Then in discovery/fetch:
+Then in discovery/fetch — sessions are always optional, handle `nil` for the no-session case:
 
 ```ruby
-session = SessionManager.load_if_required!
+session = SessionManager.load_if_exists
 context = browser.new_context(**default_context_options(locale: locale, storage_state: session))
+```
+
+For the interactive login rake task, use `Sourcing::Providers::CdpSessionHarvester`
+(`app/services/sourcing/providers/cdp_session_harvester.rb`):
+
+```ruby
+# lib/tasks/<provider>.rake
+namespace :<provider> do
+  desc "Harvest a <Provider> session from a running Chrome over CDP (--remote-debugging-port=9222)"
+  task login: :environment do
+    Sourcing::Providers::CdpSessionHarvester.new(
+      session_manager: Sourcing::Providers::<Provider>::SessionManager,
+      domain_pattern: /(?:^|\.)<provider>\.com$/i,
+      target_url: "https://www.<provider>.com/...",
+      critical_cookies: %w[<cookie names>],
+    ).call
+  end
+end
 ```
 
 For login rake tasks, include the shared `Sourcing::Providers::SessionLoginSupport` concern

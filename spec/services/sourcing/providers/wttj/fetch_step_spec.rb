@@ -9,12 +9,13 @@ RSpec.describe Sourcing::Providers::Wttj::FetchStep do
 end
 
 RSpec.describe "Sourcing::Providers::Wttj::FetchStep integration", :integration do
-  let(:real_url) { "https://www.welcometothejungle.com/fr/companies/edf/jobs/alternance-bac-3-appui-communication-graphisme-audiovisuel-f-h_paris" } # Replace with a current, public job URL if needed
+  # Pulled from sitemaps/job-listings.0.xml.gz; replace with a current URL if expired.
+  let(:real_url) { "https://www.welcometothejungle.com/fr/companies/nexans/jobs/cable-jointer_oslo" }
   let(:step) { Sourcing::Providers::Wttj::FetchStep.new }
 
   it "fetches real WTTJ job HTML" do
     html = step.call(url: real_url)
     expect(html).to include("<html")
-    expect(html).to match(/(description|Descriptif du poste)/i)
+    expect(html).to match(/(description|Descriptif du poste|JobPosting)/i)
   end
 end

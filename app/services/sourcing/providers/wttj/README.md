@@ -1,54 +1,85 @@
 # WTTJ Provider
 
-This provider integrates Welcome to the Jungle jobs into the sourcing pipeline:
+Welcome to the Jungle (WTTJ) integration for the sourcing pipeline:
 
 DiscoveryJob -> FetchJob -> AnalyzeJob -> EnrichJob
 
 ## Files
 
-- discovery_step.rb: Discover WTTJ offer URLs from search pages.
-- fetch_step.rb: Fetch WTTJ offer detail HTML with Playwright.
-- analyze_step.rb: Extract normalized fields from embedded data and DOM fallback selectors.
+- discovery_step.rb: Combined sitemap (always) + jobs-matches (when session is present).
+- fetch_step.rb: Fetch WTTJ offer HTML via Playwright with optional stored session.
+- analyze_step.rb: Extract normalized fields from JSON-LD, `__INITIAL_DATA__`, and DOM fallbacks.
 - enrich_step.rb: LLM enrichment for missing structured fields.
+- session_manager.rb: Stores Playwright `storageState` for AWS-WAF-protected pages.
 
 ## Runtime behavior
 
 ### Discovery
 
-- Search base URL: https://www.welcometothejungle.com/fr/jobs
-- Supports keyword and location filtering via URL params.
-- Uses next-page controls with MAX_PAGES guard.
+WTTJ added AWS WAF on CloudFront, which blocks every headless request to frontend
+page routes. Discovery therefore avoids the search page entirely and combines two
+sources:
+
+1. **Public sitemaps** (always): `https://www.welcometothejungle.com/sitemaps/job-listings.{0..10}.xml.gz`.
+   Filters: `/fr/companies/` URL prefix, `lastmod` within `input[:days]` (default 14),
+   optional `input[:keyword]` slug match. No Playwright, no session needed.
+2. **`/fr/jobs-matches`** (only when `SessionManager.exists?`): personalized matches
+   for the logged-in WTTJ profile. Uses Playwright with the stored session.
+
+`work_mode` filtering is **not** supported (sitemap has no metadata; downstream
+enrich/score handles relevance).
 
 ### Fetch
 
-- Fetches page in Playwright and validates basic content sanity.
-- Returns HTML payload consumed by analyze step.
+- Loads session via `SessionManager.load_if_exists` and passes it as `storage_state`
+  to Playwright. With a valid `aws-waf-token` cookie the WAF challenge is bypassed.
+- Detects WAF challenge / rate-limit pages and raises with guidance to re-run
+  `bin/rails wttj:login` or slow down the crawl.
+- Applies jittered per-request throttling (2–4s) to reduce WAF triggers. Fetches
+  are serialized (Sidekiq concurrency=1 per provider) like LinkedIn.
 
 ### Analyze
 
-- Prioritizes structured/embedded data when available.
-- Normalizes contracts, salary ranges, location mode, and posted_at.
-- Extracts minimal description HTML for token efficiency.
+Detects disabled offers (returns `disabled: true`) when the page shows WTTJ's
+"Cette offre n'est plus disponible" banner (offer taken down or expired).
+The pipeline flags these and skips further enrichment.
+
+Extraction priority:
+1. **JSON-LD** (`script[type='application/ld+json']` with `@type == "JobPosting"`) —
+   Next.js emits this for SEO. Primary, most reliable source.
+2. **`window.__INITIAL_DATA__`** (legacy React Query cache, may still be present).
+3. **DOM selectors** — last-resort fallbacks for `h1`/contract/salary/location.
 
 ### Enrich
 
-- Uses stripped description text as LLM input.
-- Returns strict enrichment schema used by the pipeline.
+Strips description HTML to plain text and asks the LLM for missing structured fields.
+
+## Session setup
+
+WTTJ pages are gated by AWS WAF (CloudFront). Headless browsers are fingerprinted
+and rejected with an HTTP 202 + `x-amzn-waf-action: challenge`.
+
+Harvest a session from a real Chrome:
+
+```bash
+bin/rails wttj:login
+```
+
+The task prints instructions: launch Chrome with `--remote-debugging-port=9222`,
+visit `https://www.welcometothejungle.com/fr/jobs-matches` (pass any WAF challenge,
+sign in), then press Enter to harvest cookies into `data/wttj_session.json`.
+
+The critical cookie is `aws-waf-token` (AWS WAF bypass token).
 
 ## Verification commands
 
-Targeted provider checks:
-
-- bundle exec rspec spec/services/sourcing/providers/wttj/discovery_step_spec.rb
-- bundle exec rspec spec/services/sourcing/providers/wttj/fetch_step_spec.rb
-- bundle exec rspec spec/services/sourcing/providers/wttj/analyze_step_spec.rb
-- bundle exec rspec spec/services/sourcing/providers/wttj/enrich_step_spec.rb
-
-Run all sourcing specs:
-
-- bundle exec rspec spec/services/sourcing/
+- bundle exec rspec spec/services/sourcing/providers/wttj/
+- bin/rails runner "pp Sourcing::Providers::Wttj::DiscoveryStep.new.call(keyword: 'rails', days: 7)"
+- bin/rails runner "pp Sourcing::Providers::Wttj::FetchStep.new.call(url: '<url-from-discovery>')"
 
 ## Notes
 
-- WTTJ layout changes can affect selector-based fallbacks.
-- Re-run provider specs and a real URL check after selector updates.
+- AWS WAF token expiry depends on WTTJ's challenge immunity configuration. If
+  sessions expire mid-run, re-run `bin/rails wttj:login`.
+- Sitemap is regenerated daily (`changefreq: daily`); jobs posted in the last few
+  hours may not appear until the next regeneration.

@@ -36,7 +36,7 @@ module Types
       end
 
       def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil)
-        scope = ::JobOffer.where(rejected: false)
+        scope = ::JobOffer.where(rejected: false, disabled: false)
         scope = scope.where(source: source) if source.present?
         scope = scope.where(location_mode: location_modes) if location_modes.present?
 

@@ -5,12 +5,26 @@ module Sourcing
   module Providers
     module Wttj
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 2
+        VERSION = 3
+
+        # Persisted on the JobOffer by EnrichJob. Includes location_mode so we
+        # can backfill it when the AnalyzeStep couldn't extract it from metadata.
+        PERSISTED_ATTRIBUTES = %i[
+          location_mode
+          hybrid_remote_days_min_per_week
+          primary_technologies
+          secondary_technologies
+          offer_language
+          normalized_seniority
+          english_level_required
+        ].freeze
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for Welcome to the Jungle job offers.
           Return ONLY a valid JSON object matching the provided schema.
           Do not include markdown, prose, or explanations.
+          When the metadata-provided location mode is "unknown", infer it from the
+          description (look for télétravail/remote/hybride/sur site cues).
         PROMPT
 
         RESPONSE_SCHEMA = {
@@ -18,6 +32,10 @@ module Sourcing
           schema: {
             type: "object",
             properties: {
+              location_mode: {
+                type: ["string", "null"],
+                enum: ["remote", "hybrid", "on-site", nil],
+              },
               hybrid_remote_days_min_per_week: {
                 type: ["integer", "null"],
                 minimum: 1,
@@ -45,6 +63,7 @@ module Sourcing
               },
             },
             required: %w[
+              location_mode
               hybrid_remote_days_min_per_week
               primary_technologies
               secondary_technologies
@@ -73,13 +92,12 @@ module Sourcing
         end
 
         def build_user_prompt(extracted)
-          location_mode = extracted[:location_mode] || extracted[:remote]
           plain_description = description_html_to_text(extracted[:description_html])
 
           <<~PROMPT
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
-            Location mode: #{location_mode || "unknown"}
+            Location mode (from metadata): #{extracted[:location_mode] || "unknown"}
 
             Job description text:
             #{plain_description}
@@ -88,9 +106,10 @@ module Sourcing
 
         def normalize_payload(payload, extracted)
           data = super(payload, extracted).transform_keys(&:to_sym)
-          location_mode = extracted[:location_mode] || extracted[:remote]
+          location_mode = extracted[:location_mode].presence || data[:location_mode] || :on_site
 
           {
+            location_mode:,
             hybrid_remote_days_min_per_week: location_mode == "hybrid" ? data[:hybrid_remote_days_min_per_week] : nil,
             primary_technologies: normalize_techs(data[:primary_technologies]),
             secondary_technologies: normalize_techs(data[:secondary_technologies]),

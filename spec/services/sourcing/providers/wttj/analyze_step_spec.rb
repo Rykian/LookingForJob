@@ -7,12 +7,11 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(step).to be_a(Sourcing::AnalyzeStep)
   end
 
-
   let(:sample_html) do
     <<-HTML
       <html>
         <body>
-          <h2>Job Title Example</h2>
+          <h1>Job Title Example</h1>
           <a href="/companies/example">Company Name</a>
           <div class="location">Paris, Montpellier</div>
           <div class="contract">CDI</div>
@@ -28,7 +27,22 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     HTML
   end
 
-  it "extracts and normalizes fields from sample HTML" do
+  it "flags offers that show the WTTJ disabled banner" do
+    html = <<~HTML
+      <html><body>
+        <h1>Développeur Full Stack</h1>
+        <div><span>Cette offre n’est plus disponible.</span></div>
+      </body></html>
+    HTML
+
+    expect(step.call(html: html)[:disabled]).to eq(true)
+  end
+
+  it "marks active offers as not disabled" do
+    expect(step.call(html: sample_html)[:disabled]).to eq(false)
+  end
+
+  it "extracts and normalizes fields from DOM fallback HTML" do
     result = step.call(html: sample_html)
     expect(result[:title]).to eq("Job Title Example")
     expect(result[:company]).to eq("Company Name")
@@ -38,14 +52,14 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:salary_max_minor]).to eq(80000)
     expect(result[:salary_currency]).to eq("EUR")
     expect(result[:location_mode]).to eq("remote")
-    expect(result[:posted_at]).to match(/T\d{2}:\d{2}:\d{2}/) # ISO8601
+    expect(result[:posted_at]).to match(/T\d{2}:\d{2}:\d{2}/)
     expect(result[:description_html]).to include("Job description here")
   end
 
   it "handles missing and non-standard fields gracefully" do
     html = <<-HTML
       <html><body>
-        <h2>Another Job</h2>
+        <h1>Another Job</h1>
         <a href="/companies/other">OtherCo</a>
         <div class="location"></div>
         <div class="contract">Freelance</div>
@@ -68,7 +82,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
   it "parses salary with only min value" do
     html = <<-HTML
       <html><body>
-        <h2>Solo Salary</h2>
+        <h1>Solo Salary</h1>
         <a href="/companies/solo">SoloCo</a>
         <div class="location">Lyon</div>
         <div class="contract">CDD</div>
@@ -87,7 +101,44 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:posted_at]).to match(/2026-03-31T/)
   end
 
-  it "extracts fields from embedded initial data used by live WTTJ pages" do
+  it "extracts fields from JSON-LD JobPosting (Next.js SEO payload)" do
+    jsonld = {
+      "@context" => "https://schema.org",
+      "@type" => "JobPosting",
+      "title" => "Senior Software Engineer RoR",
+      "datePosted" => "2026-03-03T11:19:08Z",
+      "employmentType" => "FULL_TIME",
+      "description" => "<p>Backend job description</p>",
+      "hiringOrganization" => { "@type" => "Organization", "name" => "Bluecoders" },
+      "jobLocation" => { "@type" => "Place", "address" => { "addressLocality" => "Paris" } },
+      "jobLocationType" => "TELECOMMUTE",
+      "baseSalary" => {
+        "@type" => "MonetaryAmount",
+        "currency" => "EUR",
+        "value" => { "@type" => "QuantitativeValue", "minValue" => 50_000, "maxValue" => 80_000 },
+      },
+    }.to_json
+
+    html = <<~HTML
+      <html><head>
+        <script type="application/ld+json">#{jsonld}</script>
+      </head><body><h1>Senior Software Engineer RoR</h1></body></html>
+    HTML
+
+    result = step.call(html: html)
+    expect(result[:title]).to eq("Senior Software Engineer RoR")
+    expect(result[:company]).to eq("Bluecoders")
+    expect(result[:city]).to eq("Paris")
+    expect(result[:employment_type]).to eq("FULL_TIME")
+    expect(result[:salary_min_minor]).to eq(50_000)
+    expect(result[:salary_max_minor]).to eq(80_000)
+    expect(result[:salary_currency]).to eq("EUR")
+    expect(result[:location_mode]).to eq("remote")
+    expect(result[:posted_at]).to eq("2026-03-03T11:19:08Z")
+    expect(result[:description_html]).to include("Backend job description")
+  end
+
+  it "extracts fields from legacy window.__INITIAL_DATA__ fallback" do
     payload = {
       "queries" => [
         {
@@ -121,11 +172,10 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     HTML
 
     result = step.call(html: html)
-
     expect(result[:title]).to eq("Senior Software Engineer RoR")
     expect(result[:company]).to eq("Bluecoders")
     expect(result[:city]).to eq("Paris")
-    expect(result[:employment_type]).to eq("PERMANENT")
+    expect(result[:employment_type]).to eq("FULL_TIME")
     expect(result[:salary_min_minor]).to eq(1)
     expect(result[:salary_max_minor]).to eq(1000)
     expect(result[:salary_currency]).to eq("EUR")

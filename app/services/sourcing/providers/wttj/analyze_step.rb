@@ -6,82 +6,145 @@ module Sourcing
   module Providers
     module Wttj
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 1
+        VERSION = 3
 
-        # Selectors for fixed fields
-        TITLE_SELECTORS = ["h2"].freeze
+        # WTTJ renders this banner inline once an offer is taken down. Detecting
+        # it lets the pipeline flag the offer as disabled and stop processing it.
+        DISABLED_BANNER_PATTERN = /Cette offre n.?est plus disponible/i
+
+        # DOM fallback selectors used when both JSON-LD and __INITIAL_DATA__ are absent.
+        TITLE_SELECTORS = ["h1", "h2"].freeze
         COMPANY_SELECTORS = ["a[href*='/companies/']"].freeze
         LOCATION_SELECTORS = ["[class*='location']"].freeze
         CONTRACT_SELECTORS = ["[class*='contract']"].freeze
         SALARY_SELECTORS = ["[class*='salary']"].freeze
         POSTED_AT_SELECTORS = ["[class*='posted']"].freeze
-        REMOTE_LABELS = [/Télétravail/i, /Remote/i, /télétravail/i, /remote/i, /Hybride/i, /sur site/i, /présentiel/i, /on[- ]?site/i].freeze
+        DESCRIPTION_SELECTORS = ["#the-position-section", "section", ".description"].freeze
+        REMOTE_LABELS = [/Télétravail/i, /Remote/i, /Hybride/i, /sur site/i, /présentiel/i, /on[- ]?site/i].freeze
 
         def call(input)
           html = input[:html] || input[:html_content] || input[:description_html] || ""
           doc = Nokogiri::HTML(html)
+
+          jsonld = extract_jsonld_job(doc)
           embedded_job = extract_embedded_job_data(doc)
+
           salary_text = extract_first(doc, SALARY_SELECTORS)
 
           {
-            title: embedded_job["name"] || extract_first(doc, TITLE_SELECTORS),
-            company: embedded_job.dig("organization", "name") || extract_first(doc, COMPANY_SELECTORS),
-            city: embedded_job.dig("office", "city") || normalize_city(extract_first(doc, LOCATION_SELECTORS)),
-            employment_type: normalize_contract_type(embedded_job["contract_type"] || extract_first(doc, CONTRACT_SELECTORS)),
-            salary_min_minor: embedded_job["salary_min"] || parse_salary_min(salary_text),
-            salary_max_minor: embedded_job["salary_max"] || parse_salary_max(salary_text),
-            salary_currency: embedded_job["salary_currency"] || parse_salary_currency(salary_text),
-            location_mode: normalize_remote_policy(embedded_job["remote"] || extract_labeled_text(doc, REMOTE_LABELS)),
-            posted_at: extract_relative_posted_at(doc) || parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)) || embedded_job["published_at"],
-            description_html: extract_first_html(doc, ["#the-position-section", "section", ".description"]) || embedded_job["description"],
+            disabled: disabled_offer?(doc),
+            title: jsonld["title"] || embedded_job["name"] || extract_first(doc, TITLE_SELECTORS),
+            company: jsonld.dig("hiringOrganization", "name") || embedded_job.dig("organization", "name") || extract_first(doc, COMPANY_SELECTORS),
+            city: jsonld_city(jsonld) || embedded_job.dig("office", "city") || normalize_city(extract_first(doc, LOCATION_SELECTORS)),
+            employment_type: normalize_contract_type(jsonld_employment_type(jsonld) || embedded_job["contract_type"] || extract_first(doc, CONTRACT_SELECTORS)),
+            salary_min_minor: jsonld_salary_min(jsonld) || embedded_job["salary_min"] || parse_salary_min(salary_text),
+            salary_max_minor: jsonld_salary_max(jsonld) || embedded_job["salary_max"] || parse_salary_max(salary_text),
+            salary_currency: jsonld_salary_currency(jsonld) || embedded_job["salary_currency"] || parse_salary_currency(salary_text),
+            location_mode: normalize_remote_policy(jsonld["jobLocationType"] || embedded_job["remote"] || extract_labeled_text(doc, REMOTE_LABELS)),
+            posted_at: jsonld["datePosted"] || extract_relative_posted_at(doc) || parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)) || embedded_job["published_at"],
+            description_html: jsonld["description"] || extract_first_html(doc, DESCRIPTION_SELECTORS) || embedded_job["description"],
           }
         end
 
         private
 
-        # --- Normalization helpers for DB compatibility ---
+        def disabled_offer?(doc)
+          doc.text.match?(DISABLED_BANNER_PATTERN)
+        end
+
+        def extract_jsonld_job(doc)
+          doc.css("script[type='application/ld+json']").each do |node|
+            payload = JSON.parse(node.text)
+            entries = payload.is_a?(Array) ? payload : [payload]
+            entries.each do |entry|
+              next unless entry.is_a?(Hash)
+
+              type = entry["@type"]
+              return entry if Array(type).map(&:to_s).include?("JobPosting")
+            end
+          rescue JSON::ParserError
+            next
+          end
+          {}
+        end
+
+        def jsonld_city(jsonld)
+          value = jsonld["jobLocation"]
+          locations = value.is_a?(Array) ? value : [value]
+          locations.each do |loc|
+            city = loc.is_a?(Hash) && loc.dig("address", "addressLocality")
+            return city if city.is_a?(String) && !city.empty?
+          end
+          nil
+        end
+
+        def jsonld_employment_type(jsonld)
+          value = jsonld["employmentType"]
+          Array(value).first
+        end
+
+        def jsonld_salary_min(jsonld)
+          base = jsonld["baseSalary"]
+          return nil unless base.is_a?(Hash)
+
+          value = base["value"]
+          return value["minValue"] if value.is_a?(Hash) && value["minValue"]
+          return value if value.is_a?(Numeric)
+
+          nil
+        end
+
+        def jsonld_salary_max(jsonld)
+          base = jsonld["baseSalary"]
+          return nil unless base.is_a?(Hash)
+
+          value = base["value"]
+          return value["maxValue"] if value.is_a?(Hash) && value["maxValue"]
+
+          nil
+        end
+
+        def jsonld_salary_currency(jsonld)
+          base = jsonld["baseSalary"]
+          return nil unless base.is_a?(Hash)
+
+          base["currency"]
+        end
+
         def normalize_city(location)
           return nil if location.nil? || location.empty?
 
-          # Pick the first city if multiple are listed
           location.split(",").first.strip
         end
 
         def normalize_contract_type(contract)
           return nil if contract.nil?
 
-          case contract.strip.downcase
-          when /full_time/ then "PERMANENT"
+          case contract.to_s.strip.downcase
+          when /full_time|temps plein|full[- ]?time/ then "FULL_TIME"
+          when /part_time|temps partiel|part[- ]?time/ then "PART_TIME"
           when /cdi/ then "PERMANENT"
-          when /temporary|temp/ then "TEMPORARY"
-          when /cdd/ then "FIXED_TERM"
-          when /freelance/ then "FREELANCE"
-          when /stage/ then "INTERNSHIP"
+          when /cdd|fixed[- ]?term/ then "FIXED_TERM"
+          when /freelance|contractor/ then "FREELANCE"
+          when /stage|intern/ then "INTERNSHIP"
           when /alternance|apprentissage/ then "APPRENTICESHIP"
-          when /intérim|interim|temporaire/ then "TEMPORARY"
-          when /temps plein|full[- ]?time/ then "FULL_TIME"
-          when /temps partiel|part[- ]?time/ then "PART_TIME"
-          else
-            nil
+          when /intérim|interim|temporaire|temporary|temp/ then "TEMPORARY"
           end
         end
 
         def parse_salary_min(salary)
           return nil if salary.nil? || salary =~ /non spécifié/i
 
-          # Match "50K à 80K €" or "50 000 - 80 000 EUR"
           if salary =~ /(\d+[\sKk]*)[\sà\-]+(\d+[\sKk]*)/i
-            raw_min = $1
+            raw_min = ::Regexp.last_match(1)
             min = raw_min.gsub(/[\sKk]/, "").to_i
             min *= 1000 if raw_min =~ /[Kk]/
             min
           elsif salary =~ /(\d+[\sKk]*)/i
-            raw_min = $1
+            raw_min = ::Regexp.last_match(1)
             min = raw_min.gsub(/[\sKk]/, "").to_i
             min *= 1000 if raw_min =~ /[Kk]/
             min
-          else
-            nil
           end
         end
 
@@ -89,12 +152,10 @@ module Sourcing
           return nil if salary.nil? || salary =~ /non spécifié/i
 
           if salary =~ /(\d+[\sKk]*)[\sà\-]+(\d+[\sKk]*)/i
-            raw_max = $2
+            raw_max = ::Regexp.last_match(2)
             max = raw_max.gsub(/[\sKk]/, "").to_i
             max *= 1000 if raw_max =~ /[Kk]/
             max
-          else
-            nil
           end
         end
 
@@ -107,46 +168,33 @@ module Sourcing
             "USD"
           elsif salary =~ /£|gbp/i
             "GBP"
-          else
-            nil
           end
         end
 
         def normalize_remote_policy(remote)
           return nil if remote.nil?
 
-          case remote.strip.downcase
-          when /partial|hybride|partiel|quelques jours/
-            "hybrid"
-          when /full remote|full_remote|remote|full/i
+          case remote.to_s.strip.downcase
+          when /telecommute|full[_ ]?remote|^remote$|télétravail total/
             "remote"
-          when /none|no_remote/
-            "on-site"
-          when /télétravail total|full remote|remote/i
-            "remote"
-          when /hybride|partiel|quelques jours/i
+          when /partial|hybride|partiel|quelques jours|hybrid/
             "hybrid"
-          when /sur site|on[- ]?site|présentiel/i
+          when /none|no_remote|sur site|on[- ]?site|présentiel/
             "on-site"
-          else
-            nil
           end
         end
 
         def parse_posted_at(posted)
           return nil if posted.nil?
-
           return "last month" if posted.match?(/\ble mois dernier\b|\blast month\b/i)
 
-          # Example: "il y a 8 jours"
           if posted =~ /il y a (\d+) jours?/
-            days_ago = $1.to_i
+            days_ago = ::Regexp.last_match(1).to_i
             (Time.now - days_ago * 86_400).iso8601
           elsif posted =~ /il y a (\d+) heures?/
-            hours_ago = $1.to_i
+            hours_ago = ::Regexp.last_match(1).to_i
             (Time.now - hours_ago * 3600).iso8601
-          elsif posted =~ /\d{2}\/\d{2}\/\d{4}/
-            # Format: 31/03/2026
+          elsif posted =~ %r{\d{2}/\d{2}/\d{4}}
             Date.strptime(posted, "%d/%m/%Y").to_time.iso8601
           else
             posted

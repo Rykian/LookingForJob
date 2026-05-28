@@ -159,7 +159,9 @@ export enum ProviderEnum {
   /** Provider: indeed */
   Indeed = 'indeed',
   /** Provider: linkedin */
-  Linkedin = 'linkedin'
+  Linkedin = 'linkedin',
+  /** Provider: wttj */
+  Wttj = 'wttj'
 }
 
 export type Query = {

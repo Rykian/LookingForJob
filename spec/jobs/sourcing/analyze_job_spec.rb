@@ -154,6 +154,55 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     expect(Sourcing::Pipeline).not_to have_received(:advance)
   end
 
+  it "returns early when offer is already disabled" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/disabled",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/disabled"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
+      disabled: true
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html>content</html>"),
+      filename: "disabled.html",
+      content_type: "text/html"
+    )
+
+    expect(analyze_step).not_to receive(:call)
+
+    described_class.perform_now(offer.id)
+
+    expect(Sourcing::Pipeline).not_to have_received(:advance)
+  end
+
+  it "marks offer as disabled and stops pipeline when extracted[:disabled] is true" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+    allow(analyze_step).to receive(:call).and_return(disabled: true, title: "Should be ignored")
+
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/taken-down",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/taken-down"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
+    )
+    offer.html_file.attach(
+      io: StringIO.new("<html>content</html>"),
+      filename: "taken_down.html",
+      content_type: "text/html"
+    )
+
+    described_class.perform_now(offer.id)
+
+    offer.reload
+    expect(offer.disabled).to eq(true)
+    expect(offer.title).to be_nil
+    expect(offer.steps_details["analyze"]).to be_nil
+
+    expect(Sourcing::Pipeline).not_to have_received(:advance)
+  end
+
   describe "version checking behavior" do
     let(:step_name) { "analyze" }
     let(:current_version) { 1 }

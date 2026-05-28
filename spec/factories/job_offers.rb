@@ -21,6 +21,10 @@ FactoryBot.define do
       rejected { true }
     end
 
+    trait :disabled do
+      disabled { true }
+    end
+
     trait :with_discovery_step do
       transient { discovered_at { 2.days.ago } }
       steps_details do
