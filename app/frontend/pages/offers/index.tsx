@@ -19,6 +19,9 @@ export default function OffersPage() {
     datePreset,
     sortBy,
     sortDirection,
+    onlyWithinCommute,
+    minCommuteMinutes,
+    maxCommuteMinutes,
     updateSearchParams,
     resetSearchParams,
   } = useJobOffersFilters({
@@ -39,6 +42,7 @@ export default function OffersPage() {
     technologiesLoading,
     sourcingStatus,
     isSourcingActive,
+    commuteMaxMinutes,
     data,
     loading,
     error,
@@ -70,6 +74,10 @@ export default function OffersPage() {
         selectedEnglishLevels={selectedEnglishLevels}
         seenField={seenField}
         datePreset={datePreset}
+        onlyWithinCommute={onlyWithinCommute}
+        minCommuteMinutes={minCommuteMinutes}
+        maxCommuteMinutes={maxCommuteMinutes}
+        commuteMaxMinutes={commuteMaxMinutes}
         onChangeTechnologies={(items) => {
           updateSearchParams({
             page: null,
@@ -95,15 +103,35 @@ export default function OffersPage() {
           })
         }}
         onChangeSeenField={(value) => {
-          updateSearchParams({
-            page: null,
-            seenField: value,
-          })
+          updateSearchParams({ page: null, seenField: value })
         }}
         onChangeDatePreset={(value) => {
+          updateSearchParams({ page: null, datePreset: value })
+        }}
+        onChangeOnlyWithinCommute={(checked) => {
+          if (checked) {
+            updateSearchParams({
+              page: null,
+              onlyWithinCommute: 'true',
+              minCommute: null,
+              maxCommute: commuteMaxMinutes != null ? String(commuteMaxMinutes) : null,
+            })
+          } else {
+            updateSearchParams({ page: null, onlyWithinCommute: null })
+          }
+        }}
+        onChangeMinCommuteMinutes={(value) => {
           updateSearchParams({
             page: null,
-            datePreset: value,
+            onlyWithinCommute: null,
+            minCommute: value != null ? String(value) : null,
+          })
+        }}
+        onChangeMaxCommuteMinutes={(value) => {
+          updateSearchParams({
+            page: null,
+            onlyWithinCommute: null,
+            maxCommute: value != null ? String(value) : null,
           })
         }}
         onReset={resetSearchParams}

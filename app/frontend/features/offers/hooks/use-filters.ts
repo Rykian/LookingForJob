@@ -84,6 +84,14 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
         .filter((value): value is EnglishLevel => isOneOf(value, ENGLISH_LEVEL_VALUES))
     : []
 
+  const onlyWithinCommute = searchParams.get('onlyWithinCommute') === 'true'
+
+  const minCommuteParam = searchParams.get('minCommute')
+  const minCommuteMinutes = minCommuteParam ? Number.parseInt(minCommuteParam, 10) : null
+
+  const maxCommuteParam = searchParams.get('maxCommute')
+  const maxCommuteMinutes = maxCommuteParam ? Number.parseInt(maxCommuteParam, 10) : null
+
   const seenFieldParam = searchParams.get('seenField')
   const seenField: SeenField =
     seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
@@ -150,6 +158,8 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...seenDateVariables,
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
     ...(selectedEnglishLevels.length > 0 ? { englishLevelsRequired: selectedEnglishLevels } : {}),
+    ...(minCommuteMinutes !== null ? { minCommuteMinutes } : {}),
+    ...(maxCommuteMinutes !== null ? { maxCommuteMinutes } : {}),
   }
 
   return {
@@ -163,6 +173,9 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     datePreset,
     sortBy,
     sortDirection,
+    onlyWithinCommute,
+    minCommuteMinutes,
+    maxCommuteMinutes,
     updateSearchParams,
     resetSearchParams,
   }

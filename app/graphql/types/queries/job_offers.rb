@@ -32,10 +32,14 @@ module Types
             description: "Filter offers by matching any of these technologies (primary or secondary)."
           argument :english_levels_required, [String], required: false,
             description: "Filter by required English level (none, basic, professional, fluent)."
+          argument :min_commute_minutes, Integer, required: false,
+            description: "Only return offers with a commute duration >= this value (uses profile origin and mode)."
+          argument :max_commute_minutes, Integer, required: false,
+            description: "Only return offers with a commute duration <= this value (uses profile origin and mode)."
         end
       end
 
-      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil)
+      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil, min_commute_minutes: nil, max_commute_minutes: nil)
         scope = ::JobOffer.where(rejected: false, disabled: false)
         scope = scope.where(source: source) if source.present?
         scope = scope.where(location_mode: location_modes) if location_modes.present?
@@ -52,6 +56,25 @@ module Types
         scope = scope.where("last_seen_at <= ?", last_seen_before) if last_seen_before.present?
 
         scope = scope.where(english_level_required: english_levels_required) if english_levels_required.present?
+
+        if min_commute_minutes.present? || max_commute_minutes.present?
+          cfg = context[:scoring_profile]&.dig(:location, :commute)
+          if cfg
+            origin_id = Commute::City.find_by(normalized_name: Commute::City.normalize(cfg[:origin_city]))&.id
+            if origin_id
+              duration_range = if min_commute_minutes && max_commute_minutes
+                min_commute_minutes..max_commute_minutes
+              elsif min_commute_minutes
+                min_commute_minutes..
+              else
+                ..max_commute_minutes
+              end
+              scope = scope
+                .joins("INNER JOIN commute_durations ON commute_durations.destination_city_id = job_offers.commute_city_id")
+                .where(commute_durations: { origin_city_id: origin_id, mode: cfg[:mode], duration_minutes: duration_range })
+            end
+          end
+        end
 
         if technologies.present?
           norm_techs = technologies.map { |t| t.downcase.gsub(/[^a-z]/, "") }

@@ -1,9 +1,11 @@
 import { useQuery, useSubscription } from '@apollo/client/react'
 import { useEffect, useRef } from 'react'
+import { SCORING_PROFILE_QUERY } from '@/features/profile/queries/documents'
 import type {
   JobOffersQuery,
   JobOffersQueryVariables,
   ProvidersQuery,
+  ScoringProfileQuery,
   SourcingStatusSubscription,
   TechnologiesQuery,
 } from '@/graphql/generated'
@@ -33,6 +35,15 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
   const sourcingStatus = sourcingStatusData?.sourcingStatus
   const isSourcingActive = sourcingStatus?.active ?? false
 
+  const { data: profileData } = useQuery<ScoringProfileQuery>(SCORING_PROFILE_QUERY)
+  const commuteCfg = (
+    (profileData?.scoringProfile as Record<string, unknown> | undefined)?.location as
+      | Record<string, unknown>
+      | undefined
+  )?.commute as Record<string, unknown> | undefined
+  const commuteMaxMinutes =
+    typeof commuteCfg?.max_minutes === 'number' ? commuteCfg.max_minutes : null
+
   const queryState = useQuery<JobOffersQuery, JobOffersQueryVariables>(JOB_OFFERS_QUERY, {
     variables,
   })
@@ -55,6 +66,7 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
     technologiesLoading,
     sourcingStatus,
     isSourcingActive,
+    commuteMaxMinutes,
     ...queryState,
   }
 }

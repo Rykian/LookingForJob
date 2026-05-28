@@ -11,6 +11,7 @@ import {
   ComboboxList,
   ComboboxValue,
 } from '@/components/ui/combobox'
+import { Input } from '@/components/ui/input'
 import type { DatePreset, EnglishLevel, SeenField } from '@/features/offers/hooks/use-filters'
 import { englishLevelValues, locationModeValues } from '@/features/offers/hooks/use-filters'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
@@ -26,13 +27,25 @@ interface FiltersPanelProps {
   selectedEnglishLevels: EnglishLevel[]
   seenField: SeenField
   datePreset: DatePreset
+  onlyWithinCommute: boolean
+  minCommuteMinutes: number | null
+  maxCommuteMinutes: number | null
+  commuteMaxMinutes: number | null
   onChangeTechnologies: (items: string[]) => void
   onChangeSources: (items: string[]) => void
   onChangeLocationModes: (items: string[]) => void
   onChangeEnglishLevels: (items: EnglishLevel[]) => void
   onChangeSeenField: (value: string) => void
   onChangeDatePreset: (value: string) => void
+  onChangeOnlyWithinCommute: (checked: boolean) => void
+  onChangeMinCommuteMinutes: (value: number | null) => void
+  onChangeMaxCommuteMinutes: (value: number | null) => void
   onReset: () => void
+}
+
+function parseMinutes(raw: string): number | null {
+  const n = Number.parseInt(raw, 10)
+  return Number.isFinite(n) && n >= 0 ? n : null
 }
 
 export function FiltersPanel({
@@ -46,12 +59,19 @@ export function FiltersPanel({
   selectedEnglishLevels,
   seenField,
   datePreset,
+  onlyWithinCommute,
+  minCommuteMinutes,
+  maxCommuteMinutes,
+  commuteMaxMinutes,
   onChangeTechnologies,
   onChangeSources,
   onChangeLocationModes,
   onChangeEnglishLevels,
   onChangeSeenField,
   onChangeDatePreset,
+  onChangeOnlyWithinCommute,
+  onChangeMinCommuteMinutes,
+  onChangeMaxCommuteMinutes,
   onReset,
 }: FiltersPanelProps) {
   return (
@@ -178,6 +198,40 @@ export function FiltersPanel({
             <option value="last_7_days">Date: last 7 days</option>
             <option value="last_30_days">Date: last 30 days</option>
           </select>
+
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              min={0}
+              placeholder="Min commute"
+              value={minCommuteMinutes ?? ''}
+              onChange={(e) => {
+                onChangeOnlyWithinCommute(false)
+                onChangeMinCommuteMinutes(parseMinutes(e.target.value))
+              }}
+            />
+            <Input
+              type="number"
+              min={0}
+              placeholder={
+                commuteMaxMinutes != null ? `Max (profile: ${commuteMaxMinutes})` : 'Max commute'
+              }
+              value={maxCommuteMinutes ?? ''}
+              onChange={(e) => {
+                onChangeOnlyWithinCommute(false)
+                onChangeMaxCommuteMinutes(parseMinutes(e.target.value))
+              }}
+            />
+          </div>
+
+          <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border bg-background px-3 text-sm">
+            <input
+              type="checkbox"
+              checked={onlyWithinCommute}
+              onChange={(e) => onChangeOnlyWithinCommute(e.target.checked)}
+            />
+            Within commute
+          </label>
 
           <Button variant="outline" onClick={onReset}>
             Reset
