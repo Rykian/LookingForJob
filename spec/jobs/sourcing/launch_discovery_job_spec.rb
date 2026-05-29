@@ -190,4 +190,43 @@ RSpec.describe Sourcing::LaunchDiscoveryJob, type: :job do
       { source: "linkedin", keyword: "ruby" },
     ])
   end
+
+  it "creates a Run record with resolved keywords, providers, and work_modes" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return("ruby, rails")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return("remote, hybrid")
+
+    expect { described_class.perform_now }.to change(Run, :count).by(1)
+
+    run = Run.last
+    expect(run.keywords).to eq(["ruby", "rails"])
+    expect(run.providers).to match_array(["linkedin", "france_travail"])
+    expect(run.work_modes).to eq(["remote", "hybrid"])
+  end
+
+  it "passes the run_id to every enqueued DiscoveryJob" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return("ruby")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return("remote")
+
+    described_class.perform_now
+
+    run = Run.last
+    queued = enqueued_jobs.select { |job| job[:job] == Sourcing::DiscoveryJob }
+    run_ids = queued.map { |job| job[:args].first.deep_symbolize_keys[:run_id] }
+
+    expect(run_ids).to all(eq(run.id))
+  end
+
+  it "uses the existing run when run_id is passed and updates resolved values" do
+    allow(ENV).to receive(:[]).with("KEYWORDS").and_return("ruby")
+    allow(ENV).to receive(:[]).with("WORK_MODE").and_return("remote")
+
+    existing = Run.create!(keywords: [], providers: [], work_modes: [])
+
+    expect { described_class.perform_now(run_id: existing.id) }.not_to change(Run, :count)
+
+    existing.reload
+    expect(existing.keywords).to eq(["ruby"])
+    expect(existing.providers).to match_array(["linkedin", "france_travail"])
+    expect(existing.work_modes).to eq(["remote"])
+  end
 end

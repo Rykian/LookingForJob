@@ -7,12 +7,13 @@ module Sourcing
     # ActiveJob::Continuable's around_perform callback causes Ruby 3+ to receive
     # deserialized kwargs as a positional hash rather than keyword args when the
     # job is executed via Sidekiq. Accept both forms explicitly.
-    def perform(*pos_args, source: nil, keyword: nil, work_mode: nil, force: false)
+    def perform(*pos_args, source: nil, keyword: nil, work_mode: nil, force: false, run_id: nil)
       if (hash = pos_args.first).is_a?(Hash)
         source    = hash[:source]
         keyword   = hash[:keyword]
         work_mode = hash[:work_mode]
         force     = hash.fetch(:force, false)
+        run_id    = hash[:run_id]
       end
 
       input = { source:, keyword:, work_mode:, force: }
@@ -31,7 +32,7 @@ module Sourcing
             runtime: @runtime,
             page: page
           )
-          enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls), keyword: keyword, force: force)
+          enqueue_discovered_urls(source: source, discovered_urls: result.fetch(:discovered_urls), keyword: keyword, force: force, run_id: run_id)
 
           break unless result.fetch(:has_next_page, false)
 
@@ -45,7 +46,7 @@ module Sourcing
 
     private
 
-    def enqueue_discovered_urls(source:, discovered_urls:, keyword:, force: false)
+    def enqueue_discovered_urls(source:, discovered_urls:, keyword:, force: false, run_id: nil)
       discovered_at = Time.current
 
       discovered_urls.each do |url|
@@ -53,6 +54,14 @@ module Sourcing
         next unless @seen_url_hashes.add?(url_hash)
 
         offer = upsert_offer_url(source: source, url: url, url_hash: url_hash, now: discovered_at, keyword:)
+
+        if run_id
+          RunJobOffer.insert(
+            { run_id:, job_offer_id: offer.id },
+            unique_by: %i[run_id job_offer_id]
+          )
+        end
+
         Sourcing::Pipeline.advance(offer, "discovery", force:)
       end
     end

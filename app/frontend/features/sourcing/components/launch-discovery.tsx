@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client/react'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import {
   LAUNCH_DISCOVERY_MUTATION,
   PROVIDERS_QUERY,
@@ -17,6 +18,7 @@ interface LaunchDiscoveryProps {
 }
 
 export function LaunchDiscovery({ onSuccess }: LaunchDiscoveryProps) {
+  const navigate = useNavigate()
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [selectedProviders, setSelectedProviders] = useState<string[]>([])
 
@@ -44,10 +46,12 @@ export function LaunchDiscovery({ onSuccess }: LaunchDiscoveryProps) {
   }, [technologies])
 
   useEffect(() => {
-    if (data?.launchDiscovery?.message) {
+    const runId = data?.launchDiscovery?.runId
+    if (runId) {
       onSuccess?.()
+      navigate(`/offers?runId=${runId}`)
     }
-  }, [data?.launchDiscovery?.message, onSuccess])
+  }, [data?.launchDiscovery?.runId, onSuccess, navigate])
 
   const handleLaunch = () => {
     launchDiscovery({

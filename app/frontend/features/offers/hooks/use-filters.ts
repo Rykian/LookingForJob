@@ -3,7 +3,7 @@ import { type JobOffersQueryVariables, LocationModeEnum } from '@/graphql/genera
 
 const LOCATION_MODE_VALUES = Object.values(LocationModeEnum)
 const SEEN_FIELD_VALUES = ['first_seen_at', 'last_seen_at'] as const
-const DATE_PRESET_VALUES = ['today', 'yesterday', 'last_7_days', 'last_30_days'] as const
+const DATE_PRESET_VALUES = ['all', 'today', 'yesterday', 'last_7_days', 'last_30_days'] as const
 const SORT_BY_VALUES = ['first_seen_at', 'last_seen_at', 'score', 'company', 'title'] as const
 const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
 const ENGLISH_LEVEL_VALUES = ['none', 'basic', 'professional', 'fluent'] as const
@@ -23,11 +23,14 @@ function getPresetRange(preset: DatePreset): { after?: string; before?: string }
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
   switch (preset) {
-    case 'today': {
+    case 'all':
+      return {}
+
+    case 'today':
       return {
         after: startOfToday.toISOString(),
       }
-    }
+
     case 'yesterday': {
       const start = new Date(startOfToday)
       start.setDate(start.getDate() - 1)
@@ -96,9 +99,14 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
   const seenField: SeenField =
     seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
 
+  const runId = searchParams.get('runId') || null
+
   const datePresetParam = searchParams.get('datePreset')
+  const datePresetDefault: DatePreset = runId ? 'all' : 'today'
   const datePreset: DatePreset =
-    datePresetParam && isOneOf(datePresetParam, DATE_PRESET_VALUES) ? datePresetParam : 'today'
+    datePresetParam && isOneOf(datePresetParam, DATE_PRESET_VALUES)
+      ? datePresetParam
+      : datePresetDefault
 
   const sortByParam = searchParams.get('sortBy')
   const sortBy: SortBy = sortByParam && isOneOf(sortByParam, SORT_BY_VALUES) ? sortByParam : 'score'
@@ -160,11 +168,13 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...(selectedEnglishLevels.length > 0 ? { englishLevelsRequired: selectedEnglishLevels } : {}),
     ...(minCommuteMinutes !== null ? { minCommuteMinutes } : {}),
     ...(maxCommuteMinutes !== null ? { maxCommuteMinutes } : {}),
+    ...(runId ? { runId } : {}),
   }
 
   return {
     page,
     variables,
+    runId,
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,

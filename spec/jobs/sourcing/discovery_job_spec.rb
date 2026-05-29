@@ -156,4 +156,58 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
 
     expect(page_calls).to eq([1, 2])
   end
+
+  context "with a run_id" do
+    let(:run) { Run.create! }
+
+    before do
+      allow(Sourcing::Pipeline).to receive(:advance)
+      allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return({})
+      allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
+    end
+
+    it "creates a join row for each discovered offer" do
+      allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
+        { discovered_urls: ["https://example.com/jobs/1", "https://example.com/jobs/2"], has_next_page: false }
+      )
+
+      described_class.perform_now(
+        source: "linkedin", keyword: "ruby", work_mode: "remote", run_id: run.id
+      )
+
+      expect(run.job_offers.count).to eq(2)
+      expect(run.job_offers.map(&:url)).to match_array([
+        "https://example.com/jobs/1",
+        "https://example.com/jobs/2",
+      ])
+    end
+
+    it "is idempotent: re-running does not create duplicate join rows" do
+      allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
+        { discovered_urls: ["https://example.com/jobs/1"], has_next_page: false }
+      )
+
+      described_class.perform_now(
+        source: "linkedin", keyword: "ruby", work_mode: "remote", run_id: run.id
+      )
+      described_class.perform_now(
+        source: "linkedin", keyword: "ruby", work_mode: "remote", run_id: run.id
+      )
+
+      expect(run.job_offers.count).to eq(1)
+    end
+  end
+
+  it "does not create join rows when run_id is not provided" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:setup).and_return({})
+    allow_any_instance_of(MockDiscoveryStep).to receive(:teardown)
+    allow_any_instance_of(MockDiscoveryStep).to receive(:crawl_page).and_return(
+      { discovered_urls: ["https://example.com/jobs/1"], has_next_page: false }
+    )
+
+    expect {
+      described_class.perform_now(source: "linkedin", keyword: "ruby", work_mode: "remote")
+    }.not_to change(RunJobOffer, :count)
+  end
 end

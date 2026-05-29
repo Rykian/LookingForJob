@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_28_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_29_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -107,9 +107,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_28_120000) do
     t.index ["url_hash"], name: "index_job_offers_on_url_hash", unique: true
   end
 
+  create_table "run_job_offers", force: :cascade do |t|
+    t.bigint "job_offer_id", null: false
+    t.bigint "run_id", null: false
+    t.index ["job_offer_id"], name: "index_run_job_offers_on_job_offer_id"
+    t.index ["run_id", "job_offer_id"], name: "index_run_job_offers_on_run_id_and_job_offer_id", unique: true
+    t.index ["run_id"], name: "index_run_job_offers_on_run_id"
+  end
+
+  create_table "runs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "keywords", default: [], null: false, array: true
+    t.string "providers", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.string "work_modes", default: [], null: false, array: true
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "commute_durations", "commute_cities", column: "destination_city_id"
   add_foreign_key "commute_durations", "commute_cities", column: "origin_city_id"
   add_foreign_key "job_offers", "commute_cities"
+  add_foreign_key "run_job_offers", "job_offers"
+  add_foreign_key "run_job_offers", "runs"
 end

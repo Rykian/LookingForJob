@@ -28,6 +28,7 @@ export const JOB_OFFERS_QUERY = gql`
     $englishLevelsRequired: [String!]
     $minCommuteMinutes: Int
     $maxCommuteMinutes: Int
+    $runId: ID
   ) {
     jobOffers(
       page: $page
@@ -44,6 +45,7 @@ export const JOB_OFFERS_QUERY = gql`
       englishLevelsRequired: $englishLevelsRequired
       minCommuteMinutes: $minCommuteMinutes
       maxCommuteMinutes: $maxCommuteMinutes
+      runId: $runId
     ) {
       totalCount
       totalPages

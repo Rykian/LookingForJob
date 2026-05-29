@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { FiltersPanel } from '@/features/offers/components/filters-panel'
 import { Pagination } from '@/features/offers/components/pagination'
@@ -11,6 +12,7 @@ export default function OffersPage() {
   const {
     page,
     variables,
+    runId,
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
@@ -62,6 +64,21 @@ export default function OffersPage() {
         <h1 className="text-2xl font-semibold">Offers</h1>
         <p className="mt-1 text-sm text-muted-foreground">Browse and filter sourced job offers.</p>
       </div>
+
+      {runId && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">Filtered by run</span>
+          <span className="font-medium">#{runId}</span>
+          <button
+            type="button"
+            className="ml-auto rounded p-0.5 hover:bg-muted"
+            onClick={() => updateSearchParams({ runId: null })}
+            aria-label="Clear run filter"
+          >
+            <X className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
+      )}
 
       <FiltersPanel
         providerKeys={providerKeys}

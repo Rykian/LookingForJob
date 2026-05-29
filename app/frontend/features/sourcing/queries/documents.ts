@@ -16,6 +16,7 @@ export const LAUNCH_DISCOVERY_MUTATION = gql`
   mutation LaunchDiscovery($keywords: [String!], $providers: [ProviderEnum!]) {
     launchDiscovery(input: { keywords: $keywords, providers: $providers }) {
       message
+      runId
     }
   }
 `

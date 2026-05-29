@@ -11,11 +11,13 @@ module Mutations
 
     field :message, String, null: false,
       description: "User-facing enqueue confirmation message."
+    field :run_id, GraphQL::Types::ID, null: false,
+      description: "ID of the Run created for this discovery. Use to filter offers by run."
 
     def resolve(keywords: nil, providers: nil)
-      # Discovery fan-out is handled by LaunchDiscoveryJob based on env configuration.
-      Sourcing::LaunchDiscoveryJob.perform_later(keywords: keywords, providers: providers)
-      { message: "Discovery job enqueued." }
+      run = ::Run.create!(keywords: [], providers: [], work_modes: [])
+      Sourcing::LaunchDiscoveryJob.perform_later(keywords: keywords, providers: providers, run_id: run.id)
+      { message: "Discovery job enqueued.", run_id: run.id }
     end
   end
 end

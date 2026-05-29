@@ -65,6 +65,9 @@ class JobOffer < ApplicationRecord
 
   belongs_to :commute_city, class_name: "Commute::City", optional: true, inverse_of: :job_offers
 
+  has_many :run_job_offers, dependent: :delete_all
+  has_many :runs, through: :run_job_offers
+
   enum :location_mode, LOCATION_MODE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true
   enum :offer_language, OFFER_LANGUAGES, prefix: true

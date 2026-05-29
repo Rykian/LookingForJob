@@ -1,6 +1,8 @@
 import { MockedProvider } from '@apollo/client/testing/react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import {
   LAUNCH_DISCOVERY_MUTATION,
@@ -8,6 +10,10 @@ import {
   TECHNOLOGIES_QUERY,
 } from '@/features/sourcing/queries/documents'
 import { LaunchDiscovery } from './launch-discovery'
+
+function renderWithRouter(ui: ReactNode) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>)
+}
 
 const mockProvidersQuery = {
   request: { query: PROVIDERS_QUERY },
@@ -33,7 +39,7 @@ const mockSuccessMutation = {
   },
   result: {
     data: {
-      launchDiscovery: { message: 'Discovery job enqueued.' },
+      launchDiscovery: { message: 'Discovery job enqueued.', runId: '42' },
     },
   },
 }
@@ -45,7 +51,7 @@ async function waitForAllSelectionsLoaded() {
 
 describe('LaunchDiscovery', () => {
   it('pre-selects all providers on mount', async () => {
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -57,7 +63,7 @@ describe('LaunchDiscovery', () => {
   })
 
   it('pre-selects all keywords on mount', async () => {
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -71,7 +77,7 @@ describe('LaunchDiscovery', () => {
   it('shows success message after successful launch', async () => {
     const user = userEvent.setup()
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery, mockSuccessMutation]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -88,7 +94,7 @@ describe('LaunchDiscovery', () => {
     const user = userEvent.setup()
     const onSuccess = vi.fn()
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery, mockSuccessMutation]}>
         <LaunchDiscovery onSuccess={onSuccess} />
       </MockedProvider>,
@@ -116,7 +122,7 @@ describe('LaunchDiscovery', () => {
       error: new Error('Network error'),
     }
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery, errorMutation]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -143,7 +149,7 @@ describe('LaunchDiscovery', () => {
       error: new Error('Network error'),
     }
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery, errorMutation]}>
         <LaunchDiscovery onSuccess={onSuccess} />
       </MockedProvider>,
@@ -162,7 +168,7 @@ describe('LaunchDiscovery', () => {
     const user = userEvent.setup()
     const delayedMutation = { ...mockSuccessMutation, delay: 100 }
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, mockTechnologiesQuery, delayedMutation]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -181,7 +187,7 @@ describe('LaunchDiscovery', () => {
       delay: 1000,
     }
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[slowProviders, mockTechnologiesQuery]}>
         <LaunchDiscovery />
       </MockedProvider>,
@@ -196,7 +202,7 @@ describe('LaunchDiscovery', () => {
       delay: 1000,
     }
 
-    render(
+    renderWithRouter(
       <MockedProvider mocks={[mockProvidersQuery, slowKeywords]}>
         <LaunchDiscovery />
       </MockedProvider>,

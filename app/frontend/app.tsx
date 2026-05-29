@@ -4,6 +4,7 @@ import DashboardPage from '@/pages/dashboard'
 import OfferDetailPage from '@/pages/offers/detail'
 import OffersPage from '@/pages/offers/index'
 import ProfilePage from '@/pages/profile'
+import RunsPage from '@/pages/runs/index'
 import SourcingPage from '@/pages/sourcing'
 
 const router = createBrowserRouter([
@@ -14,6 +15,7 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'offers', element: <OffersPage /> },
       { path: 'offers/:id', element: <OfferDetailPage /> },
+      { path: 'runs', element: <RunsPage /> },
       { path: 'sourcing', element: <SourcingPage /> },
       { path: 'profile', element: <ProfilePage /> },
     ],

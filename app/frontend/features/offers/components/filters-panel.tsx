@@ -193,6 +193,7 @@ export function FiltersPanel({
             value={datePreset}
             onChange={(event) => onChangeDatePreset(event.target.value)}
           >
+            <option value="all">Date: all</option>
             <option value="today">Date: today</option>
             <option value="yesterday">Date: yesterday</option>
             <option value="last_7_days">Date: last 7 days</option>

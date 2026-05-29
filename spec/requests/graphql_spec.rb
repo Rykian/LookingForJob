@@ -446,7 +446,7 @@ RSpec.describe "GraphQL API", type: :request do
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "launchDiscovery", "message")).to eq("Discovery job enqueued.")
-      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: ["ruby", "rails"], providers: nil)
+      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: ["ruby", "rails"], providers: nil, run_id: kind_of(Integer))
     end
 
     it "enqueues launch discovery job with providers parameter" do
@@ -468,7 +468,7 @@ RSpec.describe "GraphQL API", type: :request do
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "launchDiscovery", "message")).to eq("Discovery job enqueued.")
-      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: nil, providers: ["linkedin", "indeed"])
+      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: nil, providers: ["linkedin", "indeed"], run_id: kind_of(Integer))
     end
 
     it "enqueues launch discovery job with both keywords and providers parameters" do
@@ -490,7 +490,7 @@ RSpec.describe "GraphQL API", type: :request do
 
       expect(result["errors"]).to be_nil
       expect(result.dig("data", "launchDiscovery", "message")).to eq("Discovery job enqueued.")
-      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: ["ruby"], providers: ["linkedin", "indeed", "apec"])
+      expect(Sourcing::LaunchDiscoveryJob).to have_received(:perform_later).with(keywords: ["ruby"], providers: ["linkedin", "indeed", "apec"], run_id: kind_of(Integer))
     end
   end
 end

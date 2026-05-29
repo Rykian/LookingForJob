@@ -6,6 +6,7 @@ module Types
     include Types::Queries::JobOffer
     include Types::Queries::JobOffers
     include Types::Queries::Providers
+    include Types::Queries::Runs
     include Types::Queries::ScoringProfile
     include Types::Queries::Technologies
 
