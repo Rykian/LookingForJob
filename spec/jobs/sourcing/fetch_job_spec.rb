@@ -74,6 +74,7 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
       "fetch",
+      nil,
       force: false
     )
   end

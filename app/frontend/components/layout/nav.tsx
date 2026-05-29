@@ -1,4 +1,12 @@
-import { Briefcase, ExternalLink, History, LayoutDashboard, Search, Settings } from 'lucide-react'
+import {
+  AlertTriangle,
+  Briefcase,
+  ExternalLink,
+  History,
+  LayoutDashboard,
+  Search,
+  Settings,
+} from 'lucide-react'
 import { NavLink } from 'react-router'
 import { cn } from '@/lib/utils'
 
@@ -6,6 +14,7 @@ const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/offers', label: 'Offers', icon: Briefcase, end: false },
   { to: '/runs', label: 'Runs', icon: History, end: false },
+  { to: '/errors', label: 'Errors', icon: AlertTriangle, end: false },
   { to: '/sourcing', label: 'Sourcing', icon: Search, end: false },
   { to: '/profile', label: 'Profile', icon: Settings, end: false },
 ]

@@ -8,7 +8,7 @@ module Sourcing
       return unless offer
 
       if Sourcing::Pipeline.should_skip?(offer, "commute", force:)
-        Sourcing::Pipeline.advance(offer, "commute", force:)
+        Sourcing::Pipeline.advance(offer, "commute", run_id, force:)
         return
       end
 
@@ -25,7 +25,7 @@ module Sourcing
       attrs[:city] = result.canonical_city if result.canonical_city.present? && result.canonical_city != offer.city
 
       offer.update!(attrs)
-      Sourcing::Pipeline.advance(offer, "commute", force:)
+      Sourcing::Pipeline.advance(offer, "commute", run_id, force:)
     end
   end
 end

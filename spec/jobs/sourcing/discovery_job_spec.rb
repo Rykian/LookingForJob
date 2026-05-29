@@ -76,6 +76,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.url == "https://example.com/jobs/1" },
       "discovery",
+      nil,
       force: false
     )
   end
@@ -97,7 +98,7 @@ RSpec.describe Sourcing::DiscoveryJob, type: :job do
       force: true
     )
 
-    expect(Sourcing::Pipeline).to have_received(:advance).with(anything, "discovery", force: true).once
+    expect(Sourcing::Pipeline).to have_received(:advance).with(anything, "discovery", nil, force: true).once
   end
 
   it "deduplicates urls returned across pages within a single run" do

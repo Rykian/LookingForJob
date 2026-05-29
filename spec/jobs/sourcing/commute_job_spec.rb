@@ -40,7 +40,7 @@ RSpec.describe Sourcing::CommuteJob, type: :job do
     expect(offer.city).to eq("Paris")
     expect(offer.steps_details["commute"]).to include("version" => Sourcing::CommuteStep::VERSION)
     expect(offer.steps_details.dig("commute", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
-    expect(Sourcing::Pipeline).to have_received(:advance).with(satisfy { |o| o.id == offer.id }, "commute", force: false)
+    expect(Sourcing::Pipeline).to have_received(:advance).with(satisfy { |o| o.id == offer.id }, "commute", nil, force: false)
   end
 
   it "does not overwrite city when CommuteStep returns no canonical city" do

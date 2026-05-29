@@ -89,6 +89,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
       "analyze",
+      nil,
       force: false
     )
   end

@@ -8,6 +8,7 @@ export const RUNS_QUERY = gql`
       providers
       workModes
       jobOffersCount
+      errorCount
       createdAt
     }
   }

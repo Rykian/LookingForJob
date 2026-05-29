@@ -47,7 +47,7 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     expect { described_class.perform_now(-1) }.not_to raise_error
   end
 
-  it "logs and raises when profile loading fails" do
+  it "records error and raises when profile loading fails" do
     offer = JobOffer.create!(
       source: "linkedin",
       url: "https://example.com/jobs/score-2",
@@ -56,10 +56,14 @@ RSpec.describe Sourcing::ScoringJob, type: :job do
     )
 
     allow(Sourcing::ScoringProfile).to receive(:load).and_raise("bad profile")
-    allow(Rails.logger).to receive(:error)
 
     expect { described_class.perform_now(offer.id) }.to raise_error(RuntimeError, /bad profile/)
-    expect(Rails.logger).to have_received(:error).with(/ScoringJob failed/)
+
+    error = PipelineError.where(job_offer_id: offer.id, step: "score").first
+    expect(error).to be_present
+    expect(error.error_class).to eq("RuntimeError")
+    expect(error.error_message).to eq("bad profile")
+    expect(error.resolved).to eq(false)
   end
 
   it "skips score step if version matches and force is false" do

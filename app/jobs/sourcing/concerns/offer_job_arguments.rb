@@ -12,6 +12,11 @@ module Sourcing
 
         options.to_h.symbolize_keys.fetch(:force, false)
       end
+
+      def run_id
+        opts = arguments.find { |a| a.is_a?(Hash) } || {}
+        opts.to_h.symbolize_keys[:run_id]
+      end
     end
   end
 end

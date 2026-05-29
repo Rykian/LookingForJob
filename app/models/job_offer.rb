@@ -67,6 +67,7 @@ class JobOffer < ApplicationRecord
 
   has_many :run_job_offers, dependent: :delete_all
   has_many :runs, through: :run_job_offers
+  has_many :pipeline_errors, dependent: :delete_all
 
   enum :location_mode, LOCATION_MODE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true

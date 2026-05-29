@@ -26,6 +26,7 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
       step_name,
+      nil,
       force: false
     )
   end
@@ -39,6 +40,7 @@ RSpec.shared_examples "skippable sourcing job with version checking" do
     expect(Sourcing::Pipeline).to have_received(:advance).with(
       satisfy { |o| o.id == offer.id },
       step_name,
+      nil,
       force: true
     )
   end

@@ -57,7 +57,7 @@ RSpec.describe Sourcing::Pipeline do
   it "enqueues FetchJob when no step has run" do
     offer = build_offer
 
-    expect(described_class.advance(offer, "test")).to eq("fetch")
+    expect(described_class.advance(offer, "test", nil)).to eq("fetch")
 
     queued = enqueued_jobs.select { |j| j[:job] == Sourcing::FetchJob }
     expect(queued.size).to eq(1)
@@ -71,7 +71,7 @@ RSpec.describe Sourcing::Pipeline do
       "analyze" => { "version" => 1, "at" => Time.current.iso8601 },
     })
 
-    expect(described_class.advance(offer, "test")).to eq("enrich")
+    expect(described_class.advance(offer, "test", nil)).to eq("enrich")
 
     queued = enqueued_jobs.select { |j| j[:job] == Sourcing::EnrichJob }
     expect(queued.size).to eq(1)
@@ -82,7 +82,7 @@ RSpec.describe Sourcing::Pipeline do
       "fetch" => { "version" => 99, "at" => Time.current.iso8601 },
     })
 
-    expect(described_class.advance(offer, "test")).to eq("fetch")
+    expect(described_class.advance(offer, "test", nil)).to eq("fetch")
   end
 
   it "enqueues nothing when every step is current" do
@@ -94,7 +94,7 @@ RSpec.describe Sourcing::Pipeline do
       "score" => { "version" => 2, "at" => Time.current.iso8601 },
     })
 
-    expect(described_class.advance(offer, "test")).to be_nil
+    expect(described_class.advance(offer, "test", nil)).to be_nil
     expect(enqueued_jobs).to be_empty
   end
 
@@ -103,7 +103,7 @@ RSpec.describe Sourcing::Pipeline do
       "fetch" => { "version" => 1, "at" => Time.current.iso8601 },
     })
 
-    expect(described_class.advance(offer, "test", force: true)).to eq("analyze")
+    expect(described_class.advance(offer, "test", nil, force: true)).to eq("analyze")
 
     queued = enqueued_jobs.select { |j| j[:job] == Sourcing::AnalyzeJob }
     expect(queued.first[:args].second).to include("force" => true)

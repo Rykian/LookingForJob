@@ -17,9 +17,6 @@ module Sourcing
         score_breakdown: breakdown,
         steps_details: offer.steps_details.merge("score" => { "at" => now.iso8601, "version" => Sourcing::ScoreStep::VERSION })
       )
-    rescue => e
-      Rails.logger.error("ScoringJob failed for offer_id=#{offer_id}: #{e.message}")
-      raise
     end
   end
 end

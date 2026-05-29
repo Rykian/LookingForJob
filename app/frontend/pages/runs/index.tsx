@@ -14,7 +14,15 @@ function formatDate(iso: string) {
   })
 }
 
-function RunRow({ run, onClick }: { run: Run; onClick: () => void }) {
+function RunRow({
+  run,
+  onClick,
+  onErrorClick,
+}: {
+  run: Run
+  onClick: () => void
+  onErrorClick: () => void
+}) {
   return (
     <tr
       className="cursor-pointer border-b border-border transition-colors hover:bg-muted/50"
@@ -52,6 +60,25 @@ function RunRow({ run, onClick }: { run: Run; onClick: () => void }) {
       </td>
       <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">
         {run.jobOffersCount}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onErrorClick()
+          }}
+          disabled={run.errorCount === 0}
+          className="inline-flex"
+          aria-label={`Show ${run.errorCount} unresolved errors for run ${run.id}`}
+        >
+          <Badge
+            variant={run.errorCount > 0 ? 'destructive' : 'outline'}
+            className={run.errorCount > 0 ? 'cursor-pointer hover:opacity-80' : ''}
+          >
+            {run.errorCount}
+          </Badge>
+        </button>
       </td>
     </tr>
   )
@@ -92,6 +119,7 @@ export default function RunsPage() {
                 <th className="px-4 py-2">Providers</th>
                 <th className="px-4 py-2">Work Modes</th>
                 <th className="px-4 py-2 text-right">Offers</th>
+                <th className="px-4 py-2 text-right">Errors</th>
               </tr>
             </thead>
             <tbody>
@@ -100,6 +128,7 @@ export default function RunsPage() {
                   key={run.id}
                   run={run}
                   onClick={() => navigate(`/offers?runId=${run.id}`)}
+                  onErrorClick={() => navigate(`/errors?runId=${run.id}`)}
                 />
               ))}
             </tbody>

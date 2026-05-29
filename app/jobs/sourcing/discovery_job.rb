@@ -62,7 +62,7 @@ module Sourcing
           )
         end
 
-        Sourcing::Pipeline.advance(offer, "discovery", force:)
+        Sourcing::Pipeline.advance(offer, "discovery", run_id, force:)
       end
     end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_29_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_29_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -107,6 +107,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_100000) do
     t.index ["url_hash"], name: "index_job_offers_on_url_hash", unique: true
   end
 
+  create_table "pipeline_errors", force: :cascade do |t|
+    t.jsonb "arguments", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.string "error_class", null: false
+    t.text "error_message", null: false
+    t.bigint "job_offer_id"
+    t.boolean "resolved", default: false, null: false
+    t.bigint "run_id"
+    t.string "source"
+    t.string "step", null: false
+    t.integer "step_version"
+    t.datetime "updated_at", null: false
+    t.index ["job_offer_id", "step", "resolved"], name: "index_pipeline_errors_on_job_offer_id_and_step_and_resolved"
+    t.index ["job_offer_id"], name: "index_pipeline_errors_on_job_offer_id"
+    t.index ["resolved"], name: "index_pipeline_errors_on_resolved"
+    t.index ["run_id"], name: "index_pipeline_errors_on_run_id"
+    t.index ["step"], name: "index_pipeline_errors_on_step"
+  end
+
   create_table "run_job_offers", force: :cascade do |t|
     t.bigint "job_offer_id", null: false
     t.bigint "run_id", null: false
@@ -128,6 +147,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_100000) do
   add_foreign_key "commute_durations", "commute_cities", column: "destination_city_id"
   add_foreign_key "commute_durations", "commute_cities", column: "origin_city_id"
   add_foreign_key "job_offers", "commute_cities"
+  add_foreign_key "pipeline_errors", "job_offers"
+  add_foreign_key "pipeline_errors", "runs"
   add_foreign_key "run_job_offers", "job_offers"
   add_foreign_key "run_job_offers", "runs"
 end

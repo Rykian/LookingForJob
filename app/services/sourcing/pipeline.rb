@@ -41,7 +41,12 @@ module Sourcing
     # current_step: when supplied with only_forward: true, restricts the search
     # to steps after current_step. Jobs that call advance as a hand-off use this
     # to guarantee they never re-enqueue a step they just completed.
-    def advance(offer, current_step, force: false, only_forward: true)
+    def advance(offer, current_step, run_id, force: false, only_forward: true)
+      if current_step
+        PipelineError.where(job_offer_id: offer.id, step: current_step.to_s, resolved: false)
+                     .update_all(resolved: true)
+      end
+
       provider = Sourcing::Providers.registry.fetch(offer.source)
 
       steps = STEPS
@@ -53,7 +58,7 @@ module Sourcing
       step = steps.find { |s| outdated?(offer, s, provider) }
       return nil unless step
 
-      step[:job].perform_later(offer.id, source: offer.source, force: force)
+      step[:job].perform_later(offer.id, source: offer.source, force: force, run_id: run_id)
       step[:name]
     end
 

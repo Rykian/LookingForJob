@@ -5,6 +5,7 @@ module Types
     include Types::Queries::DashboardMetrics
     include Types::Queries::JobOffer
     include Types::Queries::JobOffers
+    include Types::Queries::PipelineErrors
     include Types::Queries::Providers
     include Types::Queries::Runs
     include Types::Queries::ScoringProfile

@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import AppShell from '@/components/layout/app-shell'
 import DashboardPage from '@/pages/dashboard'
+import ErrorsPage from '@/pages/errors/index'
 import OfferDetailPage from '@/pages/offers/detail'
 import OffersPage from '@/pages/offers/index'
 import ProfilePage from '@/pages/profile'
@@ -16,6 +17,7 @@ const router = createBrowserRouter([
       { path: 'offers', element: <OffersPage /> },
       { path: 'offers/:id', element: <OfferDetailPage /> },
       { path: 'runs', element: <RunsPage /> },
+      { path: 'errors', element: <ErrorsPage /> },
       { path: 'sourcing', element: <SourcingPage /> },
       { path: 'profile', element: <ProfilePage /> },
     ],
