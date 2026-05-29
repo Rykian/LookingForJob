@@ -7,7 +7,8 @@ export const RUNS_QUERY = gql`
       keywords
       providers
       workModes
-      jobOffersCount
+      newOffersCount
+      updatedOffersCount
       errorCount
       createdAt
     }

@@ -59,7 +59,10 @@ function RunRow({
         </div>
       </td>
       <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">
-        {run.jobOffersCount}
+        {run.newOffersCount}
+      </td>
+      <td className="px-4 py-3 text-right text-sm font-medium tabular-nums text-muted-foreground">
+        {run.updatedOffersCount}
       </td>
       <td className="px-4 py-3 text-right">
         <button
@@ -118,7 +121,8 @@ export default function RunsPage() {
                 <th className="px-4 py-2">Keywords</th>
                 <th className="px-4 py-2">Providers</th>
                 <th className="px-4 py-2">Work Modes</th>
-                <th className="px-4 py-2 text-right">Offers</th>
+                <th className="px-4 py-2 text-right">New</th>
+                <th className="px-4 py-2 text-right">Updated</th>
                 <th className="px-4 py-2 text-right">Errors</th>
               </tr>
             </thead>
