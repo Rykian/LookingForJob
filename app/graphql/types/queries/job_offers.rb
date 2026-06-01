@@ -83,21 +83,13 @@ module Types
         end
 
         if technologies.present?
-          norm_techs = technologies.map { |t| t.downcase.gsub(/[^a-z]/, "") }
-          sql = <<~SQL.squish
-            (
-              ARRAY(
-                SELECT lower(regexp_replace(t, '[^a-z]', '', 'g')) FROM unnest(primary_technologies) AS t
-              ) && ARRAY[?]::text[]
-            )
-            OR
-            (
-              ARRAY(
-                SELECT lower(regexp_replace(t, '[^a-z]', '', 'g')) FROM unnest(secondary_technologies) AS t
-              ) && ARRAY[?]::text[]
-            )
-          SQL
-          scope = scope.where(sql, norm_techs, norm_techs)
+          t = ::JobOffer.arel_table
+          # Works only after a first dedup job pass that ensures
+          # primary_technologies and secondary_technologies are caninocalized.
+          scope = scope.where(
+            t[:primary_technologies].overlaps(technologies)
+              .or(t[:secondary_technologies].overlaps(technologies))
+          )
         end
 
         sort_column = normalize_sort_column(sort_by)
