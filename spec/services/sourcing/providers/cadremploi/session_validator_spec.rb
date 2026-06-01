@@ -42,7 +42,7 @@ RSpec.describe Sourcing::Providers::Cadremploi::SessionValidator do
   end
 
   it "rejects invalid storage-state shape" do
-    validator = described_class.new(storage_state: { "cookies" => "wrong" }, validation_runner: validation_runner)
+    validator = described_class.new(storage_state: { "cookies" => "wrong", "origins" => [] }, validation_runner: validation_runner)
 
     expect { validator.validate! }.to raise_error(
       Sourcing::Providers::Cadremploi::SessionValidationError,
