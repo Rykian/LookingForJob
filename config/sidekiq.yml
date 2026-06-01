@@ -1,0 +1,6 @@
+---
+:scheduler:
+  :schedule:
+    dedup_technologies:
+      cron: "0 3 * * 1" # every Monday at 3am
+      class: "Sourcing::DedupTechnologiesJob"

@@ -72,3 +72,5 @@ group :test do
   gem "shoulda-matchers"
   gem "simplecov", require: false
 end
+
+gem "sidekiq-scheduler", "~> 6.0"
