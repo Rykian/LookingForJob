@@ -8,8 +8,8 @@ import {
 } from '@/features/sourcing/queries/documents'
 import type {
   LaunchDiscoveryMutation,
+  PrimaryTechnologiesQuery,
   ProvidersQuery,
-  TechnologiesQuery,
 } from '@/graphql/generated'
 import { LaunchDiscoveryView } from './launch-discovery-view'
 
@@ -25,7 +25,7 @@ export function LaunchDiscovery({ onSuccess }: LaunchDiscoveryProps) {
   const { data: providersData, loading: providersLoading } =
     useQuery<ProvidersQuery>(PROVIDERS_QUERY)
   const { data: technologiesData, loading: technologiesLoading } =
-    useQuery<TechnologiesQuery>(TECHNOLOGIES_QUERY)
+    useQuery<PrimaryTechnologiesQuery>(TECHNOLOGIES_QUERY)
 
   const [launchDiscovery, { loading, error, data }] =
     useMutation<LaunchDiscoveryMutation>(LAUNCH_DISCOVERY_MUTATION)

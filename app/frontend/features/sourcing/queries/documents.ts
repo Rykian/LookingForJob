@@ -7,8 +7,8 @@ export const PROVIDERS_QUERY = gql`
 `
 
 export const TECHNOLOGIES_QUERY = gql`
-  query Technologies {
-    technologies
+  query PrimaryTechnologies {
+    technologies(includePrimary: true)
   }
 `
 
