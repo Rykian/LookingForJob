@@ -30,8 +30,8 @@ RSpec.describe Sourcing::Providers::Apec::EnrichStep do
     result = step.call(extracted: { description_html: description_html, location_mode: "hybrid" })
 
     expect(result[:hybrid_remote_days_min_per_week]).to eq(3)
-    expect(result[:primary_technologies]).to eq(["rubyonrails"])
-    expect(result[:secondary_technologies]).to eq(["postgresql"])
+    expect(result[:primary_technologies]).to eq(["Ruby on Rails"])
+    expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("senior")
     expect(result[:english_level_required]).to eq("professional")

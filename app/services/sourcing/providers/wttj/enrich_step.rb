@@ -93,14 +93,17 @@ module Sourcing
 
         def build_user_prompt(extracted)
           plain_description = description_html_to_text(extracted[:description_html])
+          tech_prompt = canonical_technologies_prompt
 
-          <<~PROMPT
+          <<~PROMPT.strip
             Job title: #{extracted[:title] || "unknown"}
             Company: #{extracted[:company] || "unknown"}
             Location mode (from metadata): #{extracted[:location_mode] || "unknown"}
 
             Job description text:
             #{plain_description}
+
+            #{tech_prompt}
           PROMPT
         end
 

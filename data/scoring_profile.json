@@ -2,27 +2,25 @@
   "$schema": "./scoring_profile.schema.json",
   "technology": {
     "primary": [
-      "ruby",
-      "nodejs",
-      "java",
-      "scala",
-      "elixir"
+      "Ruby",
+      "Node.js",
+      "Java",
+      "Scala",
+      "Elixir"
     ],
     "secondary": [
-      "react",
-      "postgresql",
-      "sidekiq",
-      "typescript",
-      "docker",
-      "elm",
-      "javascript",
-      "redis",
-      "node",
-      "express",
-      "graphql",
-      "rails",
-      "ruby on rails",
-      "tailwindcss"
+      "React",
+      "PostgreSQL",
+      "Sidekiq",
+      "TypeScript",
+      "Docker",
+      "Elm",
+      "JavaScript",
+      "Redis",
+      "Express",
+      "GraphQL",
+      "Ruby on Rails",
+      "Tailwind CSS"
     ]
   },
   "location": {

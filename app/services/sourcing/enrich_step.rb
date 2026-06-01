@@ -23,8 +23,9 @@ module Sourcing
 
       response = RubyLLM
                  .chat(model: model, provider: provider)
+                 .with_instructions(system)
                  .with_schema(schema)
-                 .ask("#{system}\n\n#{prompt}")
+                 .ask(prompt)
 
       response.content
     end
@@ -37,7 +38,33 @@ module Sourcing
     protected
 
     def normalize_techs(arr)
-      Array(arr).map { |t| t.is_a?(String) ? t.gsub(/[^a-zA-Z]/, "").downcase : t }
+      Array(arr).filter_map do |t|
+        next unless t.is_a?(String)
+        canonical = t.strip.squeeze(" ")
+        canonical.empty? ? nil : canonical
+      end.uniq
+    end
+
+    def canonical_technologies
+      @canonical_technologies ||= TechnologyStore.read_alias_map.values.uniq.sort
+    end
+
+    def common_technologies
+      @common_technologies ||= TechnologyStore.read_common_technologies
+    end
+
+    def canonical_technologies_prompt
+      techs = common_technologies.empty? ? canonical_technologies : common_technologies
+      return "" if techs.empty?
+
+      <<~PROMPT.strip
+        Known technologies (use these names when applicable):
+        #{techs.join(", ")}
+
+        Versioning rule: Include versions only when they represent a paradigm shift (e.g., Angular 1 vs Angular 2+, Symfony 1 vs Symfony 2+, Python 2 vs Python 3). For incremental updates within the same paradigm (e.g., Angular 16 vs Angular 21), use only the base name.
+
+        If the job requires a technology not in the list, use its conventional name (e.g. "GraphQL", "Docker", "Kubernetes").
+      PROMPT
     end
   end
 end

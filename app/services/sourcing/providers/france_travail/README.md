@@ -45,10 +45,6 @@ Targeted provider checks:
 - bundle exec rspec spec/services/sourcing/providers/france_travail/analyze_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/france_travail/enrich_step_spec.rb
 
-Run all sourcing specs:
-
-- bundle exec rspec spec/services/sourcing/
-
 ## Notes
 
 - Auth/interstitial pages are treated as explicit failures.

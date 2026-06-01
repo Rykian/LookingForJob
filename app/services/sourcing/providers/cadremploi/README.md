@@ -24,7 +24,6 @@ DiscoveryJob -> FetchJob -> AnalyzeJob -> EnrichJob
 
 ### Fetch
 
-- Uses Playwright with fr-FR locale.
 - Handles cookie consent banners.
 - Fails loudly when the page is not a real job page (auth wall/challenge/no title).
 
@@ -35,19 +34,6 @@ Extraction precedence:
 1. JSON-LD JobPosting
 2. Stable DOM selectors
 3. Text heuristics
-
-Current normalized output fields:
-
-- title
-- company
-- city
-- employment_type
-- salary_min_minor
-- salary_max_minor
-- salary_currency
-- location_mode
-- posted_at
-- description_html
 
 Implemented normalizations include:
 
@@ -89,10 +75,6 @@ Targeted provider checks:
 - bundle exec rspec spec/services/sourcing/providers/cadremploi/fetch_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/cadremploi/analyze_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/cadremploi/enrich_step_spec.rb
-
-Run all sourcing specs:
-
-- bundle exec rspec spec/services/sourcing/
 
 ## Notes
 

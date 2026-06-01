@@ -64,12 +64,6 @@ Targeted specs:
 bundle exec rspec spec/services/sourcing/providers/linkedin/
 ```
 
-All sourcing specs:
-
-```bash
-bundle exec rspec spec/services/sourcing
-```
-
 Manual probe (no Rails boot needed):
 
 ```bash

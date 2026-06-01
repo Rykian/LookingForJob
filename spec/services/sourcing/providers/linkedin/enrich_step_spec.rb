@@ -32,8 +32,8 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
 
     expect(result[:location_mode]).to eq("hybrid")
     expect(result[:hybrid_remote_days_min_per_week]).to eq(2)
-    expect(result[:primary_technologies]).to eq(%w[typescript nodejs])
-    expect(result[:secondary_technologies]).to eq(["postgresql"])
+    expect(result[:primary_technologies]).to eq(["TypeScript", "Node.js"])
+    expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("en")
     expect(result[:normalized_seniority]).to eq("mid")
     expect(result[:english_level_required]).to eq("fluent")

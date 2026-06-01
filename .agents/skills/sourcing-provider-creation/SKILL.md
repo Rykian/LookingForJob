@@ -139,6 +139,7 @@ If using Playwright crawling, assess authentication needs:
 2. Infer missing fields from the stripped description text.
 3. Keep strict output schema and defaults for unknown values.
 4. Fail loudly with actionable details when LLM keys are missing (`OPENAI_API_KEY` or `LLM_API_KEY`) or quota is hit.
+5. Include `#{canonical_technologies_prompt}` in the user prompt — the base `EnrichStep` provides this method. It injects the canonical technology list from `TechnologyStore` (Redis) when available, guiding the LLM toward consistent tech names. It returns an empty string before the first `DedupTechnologiesJob` run, so it is always safe to interpolate.
 
 ## Output Format (for review with user)
 
@@ -192,7 +193,8 @@ Before discovery implementation, always include:
 13. **Provider-specific README created** and linked from root README:
     - Document extraction strategy (JSON-LD first, then selectors, fallback heuristics).
     - Document known limitations and provider-specific behavior.
-    - Include rebuild instructions and test command examples.
+    - Include provider-specific verification commands (targeted specs and manual probes).
+    - Do NOT repeat content already owned by `app/services/sourcing/README.md`: analyze output field list, LLM credentials, Playwright fr-FR locale default, and "run all sourcing specs" command.
 14. Provider-specific specs exist for integration behavior.
 15. Fetch was validated against a real page state, not just fixtures.
 16. Failure modes for auth walls, challenge pages, quota errors, and invalid HTML were checked explicitly.
@@ -355,6 +357,7 @@ end
 
 ## Related Documentation
 
+- See `app/services/sourcing/README.md` for step contracts (analyze output fields, LLM credentials, Playwright defaults, technology canonicalization system).
 - See `app/services/sourcing/providers/cadremploi/README.md` for a complete example of discovery/fetch/analyze/enrich with session management and JSON-LD extraction.
 - See `app/services/sourcing/providers/linkedin/README.md` for resilient selector patterns and performance optimization examples.
 - See `AGENTS.md` for provider-specific guardrails (e.g., LinkedIn crawling brittleness, need to update provider docs on behavior changes).

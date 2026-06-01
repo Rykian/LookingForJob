@@ -68,6 +68,7 @@ Seven providers behind a uniform four-step contract
 
 Adding a new provider = drop four files under `app/services/sourcing/providers/<name>/`
 and register the key in [Sourcing::Providers](app/services/sourcing/providers.rb).
+See [app/services/sourcing/README.md](app/services/sourcing/README.md) for pipeline internals and the technology canonicalization system.
 
 ## Profile-driven scoring
 

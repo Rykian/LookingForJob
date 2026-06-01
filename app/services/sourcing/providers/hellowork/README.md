@@ -27,7 +27,6 @@ No public Hellowork API endpoint was identified during implementation, and site 
 
 ### Fetch
 
-- Uses Playwright with `fr-FR` locale.
 - Validates that fetched pages are real Hellowork job URLs.
 - Fails loudly on anti-bot/challenge pages and 404/non-job pages.
 - Validates minimum content size before analyze.
@@ -39,19 +38,6 @@ Extraction precedence:
 1. JSON-LD JobPosting
 2. Stable DOM selectors and metadata list items
 3. Text heuristics for location mode and dates
-
-Current normalized output fields:
-
-- title
-- company
-- city
-- employment_type
-- salary_min_minor
-- salary_max_minor
-- salary_currency
-- location_mode
-- posted_at
-- description_html
 
 Description extraction:
 
@@ -65,7 +51,6 @@ Description extraction:
 
 - Converts `description_html` to plain text before prompting LLM.
 - Keeps strict schema output compatible with the sourcing pipeline.
-- Uses environment-backed LLM credentials (`OPENAI_API_KEY` or `LLM_API_KEY` via LLM config).
 
 ## Verification commands
 
@@ -75,10 +60,6 @@ Targeted provider checks:
 - bundle exec rspec spec/services/sourcing/providers/hellowork/fetch_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/hellowork/analyze_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/hellowork/enrich_step_spec.rb
-
-Run all sourcing specs:
-
-- bundle exec rspec spec/services/sourcing/
 
 ## Notes
 

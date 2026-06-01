@@ -1,7 +1,7 @@
 module Sourcing
   class LlmConfig
     DEFAULT_PROVIDER = :openai
-    DEFAULT_MODEL = "gpt-4.1-mini"
+    DEFAULT_MODEL = "gpt-5-nano"
     DEFAULT_REQUEST_TIMEOUT = 120
     DEFAULT_MAX_RETRIES = 2
 

@@ -39,8 +39,8 @@ RSpec.describe Sourcing::Providers::FranceTravail::EnrichStep do
     result = step.call(extracted: extracted)
 
     expect(result[:hybrid_remote_days_min_per_week]).to eq(2)
-    expect(result[:primary_technologies]).to eq(["rubyonrails"])
-    expect(result[:secondary_technologies]).to eq(["postgresql"])
+    expect(result[:primary_technologies]).to eq(["Ruby on Rails"])
+    expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("mid")
     expect(result[:english_level_required]).to eq("professional")

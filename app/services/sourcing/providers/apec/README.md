@@ -37,7 +37,6 @@ Apec exposes public website webservices such as `/cms/webservices/rechercheOffre
 
 ### Fetch
 
-- Uses Playwright with `fr-FR` locale.
 - Waits for `h1`, `apec-offre-metadata`, or `.details-post` before capturing HTML.
 - Validates the detail URL shape, presence of offer metadata, and minimum body size.
 - Fails loudly on anti-bot/challenge pages and 404/non-job pages.
@@ -49,19 +48,6 @@ Extraction precedence:
 1. Stable rendered DOM markers (`apec-offre-metadata`, `.details-post`)
 2. Text heuristics for telework and dates
 
-Current normalized output fields:
-
-- title
-- company
-- city
-- employment_type
-- salary_min_minor
-- salary_max_minor
-- salary_currency
-- location_mode
-- posted_at
-- description_html
-
 Description extraction:
 
 - Keeps the rendered `Descriptif du poste` block only.
@@ -72,7 +58,6 @@ Description extraction:
 
 - Converts `description_html` to plain text before prompting the LLM.
 - Keeps strict schema output compatible with the sourcing pipeline.
-- Uses environment-backed LLM credentials (`OPENAI_API_KEY` or `LLM_API_KEY` via LLM config).
 
 ## Validation notes
 
@@ -91,6 +76,3 @@ Targeted provider checks:
 - bundle exec rspec spec/services/sourcing/providers/apec/analyze_step_spec.rb
 - bundle exec rspec spec/services/sourcing/providers/apec/enrich_step_spec.rb
 
-Run all sourcing specs:
-
-- bundle exec rspec spec/services/sourcing/

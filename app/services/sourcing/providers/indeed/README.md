@@ -29,7 +29,6 @@ DiscoveryJob -> FetchJob -> AnalyzeJob -> EnrichJob
 
 ### Fetch
 
-- Uses Playwright with `fr-FR` locale.
 - Handles cookie consent banner.
 - Fails loudly when the page is an anti-bot challenge or lacks main content markers.
 - Main content markers: JSON-LD script, `h1[data-testid='jobsearch-JobInfoHeader-title']`, `#jobDescriptionText`.
@@ -42,22 +41,17 @@ Extraction precedence:
 2. Stable DOM selectors (`#jobDescriptionText`, `[data-testid='inlineHeader-companyName']`, etc.)
 3. Text heuristics for employment type and location mode
 
-Normalized output fields:
+Provider-specific output notes:
 
-- `title`
-- `company`
-- `city` (postal codes stripped from `"Paris (75001)"` / `"75001 Paris"` shapes)
-- `employment_type` (PERMANENT/FIXED_TERM/APPRENTICESHIP/INTERNSHIP/FREELANCE/TEMPORARY/FULL_TIME/PART_TIME)
-- `salary_min_minor`, `salary_max_minor`, `salary_currency` (normalized to yearly amounts from MONTH/WEEK/DAY/HOUR units)
-- `location_mode` (remote/hybrid/on-site/nil) - JSON-LD `jobLocationType=TELECOMMUTE` is the strongest signal
-- `posted_at` (ISO-8601)
-- `description_html` (cleaned via `Sourcing::AnalyzeStep.clean_attributes` - no class/style attributes)
+- `city` — postal codes stripped from `"Paris (75001)"` / `"75001 Paris"` shapes
+- `employment_type` — PERMANENT/FIXED_TERM/APPRENTICESHIP/INTERNSHIP/FREELANCE/TEMPORARY/FULL_TIME/PART_TIME
+- `salary_*` — normalized to yearly amounts from MONTH/WEEK/DAY/HOUR units
+- `location_mode` — `jobLocationType=TELECOMMUTE` in JSON-LD is the strongest signal
 
 ### Enrich
 
 - Uses stripped description text as LLM input.
 - Strict JSON schema output, identical shape to Apec/Cadremploi for downstream consistency.
-- Requires `OPENAI_API_KEY` or `LLM_API_KEY`.
 
 ## Trusted session mode
 
@@ -102,10 +96,6 @@ Targeted provider checks:
 - `bundle exec rspec spec/services/sourcing/providers/indeed/fetch_step_spec.rb`
 - `bundle exec rspec spec/services/sourcing/providers/indeed/analyze_step_spec.rb`
 - `bundle exec rspec spec/services/sourcing/providers/indeed/enrich_step_spec.rb`
-
-Run all sourcing specs:
-
-- `bundle exec rspec spec/services/sourcing/`
 
 ## Notes
 
