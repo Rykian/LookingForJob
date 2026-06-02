@@ -17,6 +17,14 @@ class MockFetchStepError
   end
 end
 
+class MockFetchStepGone
+  VERSION = 1
+
+  def call(source:, url:, url_hash:)
+    raise Sourcing::OfferGoneError, "gone"
+  end
+end
+
 RSpec.describe Sourcing::FetchJob, type: :job do
   include ActiveJob::TestHelper
 
@@ -112,6 +120,36 @@ RSpec.describe Sourcing::FetchJob, type: :job do
     offer.reload
     expect(offer.html_file).not_to be_attached
 
+    expect(Sourcing::Pipeline).not_to have_received(:advance)
+  end
+
+  it "disables the offer and does not raise when offer is gone" do
+    allow(Sourcing::Pipeline).to receive(:advance)
+
+    gone_registry = Sourcing::ProviderRegistry.new
+    gone_registry.register(
+      "linkedin",
+      Sourcing::Provider.new(
+        discovery_step: nil,
+        fetch_step: MockFetchStepGone.new,
+        analyze_step: nil,
+        enrich_step: nil
+      )
+    )
+    allow(Sourcing::Providers).to receive(:registry).and_return(gone_registry)
+
+    offer = JobOffer.create!(
+      source: "linkedin",
+      url: "https://example.com/jobs/gone",
+      url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/gone"),
+      last_seen_at: Time.zone.parse("2026-03-20 10:00:00")
+    )
+
+    expect { described_class.perform_now(offer.id) }.not_to raise_error
+
+    offer.reload
+    expect(offer.disabled).to be(true)
+    expect(offer.html_file).not_to be_attached
     expect(Sourcing::Pipeline).not_to have_received(:advance)
   end
 

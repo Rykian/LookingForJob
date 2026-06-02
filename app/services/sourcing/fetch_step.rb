@@ -1,4 +1,6 @@
 module Sourcing
+  OfferGoneError = Class.new(StandardError)
+
   class FetchStep
     include PlaywrightSupport
 

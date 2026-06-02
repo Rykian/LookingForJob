@@ -42,7 +42,11 @@ module Sourcing
               selectors: MAIN_CONTENT_SELECTORS,
               timeout_ms: 8_000
             )
-            raise "Indeed: job page did not load main content for #{url} (possible auth wall, expired offer, or selector drift)" unless found
+
+            unless found
+              raise Sourcing::OfferGoneError, "Indeed: offer gone at #{url}" if gone_offer_page?(page_obj, url)
+              raise "Indeed: job page did not load main content for #{url} (possible auth wall, expired offer, or selector drift)"
+            end
 
             html = page_obj.content
             ensure_basic_html_content!(provider_name: "Indeed", url: url, html: html)
@@ -51,6 +55,13 @@ module Sourcing
         end
 
         private
+
+        def gone_offer_page?(page_obj, url)
+          http_status = page_obj.evaluate(
+            "() => (performance.getEntriesByType('navigation')[0]?.responseStatus ?? 0)"
+          ).to_i
+          http_status == 404
+        end
 
         def blocked_page?(page_obj)
           title = page_obj.title.to_s

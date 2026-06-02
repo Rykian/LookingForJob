@@ -25,11 +25,16 @@ module Sourcing
         return
       end
 
-      html_content = provider.fetch_step.call(
-        source: offer.source,
-        url: offer.url,
-        url_hash: offer.url_hash
-      )
+      html_content = begin
+        provider.fetch_step.call(
+          source: offer.source,
+          url: offer.url,
+          url_hash: offer.url_hash
+        )
+      rescue Sourcing::OfferGoneError
+        offer.update!(disabled: true)
+        return
+      end
 
       if html_content.blank?
         raise Sourcing::Providers::Linkedin::FetchContentError,
