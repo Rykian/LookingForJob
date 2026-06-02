@@ -123,7 +123,7 @@ export const WithTechIcons: Story = {
     svgs.forEach((svg) => {
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24')
       expect(svg).toHaveAttribute('fill')
-      expect(svg).toHaveAttribute('title')
+      expect(svg).toHaveAttribute('aria-label')
     })
 
     // Verify third row (id='3') has no tech icons (null primaryTechnologies)
