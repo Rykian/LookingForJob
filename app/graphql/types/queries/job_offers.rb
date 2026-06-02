@@ -98,7 +98,8 @@ module Types
         total_count = scope.count
         total_pages = (total_count.to_f / per_page).ceil
         nodes = scope
-          .order(Arel.sql("#{sort_column} #{direction} NULLS LAST"))
+          # Secondary sort by id to ensure deterministic order when primary sort values are equal.
+          .order(Arel.sql("#{sort_column} #{direction} NULLS LAST, id DESC"))
           .offset((page - 1) * per_page)
           .limit(per_page)
 
