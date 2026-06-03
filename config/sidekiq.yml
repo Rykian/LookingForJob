@@ -1,4 +1,7 @@
 ---
+queues:
+  - default
+  - meilisearch
 :scheduler:
   :schedule:
     dedup_technologies:

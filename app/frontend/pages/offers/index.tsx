@@ -24,6 +24,7 @@ export default function OffersPage() {
     onlyWithinCommute,
     minCommuteMinutes,
     maxCommuteMinutes,
+    search,
     updateSearchParams,
     resetSearchParams,
   } = useJobOffersFilters({
@@ -151,6 +152,8 @@ export default function OffersPage() {
             maxCommute: value != null ? String(value) : null,
           })
         }}
+        search={search}
+        onChangeSearch={(value) => updateSearchParams({ page: null, search: value || null })}
         onReset={resetSearchParams}
       />
 

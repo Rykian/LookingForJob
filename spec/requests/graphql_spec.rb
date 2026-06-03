@@ -6,6 +6,15 @@ RSpec.describe "GraphQL API", type: :request do
     JSON.parse(response.body)
   end
 
+  # Stub the Meilisearch chain (`MeiliSearch::Rails.client.index("JobOffer").search`)
+  # so search specs stay deterministic and never hit a running Meilisearch server.
+  def stub_meilisearch(hits)
+    index = instance_double(Meilisearch::Index, search: { "hits" => hits })
+    client = instance_double(Meilisearch::Client, index: index)
+    allow(MeiliSearch::Rails).to receive(:client).and_return(client)
+    index
+  end
+
   describe "query jobOffers" do
     it "returns paginated offers and applies filters" do
       first_offer = create(:job_offer, :remote,
@@ -193,6 +202,75 @@ RSpec.describe "GraphQL API", type: :request do
     it "excludes disabled offers by default" do
       visible_offer = create(:job_offer)
       create(:job_offer, :disabled)
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!) {
+          jobOffers(page: $page, perPage: $perPage) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: query, variables: { page: 1, perPage: 25 })
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
+      expect(result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }).to eq([visible_offer.id.to_s])
+    end
+
+    it "filters offers to the ids returned by a Meilisearch search" do
+      matching = create(:job_offer, title: "Senior Rails Engineer")
+      create(:job_offer, title: "Frontend Developer")
+
+      index = stub_meilisearch([{ "id" => matching.id.to_s }])
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!, $search: String) {
+          jobOffers(page: $page, perPage: $perPage, search: $search) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: query, variables: { page: 1, perPage: 25, search: "rails" })
+
+      expect(index).to have_received(:search).with("rails", anything)
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
+      expect(result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }).to eq([matching.id.to_s])
+    end
+
+    it "returns no offers when Meilisearch finds no matches" do
+      create(:job_offer)
+      stub_meilisearch([])
+
+      query = <<~GRAPHQL
+        query JobOffers($page: Int!, $perPage: Int!, $search: String) {
+          jobOffers(page: $page, perPage: $perPage, search: $search) {
+            totalCount
+            nodes {
+              id
+            }
+          }
+        }
+      GRAPHQL
+
+      result = post_graphql(query: query, variables: { page: 1, perPage: 25, search: "zzz-no-match" })
+
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "jobOffers", "totalCount")).to eq(0)
+      expect(result.dig("data", "jobOffers", "nodes")).to be_empty
+    end
+
+    it "does not query Meilisearch when no search term is given" do
+      visible_offer = create(:job_offer)
+      expect(MeiliSearch::Rails).not_to receive(:client)
 
       query = <<~GRAPHQL
         query JobOffers($page: Int!, $perPage: Int!) {

@@ -1,6 +1,12 @@
 require "dry/schema"
 
 class JobOffer < ApplicationRecord
+  include MeiliSearch::Rails
+
+  meilisearch enqueue: true do
+    searchable_attributes [:title, :company, :city, :keywords, :primary_technologies, :secondary_technologies, :description_html]
+  end
+
   STEPS_DETAIL_KEYS = %w[discovery fetch analyze enrich commute score].freeze
   ISO8601_TIMESTAMP_REGEX = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})\z/.freeze
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -40,6 +41,8 @@ interface FiltersPanelProps {
   onChangeOnlyWithinCommute: (checked: boolean) => void
   onChangeMinCommuteMinutes: (value: number | null) => void
   onChangeMaxCommuteMinutes: (value: number | null) => void
+  search: string
+  onChangeSearch: (value: string) => void
   onReset: () => void
 }
 
@@ -72,8 +75,21 @@ export function FiltersPanel({
   onChangeOnlyWithinCommute,
   onChangeMinCommuteMinutes,
   onChangeMaxCommuteMinutes,
+  search,
+  onChangeSearch,
   onReset,
 }: FiltersPanelProps) {
+  const [localSearch, setLocalSearch] = useState(search)
+
+  useEffect(() => {
+    setLocalSearch(search)
+  }, [search])
+
+  useEffect(() => {
+    const id = setTimeout(() => onChangeSearch(localSearch), 300)
+    return () => clearTimeout(id)
+  }, [localSearch, onChangeSearch])
+
   return (
     <Card>
       <CardHeader>
@@ -81,6 +97,14 @@ export function FiltersPanel({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+          <Input
+            type="search"
+            placeholder="Search title, company, tech..."
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="md:col-span-2"
+          />
+
           <Combobox
             multiple
             items={technologyKeys}
