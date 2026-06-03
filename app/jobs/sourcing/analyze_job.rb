@@ -55,10 +55,33 @@ module Sourcing
         })
       ))
 
+      identify_duplicate(offer)
+      Sourcing::DeduplicateJob.perform_later
+
+      return if offer.duplicate?
+
       Sourcing::Pipeline.advance(offer, "analyze", run_id, force:)
     end
 
     private
+
+    def identify_duplicate(offer)
+      fp = Sourcing::DeduplicateService.compute_content_fingerprint(offer.company, offer.title, offer.city)
+      return unless fp
+
+      offer.update_column(:content_fingerprint, fp)
+
+      canonical = JobOffer
+        .where(content_fingerprint: fp)
+        .where.not(id: offer.id)
+        .where("COALESCE(posted_at, created_at) >= ?", 14.days.ago)
+        .where(rejected: false, disabled: false)
+        .order(:created_at)
+        .first
+      return unless canonical
+
+      offer.update_column(:canonical_id, canonical.canonical_id || canonical.id)
+    end
 
     def analyzed_attributes(provider)
       step_class = provider.analyze_step.class

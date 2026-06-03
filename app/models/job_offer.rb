@@ -64,10 +64,18 @@ class JobOffer < ApplicationRecord
   has_one_attached :html_file
 
   belongs_to :commute_city, class_name: "Commute::City", optional: true, inverse_of: :job_offers
+  belongs_to :canonical_offer, class_name: "JobOffer", foreign_key: :canonical_id, optional: true, inverse_of: :duplicate_offers
 
   has_many :run_job_offers, dependent: :delete_all
   has_many :runs, through: :run_job_offers
   has_many :pipeline_errors, dependent: :delete_all
+  has_many :duplicate_offers, class_name: "JobOffer", foreign_key: :canonical_id, dependent: :nullify, inverse_of: :canonical_offer
+
+  scope :canonical, -> { where(canonical_id: nil) }
+  scope :duplicates, -> { where.not(canonical_id: nil) }
+
+  def duplicate? = canonical_id.present?
+  def canonical? = canonical_id.nil?
 
   enum :location_mode, LOCATION_MODE_VALUES, prefix: true
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true

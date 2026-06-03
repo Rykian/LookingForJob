@@ -38,11 +38,14 @@ module Types
             description: "Only return offers with a commute duration <= this value (uses profile origin and mode)."
           argument :run_id, GraphQL::Types::ID, required: false,
             description: "Filter offers to those discovered in a specific run."
+          argument :exclude_duplicates, GraphQL::Types::Boolean, required: false, default_value: true,
+            description: "When true (default), exclude duplicate offers and only show canonical ones."
         end
       end
 
-      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil)
+      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil, exclude_duplicates: true)
         scope = ::JobOffer.where(rejected: false, disabled: false)
+        scope = scope.canonical if exclude_duplicates
 
         if run_id.present?
           scope = scope.joins(:run_job_offers).where(run_job_offers: { run_id: run_id })

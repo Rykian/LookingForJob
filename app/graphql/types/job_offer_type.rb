@@ -30,6 +30,20 @@ module Types
     field :first_seen_at, GraphQL::Types::ISO8601DateTime, null: true
     field :last_seen_at, GraphQL::Types::ISO8601DateTime, null: false
     field :steps_details, Types::StepsDetailsType, null: true
+    field :canonical_id, ID, null: true,
+      description: "ID of the canonical offer when this offer is a duplicate."
+    field :is_duplicate, Boolean, null: false,
+      description: "True when this offer has been identified as a duplicate of another."
+    field :duplicate_count, Integer, null: false,
+      description: "Number of duplicate offers pointing to this canonical offer."
+
+    def is_duplicate
+      object.duplicate?
+    end
+
+    def duplicate_count
+      object.duplicate_offers.size
+    end
 
     def first_seen_at
       at = object.steps_details&.dig("discovery", "at")

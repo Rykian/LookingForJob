@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_29_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_03_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,10 +66,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_110000) do
     t.index ["origin_city_id"], name: "index_commute_durations_on_origin_city_id"
   end
 
+  create_table "data_migrations", primary_key: "version", id: :string, force: :cascade do |t|
+  end
+
   create_table "job_offers", force: :cascade do |t|
+    t.bigint "canonical_id"
     t.string "city"
     t.bigint "commute_city_id"
     t.string "company"
+    t.string "content_fingerprint"
     t.datetime "created_at", null: false
     t.text "description_html"
     t.boolean "disabled", default: false, null: false
@@ -97,8 +102,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_110000) do
     t.string "url", null: false
     t.string "url_hash", null: false
     t.index "(((steps_details -> 'discovery'::text) ->> 'at'::text))", name: "index_job_offers_on_discovery_at"
+    t.index ["canonical_id"], name: "index_job_offers_on_canonical_id"
     t.index ["city"], name: "index_job_offers_on_city"
     t.index ["commute_city_id"], name: "index_job_offers_on_commute_city_id"
+    t.index ["content_fingerprint"], name: "index_job_offers_on_content_fingerprint"
     t.index ["last_seen_at"], name: "index_job_offers_on_last_seen_at"
     t.index ["location_mode"], name: "index_job_offers_on_location_mode"
     t.index ["score"], name: "index_job_offers_on_score"
@@ -147,6 +154,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_110000) do
   add_foreign_key "commute_durations", "commute_cities", column: "destination_city_id"
   add_foreign_key "commute_durations", "commute_cities", column: "origin_city_id"
   add_foreign_key "job_offers", "commute_cities"
+  add_foreign_key "job_offers", "job_offers", column: "canonical_id", on_delete: :nullify
   add_foreign_key "pipeline_errors", "job_offers"
   add_foreign_key "pipeline_errors", "runs"
   add_foreign_key "run_job_offers", "job_offers"

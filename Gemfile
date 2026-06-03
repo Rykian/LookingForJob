@@ -74,3 +74,4 @@ group :test do
 end
 
 gem "sidekiq-scheduler", "~> 6.0"
+gem "data_migrate"

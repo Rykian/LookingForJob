@@ -38,6 +38,8 @@ export type DashboardMetrics = {
 
 export type JobOffer = {
   __typename?: 'JobOffer';
+  /** ID of the canonical offer when this offer is a duplicate. */
+  canonicalId?: Maybe<Scalars['ID']['output']>;
   city?: Maybe<Scalars['String']['output']>;
   /**
    * One-way travel time from the configured commute origin to this offer's city,
@@ -52,11 +54,15 @@ export type JobOffer = {
   commuteWithinMax?: Maybe<Scalars['Boolean']['output']>;
   company?: Maybe<Scalars['String']['output']>;
   descriptionHtml?: Maybe<Scalars['String']['output']>;
+  /** Number of duplicate offers pointing to this canonical offer. */
+  duplicateCount: Scalars['Int']['output'];
   employmentType?: Maybe<Scalars['String']['output']>;
   englishLevelRequired?: Maybe<Scalars['String']['output']>;
   firstSeenAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
   hybridRemoteDaysMinPerWeek?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  /** True when this offer has been identified as a duplicate of another. */
+  isDuplicate: Scalars['Boolean']['output'];
   lastSeenAt: Scalars['ISO8601DateTime']['output'];
   locationMode?: Maybe<LocationModeEnum>;
   normalizedSeniority?: Maybe<Scalars['String']['output']>;
@@ -228,6 +234,7 @@ export type QueryJobOfferArgs = {
 
 export type QueryJobOffersArgs = {
   englishLevelsRequired?: InputMaybe<Array<Scalars['String']['input']>>;
+  excludeDuplicates?: InputMaybe<Scalars['Boolean']['input']>;
   firstSeenAfter?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
   firstSeenBefore?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
   lastSeenAfter?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
