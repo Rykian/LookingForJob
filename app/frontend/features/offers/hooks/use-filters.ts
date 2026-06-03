@@ -60,7 +60,10 @@ function getPresetRange(preset: DatePreset): { after?: string; before?: string }
 
 interface UseJobOffersFiltersParams {
   searchParams: URLSearchParams
-  setSearchParams: (next: URLSearchParams) => void
+  setSearchParams: (
+    next: URLSearchParams,
+    options?: { replace?: boolean; preventScrollReset?: boolean },
+  ) => void
 }
 
 export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOffersFiltersParams) {
@@ -100,6 +103,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
 
   const runId = searchParams.get('runId') || null
+  const search = searchParams.get('search') ?? ''
 
   const datePresetParam = searchParams.get('datePreset')
   const datePresetDefault: DatePreset = runId ? 'all' : 'today'
@@ -149,7 +153,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
       }
     })
 
-    setSearchParams(next)
+    setSearchParams(next, { preventScrollReset: true })
   }
 
   const resetSearchParams = () => {
@@ -169,6 +173,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...(minCommuteMinutes !== null ? { minCommuteMinutes } : {}),
     ...(maxCommuteMinutes !== null ? { maxCommuteMinutes } : {}),
     ...(runId ? { runId } : {}),
+    ...(search ? { search } : {}),
   }
 
   return {
@@ -186,6 +191,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     onlyWithinCommute,
     minCommuteMinutes,
     maxCommuteMinutes,
+    search,
     updateSearchParams,
     resetSearchParams,
   }
