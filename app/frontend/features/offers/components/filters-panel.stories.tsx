@@ -44,6 +44,8 @@ export const Default: Story = {
     onChangeMinCommuteMinutes: () => {},
     onChangeMaxCommuteMinutes: () => {},
     onReset: () => {},
+    search: '',
+    onChangeSearch: () => {},
   },
 }
 
