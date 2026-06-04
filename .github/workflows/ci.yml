@@ -110,7 +110,14 @@ jobs:
         run: npm ci
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        # Install the browser build for the exact playwright version the
+        # playwright-ruby-client gem launches at runtime (npx -y playwright@<gem version>).
+        # Pinning to Gemfile.lock keeps install-time and run-time in lockstep so a
+        # dependabot bump of playwright-ruby-client can't drift the chromium build again.
+        run: |
+          PW_VERSION="$(ruby -e "puts File.read('Gemfile.lock')[/playwright-ruby-client \((.+?)\)/, 1]")"
+          echo "Installing chromium for playwright@${PW_VERSION}"
+          npx -y "playwright@${PW_VERSION}" install --with-deps chromium
 
       - name: Run Storybook tests
         run: npm run test:storybook
