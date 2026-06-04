@@ -147,6 +147,17 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+      meilisearch:
+          image: getmeili/meilisearch:latest
+          ports:
+            - '7700:7700'
+          env:
+            MEILI_MASTER_KEY: masterKey
+          options: >-
+            --health-cmd="wget --no-verbose --spider http://localhost:7700/health"
+            --health-interval=10s
+            --health-timeout=5s
+            --health-retries=5
     env:
       RAILS_ENV: test
       DB_HOST: 127.0.0.1
