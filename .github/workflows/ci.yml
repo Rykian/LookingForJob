@@ -148,22 +148,24 @@ jobs:
           --health-timeout=5s
           --health-retries=5
       meilisearch:
-          image: getmeili/meilisearch:latest
-          ports:
-            - '7700:7700'
-          env:
-            MEILI_MASTER_KEY: masterKey
-          options: >-
-            --health-cmd="wget --no-verbose --spider http://localhost:7700/health"
-            --health-interval=10s
-            --health-timeout=5s
-            --health-retries=5
+        image: getmeili/meilisearch:latest
+        ports:
+          - '7700:7700'
+        env:
+          MEILI_MASTER_KEY: masterKey
+        options: >-
+          --health-cmd='wget --spider http://localhost:7700/health || exit 1'
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
       RAILS_ENV: test
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_USER: looking_for_job
       DB_PASSWORD: looking_for_job
+      MEILISEARCH_API_KEY: masterKey
+      MEILISEARCH_URL: http://127.0.0.1:7700
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
