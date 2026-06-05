@@ -4,24 +4,31 @@
 Rails 8.1.3 | Ruby 4.0.2
 
 ## Stack
-- Database: PostgreSQL — 4 tables
-- Models: 1
+- Database: PostgreSQL — 10 tables
+- Models: 6
 - Routes: 21 across 12 controllers
 - API: API-only, GraphQL
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
+- Performance: 3 issues detected
 - jobs: sidekiq
 - api: graphql
 - database: pg, redis, solid_cache, solid_cable
 - files: activestorage, aws-sdk-s3
-- testing: rspec-rails, minitest
+- testing: rspec-rails, minitest, factory_bot_rails
 - deploy: kamal, thruster
+- search: meilisearch-rails
 - server: puma
 - validation: dry-types
-- utilities: nokogiri, faraday
+- utilities: nokogiri, httparty, faraday
 
-## Models (1)
-- **JobOffer** — has_one :html_file_attachment, has_one :html_file_blob
+## Models (6)
+- **Commute::City** — has_many :outbound_durations, has_many :inbound_durations, has_many :job_offers
+- **Commute::Duration** — belongs_to :origin_city, belongs_to :destination_city
+- **JobOffer** — has_one :html_file_attachment, has_one :html_file_blob, belongs_to :commute_city, belongs_to :canonical_offer, has_many :run_job_offers, has_many :runs, has_many :pipeline_errors, has_many :duplicate_offers
+- **PipelineError** — belongs_to :job_offer, belongs_to :run
+- **Run** — has_many :run_job_offers, has_many :job_offers
+- **RunJobOffer** — belongs_to :run, belongs_to :job_offer
 
 ## Architecture
 - API-only mode (no views/assets)

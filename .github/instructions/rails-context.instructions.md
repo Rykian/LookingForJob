@@ -8,14 +8,14 @@ description: "Rails version, database, models, routes, gems, architecture patter
 
 Rails 8.1.3 | Ruby 4.0.2
 
-- Database: PostgreSQL — 4 tables
-- Models: 1
+- Database: PostgreSQL — 10 tables
+- Models: 6
 - Routes: 21
 - jobs: sidekiq
 - api: graphql
 - database: pg, redis, solid_cache, solid_cable
 - files: activestorage, aws-sdk-s3
-- testing: rspec-rails, minitest
+- testing: rspec-rails, minitest, factory_bot_rails
 - deploy: kamal, thruster
 - API-only mode (no views/assets)
 - GraphQL API (app/graphql/)
@@ -25,5 +25,6 @@ Rails 8.1.3 | Ruby 4.0.2
 - API: API-only, GraphQL
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
+- Performance: 3 issues detected
 
 Use MCP tools for detailed data. Start with `detail:"summary"`.

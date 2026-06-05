@@ -7,18 +7,19 @@ alwaysApply: true
 
 Rails 8.1.3 | Ruby 4.0.2
 
-- Database: PostgreSQL — 4 tables
-- Models: 1
+- Database: PostgreSQL — 10 tables
+- Models: 6
 - Routes: 21
 - jobs: sidekiq
 - api: graphql
 - database: pg, redis, solid_cache, solid_cable
 - files: activestorage, aws-sdk-s3
-- testing: rspec-rails, minitest
+- testing: rspec-rails, minitest, factory_bot_rails
 - deploy: kamal, thruster
+- search: meilisearch-rails
 - server: puma
 - validation: dry-types
-- utilities: nokogiri, faraday
+- utilities: nokogiri, httparty, faraday
 - API-only mode (no views/assets)
 - GraphQL API (app/graphql/)
 - Service objects pattern (app/services/)
@@ -27,6 +28,7 @@ Rails 8.1.3 | Ruby 4.0.2
 - API: API-only, GraphQL
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
+- Performance: 3 issues detected
 
 MCP tools available — see rails-mcp-tools.mdc for full reference.
 Always call with detail:"summary" first, then drill into specifics.
