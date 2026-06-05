@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -80,15 +80,19 @@ export function FiltersPanel({
   onReset,
 }: FiltersPanelProps) {
   const [localSearch, setLocalSearch] = useState(search)
+  const onChangeSearchRef = useRef(onChangeSearch)
+  useEffect(() => {
+    onChangeSearchRef.current = onChangeSearch
+  }, [onChangeSearch])
 
   useEffect(() => {
     setLocalSearch(search)
   }, [search])
 
   useEffect(() => {
-    const id = setTimeout(() => onChangeSearch(localSearch), 300)
+    const id = setTimeout(() => onChangeSearchRef.current(localSearch), 300)
     return () => clearTimeout(id)
-  }, [localSearch, onChangeSearch])
+  }, [localSearch])
 
   return (
     <Card>

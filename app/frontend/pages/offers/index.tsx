@@ -172,12 +172,8 @@ export default function OffersPage() {
         <Pagination
           page={page}
           totalPages={totalPages}
-          onPrevious={() => {
-            const previousPage = page - 1
-            updateSearchParams({ page: previousPage <= 1 ? null : String(previousPage) })
-          }}
-          onNext={() => {
-            updateSearchParams({ page: String(page + 1) })
+          onPageChange={(p) => {
+            updateSearchParams({ page: p <= 1 ? null : String(p) })
           }}
         />
       </div>

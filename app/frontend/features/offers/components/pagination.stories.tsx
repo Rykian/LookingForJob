@@ -13,27 +13,32 @@ type Story = StoryObj<typeof meta>
 
 export const MiddlePage: Story = {
   args: {
-    page: 2,
-    totalPages: 6,
-    onPrevious: () => {},
-    onNext: () => {},
+    page: 5,
+    totalPages: 10,
+    onPageChange: () => {},
   },
 }
 
 export const FirstPage: Story = {
   args: {
     page: 1,
-    totalPages: 6,
-    onPrevious: () => {},
-    onNext: () => {},
+    totalPages: 10,
+    onPageChange: () => {},
   },
 }
 
 export const LastPage: Story = {
   args: {
-    page: 6,
-    totalPages: 6,
-    onPrevious: () => {},
-    onNext: () => {},
+    page: 10,
+    totalPages: 10,
+    onPageChange: () => {},
+  },
+}
+
+export const FewPages: Story = {
+  args: {
+    page: 2,
+    totalPages: 4,
+    onPageChange: () => {},
   },
 }
