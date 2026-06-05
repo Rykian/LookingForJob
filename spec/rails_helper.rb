@@ -56,6 +56,10 @@ RSpec.configure do |config|
   # updateScoringProfile mutation spec (which stubs PROFILE_PATH) doesn't leak.
   config.before(:each) { Sourcing::ScoringProfile.instance_variable_set(:@cached, nil) }
 
+  # Disable Meilisearch indexing for the whole suite so model writes never
+  # enqueue (or run) MSJob index jobs. Search specs stub MeiliSearch::Rails.client.
+  config.before(:suite) { MeiliSearch::Rails.deactivate! }
+
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
