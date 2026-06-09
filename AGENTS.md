@@ -244,13 +244,13 @@ Don't:
 
 Use one scope from this list:
 - `sourcing` (cross-step/pipeline changes)
-- `sourcing-linkedin`
+- `sourcing/<provider>` — e.g. `sourcing/linkedin`, `sourcing/welovedevs` (provider-specific changes)
 - `graphql`
-- `job-offer` (model and domain rules)
-- `repository` (data access layer)
 - `frontend` (React/Vite UI)
 - `db` (migrations/schema/data backfills)
 - `infra` (Docker, deploy, runtime config)
+- `ci` (GitHub Actions, test environment)
+- `commute` (commute service and models)
 
 Scope selection rules:
 - Prefer the most specific scope available.
@@ -259,5 +259,5 @@ Scope selection rules:
 
 Examples:
 - `feat(sourcing): add linkedin pagination continuation`
-- `fix(sourcing-linkedin): handle crawl selector drift with explicit error`
+- `fix(sourcing/linkedin): handle crawl selector drift with explicit error`
 - `chore(docs): tighten AGENTS checklist`
