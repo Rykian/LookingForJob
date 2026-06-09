@@ -127,7 +127,9 @@ export function Table({
                     <Badge variant="outline">{formatLocationMode(offer.locationMode)}</Badge>
                   </td>
                   <td className="px-3 py-2">{offer.score ?? '-'}</td>
-                  <td className="px-3 py-2">{new Date(offer.firstSeenAt).toLocaleDateString()}</td>
+                  <td className="px-3 py-2">
+                    {new Date(offer.firstSeenAt).toLocaleDateString('en-FR')}
+                  </td>
                 </tr>
               ))}
             </tbody>

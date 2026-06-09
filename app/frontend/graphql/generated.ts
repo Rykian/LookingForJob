@@ -195,6 +195,8 @@ export enum ProviderEnum {
   Indeed = 'indeed',
   /** Provider: linkedin */
   Linkedin = 'linkedin',
+  /** Provider: welovedevs */
+  Welovedevs = 'welovedevs',
   /** Provider: wttj */
   Wttj = 'wttj'
 }

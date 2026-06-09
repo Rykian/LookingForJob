@@ -97,8 +97,8 @@ export default function OfferDetailPage() {
           </p>
           <p>
             <span className="font-medium">Seen:</span>{' '}
-            {new Date(offer.firstSeenAt).toLocaleString()} →{' '}
-            {new Date(offer.lastSeenAt).toLocaleString()}
+            {new Date(offer.firstSeenAt).toLocaleString('en-FR')} →{' '}
+            {new Date(offer.lastSeenAt).toLocaleString('en-FR')}
           </p>
         </CardContent>
       </Card>

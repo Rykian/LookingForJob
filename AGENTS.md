@@ -189,6 +189,7 @@ Repository guide for coding agents.
 - When provider behavior changes, update the matching provider doc in `app/services/sourcing/providers/<provider>/README.md`.
 - LinkedIn crawling is brittle: fail explicitly with context.
 - Indeed crawling is Cloudflare-protected from cloud IPs: provide a trusted session via `bin/rails indeed:login` and fail explicitly on challenge pages.
+- WeLoveDevs is a public Next.js site (no auth/session, no anti-bot): discovery intercepts Algolia search XHR responses (not DOM links — the listing uses `?jobId=` client routing with no scrapeable hrefs) to read each hit's `seoAlias` and build detail URLs; analyze is JSON-LD JobPosting first; a missing JobPosting on a detail page is treated as a gone offer; location_mode uses the `a[href*='/app/job-remote']` chip text as primary signal — "Occasional remote work" maps to on-site, not hybrid.
 - LLM enrichment requires env-backed keys (`OPENAI_API_KEY` or `LLM_API_KEY`).
 - On quota/rate-limit issues, fail loudly with actionable details.
 

@@ -76,6 +76,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "welovedevs",
+            Provider.new(
+              discovery_step: Sourcing::Providers::Welovedevs::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::Welovedevs::FetchStep.new,
+              analyze_step:   Sourcing::Providers::Welovedevs::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::Welovedevs::EnrichStep.new
+            )
+          )
+
         registry
       end
     end

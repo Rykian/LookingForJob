@@ -8,7 +8,7 @@ import type { RunsQuery } from '@/graphql/generated'
 type Run = RunsQuery['runs'][number]
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString('en-FR', {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
