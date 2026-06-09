@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { RUNS_QUERY } from '@/features/runs/queries/documents'
 import type { RunsQuery } from '@/graphql/generated'
+import { locale } from '@/lib/utils'
 
 type Run = RunsQuery['runs'][number]
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('en-FR', {
+  return new Date(iso).toLocaleString(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   })

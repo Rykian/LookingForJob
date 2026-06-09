@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
 import type { JobOfferQuery, JobOfferQueryVariables } from '@/graphql/generated'
+import { locale } from '@/lib/utils'
 
 const JOB_OFFER_QUERY = gql`
   query JobOffer($id: ID!) {
@@ -97,8 +98,8 @@ export default function OfferDetailPage() {
           </p>
           <p>
             <span className="font-medium">Seen:</span>{' '}
-            {new Date(offer.firstSeenAt).toLocaleString('en-FR')} →{' '}
-            {new Date(offer.lastSeenAt).toLocaleString('en-FR')}
+            {new Date(offer.firstSeenAt).toLocaleString(locale)} →{' '}
+            {new Date(offer.lastSeenAt).toLocaleString(locale)}
           </p>
         </CardContent>
       </Card>

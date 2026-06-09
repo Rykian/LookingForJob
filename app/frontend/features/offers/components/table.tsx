@@ -5,6 +5,7 @@ import type { SortableColumn } from '@/features/offers/hooks/use-sort'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
 import { TechIcon } from '@/features/offers/utils/tech-icons'
 import type { JobOffersQuery } from '@/graphql/generated'
+import { locale } from '@/lib/utils'
 
 interface TableProps {
   loading: boolean
@@ -128,7 +129,7 @@ export function Table({
                   </td>
                   <td className="px-3 py-2">{offer.score ?? '-'}</td>
                   <td className="px-3 py-2">
-                    {new Date(offer.firstSeenAt).toLocaleDateString('en-FR')}
+                    {new Date(offer.firstSeenAt).toLocaleDateString(locale)}
                   </td>
                 </tr>
               ))}
