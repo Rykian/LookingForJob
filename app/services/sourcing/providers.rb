@@ -86,6 +86,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "collective_work",
+            Provider.new(
+              discovery_step: Sourcing::Providers::CollectiveWork::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::CollectiveWork::FetchStep.new,
+              analyze_step:   Sourcing::Providers::CollectiveWork::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::CollectiveWork::EnrichStep.new
+            )
+          )
+
         registry
       end
     end
