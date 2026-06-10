@@ -187,6 +187,8 @@ export enum ProviderEnum {
   Apec = 'apec',
   /** Provider: cadremploi */
   Cadremploi = 'cadremploi',
+  /** Provider: collective_work */
+  CollectiveWork = 'collective_work',
   /** Provider: france_travail */
   FranceTravail = 'france_travail',
   /** Provider: hellowork */
