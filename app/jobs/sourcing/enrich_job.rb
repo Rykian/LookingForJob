@@ -8,7 +8,7 @@ module Sourcing
       secondary_technologies
       offer_language
       normalized_seniority
-      english_level_required
+      languages
     ].freeze
 
     def perform(offer_id, options = {})

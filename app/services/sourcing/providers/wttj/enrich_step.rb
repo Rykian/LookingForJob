@@ -5,7 +5,7 @@ module Sourcing
   module Providers
     module Wttj
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 3
+        VERSION = 4
 
         # Persisted on the JobOffer by EnrichJob. Includes location_mode so we
         # can backfill it when the AnalyzeStep couldn't extract it from metadata.
@@ -16,7 +16,7 @@ module Sourcing
           secondary_technologies
           offer_language
           normalized_seniority
-          english_level_required
+          languages
         ].freeze
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
@@ -57,10 +57,7 @@ module Sourcing
                 type: ["string", "null"],
                 enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
-              english_level_required: {
-                type: ["string", "null"],
-                enum: ["none", "basic", "professional", "fluent", nil],
-              },
+              languages: LANGUAGES_SCHEMA,
             },
             required: %w[
               location_mode
@@ -69,7 +66,7 @@ module Sourcing
               secondary_technologies
               offer_language
               normalized_seniority
-              english_level_required
+              languages
             ],
             additionalProperties: false,
           },
@@ -103,6 +100,7 @@ module Sourcing
             Job description text:
             #{plain_description}
 
+            #{LANGUAGES_PROMPT}
             #{tech_prompt}
           PROMPT
         end
@@ -118,7 +116,7 @@ module Sourcing
             secondary_technologies: normalize_techs(data[:secondary_technologies]),
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
-            english_level_required: data[:english_level_required],
+            languages: normalize_languages(data[:languages]),
           }
         end
       end

@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { LanguageLevelEnum } from '@/graphql/generated'
 import { useJobOffersFilters } from './use-filters'
 
 describe('useJobOffersFilters', () => {
@@ -24,8 +25,8 @@ describe('useJobOffersFilters', () => {
     expect(result.current.variables.sortDirection).toBe('asc')
   })
 
-  it('parses English levels from search params', () => {
-    const searchParams = new URLSearchParams('englishLevels=fluent,professional')
+  it('parses language filter from search params', () => {
+    const searchParams = new URLSearchParams('lang=en&langLevel=PROFESSIONAL')
 
     const { result } = renderHook(() =>
       useJobOffersFilters({
@@ -34,8 +35,24 @@ describe('useJobOffersFilters', () => {
       }),
     )
 
-    expect(result.current.selectedEnglishLevels).toEqual(['fluent', 'professional'])
-    expect(result.current.variables.englishLevelsRequired).toEqual(['fluent', 'professional'])
+    expect(result.current.filterLanguage).toBe('en')
+    expect(result.current.maxLanguageLevel).toBe(LanguageLevelEnum.Professional)
+    expect(result.current.variables.language).toBe('en')
+    expect(result.current.variables.maxLanguageLevel).toBe(LanguageLevelEnum.Professional)
+  })
+
+  it('ignores a language filter without a level', () => {
+    const searchParams = new URLSearchParams('lang=en')
+
+    const { result } = renderHook(() =>
+      useJobOffersFilters({
+        searchParams,
+        setSearchParams: vi.fn(),
+      }),
+    )
+
+    expect(result.current.variables.language).toBeUndefined()
+    expect(result.current.variables.maxLanguageLevel).toBeUndefined()
   })
 
   it('resets all search params', () => {

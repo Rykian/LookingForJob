@@ -10,7 +10,7 @@ RSpec.describe Sourcing::Providers::FranceTravail::EnrichStep do
           secondary_technologies:          ["PostgreSQL"],
           offer_language:                  "fr",
           normalized_seniority:            "mid",
-          english_level_required:          "professional",
+          languages:                       [{ "language" => "en", "level" => "professional" }],
         }
       end
     }.new
@@ -43,7 +43,7 @@ RSpec.describe Sourcing::Providers::FranceTravail::EnrichStep do
     expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("mid")
-    expect(result[:english_level_required]).to eq("professional")
+    expect(result[:languages]).to eq([{ "language" => "en", "level" => "professional" }])
   end
 
   it "clears hybrid_remote_days when location_mode is not hybrid" do

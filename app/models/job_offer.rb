@@ -60,12 +60,10 @@ class JobOffer < ApplicationRecord
     staff: "staff",
   }.freeze
 
-  ENGLISH_LEVELS = {
-    none: "none",
-    basic: "basic",
-    professional: "professional",
-    fluent: "fluent",
-  }.freeze
+  # Order is load-bearing: the language filter treats earlier levels as lower.
+  LANGUAGE_LEVELS = %w[not_required basic professional fluent].freeze
+
+  LANGUAGE_CODES_CACHE_KEY = "job_offers:language_codes"
 
   has_one_attached :html_file
 
@@ -87,7 +85,6 @@ class JobOffer < ApplicationRecord
   enum :employment_type, EMPLOYMENT_TYPES, prefix: true
   enum :offer_language, OFFER_LANGUAGES, prefix: true
   enum :normalized_seniority, SENIORITY_LEVELS, prefix: true
-  enum :english_level_required, ENGLISH_LEVELS, prefix: true
 
   validates :source, :url, :url_hash, :last_seen_at,
             presence: true
@@ -104,8 +101,52 @@ class JobOffer < ApplicationRecord
   validates :city, length: { maximum: 255 }, allow_nil: true
 
   validate :steps_details_must_be_valid
+  validate :languages_must_be_valid
+
+  after_commit :register_language_codes, if: :saved_change_to_languages?
+
+  def self.valid_language_code?(code)
+    code.is_a?(String) && ISO_639.find_by_code(code)&.alpha2 == code
+  end
+
+  def self.known_language_codes
+    Rails.cache.fetch(LANGUAGE_CODES_CACHE_KEY, expires_in: 1.year) do
+      connection.select_values(<<~SQL.squish).sort
+        SELECT DISTINCT jsonb_array_elements(languages)->>'language' FROM job_offers
+      SQL
+    end
+  end
 
   private
+
+  def register_language_codes
+    codes = languages.map { |l| l["language"] }
+    known = self.class.known_language_codes
+    missing = codes - known
+    return if missing.empty?
+
+    Rails.cache.write(LANGUAGE_CODES_CACHE_KEY, (known + missing).sort, expires_in: 1.year)
+  end
+
+  def languages_must_be_valid
+    return if languages == []
+    return errors.add(:languages, "must be an array") unless languages.is_a?(Array)
+
+    seen = []
+    languages.each do |entry|
+      unless entry.is_a?(Hash) && entry.keys.sort == %w[language level]
+        errors.add(:languages, "entries must be hashes with language and level keys")
+        next
+      end
+
+      language = entry["language"]
+      level = entry["level"]
+      errors.add(:languages, "has invalid language code #{language}") unless self.class.valid_language_code?(language)
+      errors.add(:languages, "has invalid level #{level}") unless LANGUAGE_LEVELS.include?(level)
+      errors.add(:languages, "contains duplicate language #{language}") if seen.include?(language)
+      seen << language
+    end
+  end
 
   def steps_details_must_be_valid
     return if steps_details.blank?

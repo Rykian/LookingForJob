@@ -21,7 +21,10 @@ const JOB_OFFER_QUERY = gql`
       employmentType
       normalizedSeniority
       offerLanguage
-      englishLevelRequired
+      languages {
+        language
+        level
+      }
       score
       scoreBreakdown
       primaryTechnologies
@@ -93,9 +96,15 @@ export default function OfferDetailPage() {
           <p>
             <span className="font-medium">Language:</span> {offer.offerLanguage || '-'}
           </p>
-          <p>
-            <span className="font-medium">English level:</span> {offer.englishLevelRequired || '-'}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">Required languages:</span>
+            {offer.languages.map((req) => (
+              <Badge key={req.language} variant="outline">
+                {req.language.toUpperCase()}: {req.level.toLowerCase().replace('_', ' ')}
+              </Badge>
+            ))}
+            {offer.languages.length === 0 ? <span className="text-muted-foreground">-</span> : null}
+          </div>
           <p>
             <span className="font-medium">Seen:</span>{' '}
             {new Date(offer.firstSeenAt).toLocaleString(locale)} →{' '}

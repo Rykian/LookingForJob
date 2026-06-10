@@ -12,6 +12,12 @@ export const PROVIDERS_QUERY = gql`
   }
 `
 
+export const JOB_OFFER_LANGUAGE_CODES_QUERY = gql`
+  query JobOfferLanguageCodes {
+    jobOfferLanguageCodes
+  }
+`
+
 export const JOB_OFFERS_QUERY = gql`
   query JobOffers(
     $page: Int!
@@ -25,7 +31,8 @@ export const JOB_OFFERS_QUERY = gql`
     $sortBy: String
     $sortDirection: String
     $technologies: [String!]
-    $englishLevelsRequired: [String!]
+    $language: String
+    $maxLanguageLevel: LanguageLevelEnum
     $minCommuteMinutes: Int
     $maxCommuteMinutes: Int
     $runId: ID
@@ -43,7 +50,8 @@ export const JOB_OFFERS_QUERY = gql`
       sortBy: $sortBy
       sortDirection: $sortDirection
       technologies: $technologies
-      englishLevelsRequired: $englishLevelsRequired
+      language: $language
+      maxLanguageLevel: $maxLanguageLevel
       minCommuteMinutes: $minCommuteMinutes
       maxCommuteMinutes: $maxCommuteMinutes
       runId: $runId

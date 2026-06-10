@@ -1,18 +1,28 @@
 import { useMemo } from 'react'
-import { type JobOffersQueryVariables, LocationModeEnum } from '@/graphql/generated'
+import {
+  type JobOffersQueryVariables,
+  LanguageLevelEnum,
+  LocationModeEnum,
+} from '@/graphql/generated'
 
 const LOCATION_MODE_VALUES = Object.values(LocationModeEnum)
 const SEEN_FIELD_VALUES = ['first_seen_at', 'last_seen_at'] as const
 const DATE_PRESET_VALUES = ['all', 'today', 'yesterday', 'last_7_days', 'last_30_days'] as const
 const SORT_BY_VALUES = ['first_seen_at', 'last_seen_at', 'score', 'company', 'title'] as const
 const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
-const ENGLISH_LEVEL_VALUES = ['none', 'basic', 'professional', 'fluent'] as const
+// Ordered lowest to highest; the backend filter treats earlier levels as lower.
+const LANGUAGE_LEVEL_VALUES = [
+  LanguageLevelEnum.NotRequired,
+  LanguageLevelEnum.Basic,
+  LanguageLevelEnum.Professional,
+  LanguageLevelEnum.Fluent,
+] as const
+const LANGUAGE_CODE_REGEX = /^[a-z]{2}$/
 
 export type SeenField = (typeof SEEN_FIELD_VALUES)[number]
 export type DatePreset = (typeof DATE_PRESET_VALUES)[number]
 export type SortBy = (typeof SORT_BY_VALUES)[number]
 export type SortDirection = (typeof SORT_DIRECTION_VALUES)[number]
-export type EnglishLevel = (typeof ENGLISH_LEVEL_VALUES)[number]
 
 function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
   return values.includes(value)
@@ -83,12 +93,13 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
         .filter((value): value is LocationModeEnum => isOneOf(value, LOCATION_MODE_VALUES))
     : []
 
-  const englishLevelsParam = searchParams.get('englishLevels') || ''
-  const selectedEnglishLevels = englishLevelsParam
-    ? englishLevelsParam
-        .split(',')
-        .filter((value): value is EnglishLevel => isOneOf(value, ENGLISH_LEVEL_VALUES))
-    : []
+  const langParam = searchParams.get('lang') || ''
+  const filterLanguage = LANGUAGE_CODE_REGEX.test(langParam) ? langParam : null
+
+  const langLevelParam = searchParams.get('langLevel') || ''
+  const maxLanguageLevel: LanguageLevelEnum | null = isOneOf(langLevelParam, LANGUAGE_LEVEL_VALUES)
+    ? langLevelParam
+    : null
 
   const onlyWithinCommute = searchParams.get('onlyWithinCommute') === 'true'
 
@@ -169,7 +180,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...(selectedLocationModes.length > 0 ? { locationModes: selectedLocationModes } : {}),
     ...seenDateVariables,
     ...(selectedTechnologies.length > 0 ? { technologies: selectedTechnologies } : {}),
-    ...(selectedEnglishLevels.length > 0 ? { englishLevelsRequired: selectedEnglishLevels } : {}),
+    ...(filterLanguage && maxLanguageLevel ? { language: filterLanguage, maxLanguageLevel } : {}),
     ...(minCommuteMinutes !== null ? { minCommuteMinutes } : {}),
     ...(maxCommuteMinutes !== null ? { maxCommuteMinutes } : {}),
     ...(runId ? { runId } : {}),
@@ -183,7 +194,8 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
-    selectedEnglishLevels,
+    filterLanguage,
+    maxLanguageLevel,
     seenField,
     datePreset,
     sortBy,
@@ -198,4 +210,4 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
 }
 
 export const locationModeValues = LOCATION_MODE_VALUES
-export const englishLevelValues = ENGLISH_LEVEL_VALUES
+export const languageLevelValues = LANGUAGE_LEVEL_VALUES

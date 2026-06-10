@@ -1,5 +1,26 @@
 module Sourcing
   class EnrichStep
+    # Shared JSON-schema fragment for the languages property of provider
+    # response schemas.
+    LANGUAGES_SCHEMA = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          language: { type: "string", description: "ISO 639-1 code (en, fr, de, ...)" },
+          level: { type: "string", enum: %w[not_required basic professional fluent] },
+        },
+        required: %w[language level],
+        additionalProperties: false,
+      },
+    }.freeze
+
+    LANGUAGES_PROMPT = <<~PROMPT.freeze
+      List every language mentioned in the offer with its required level (not_required, basic, professional, fluent) using ISO 639-1 codes.
+      Use not_required for languages mentioned but not required (e.g. "a plus").
+      Omit languages not mentioned at all.
+    PROMPT
+
     def initialize(llm_config: Sourcing::LlmConfig.from_env, generator: nil)
       @llm_config = llm_config
       @generator = generator || method(:generate_with_ruby_llm)
@@ -36,6 +57,19 @@ module Sourcing
     end
 
     protected
+
+    def normalize_languages(arr)
+      Array(arr).filter_map do |entry|
+        h = entry.respond_to?(:to_h) ? entry.to_h.transform_keys(&:to_s) : nil
+        next unless h
+
+        lang = h["language"].to_s.strip.downcase
+        level = h["level"].to_s
+        next unless JobOffer.valid_language_code?(lang) && JobOffer::LANGUAGE_LEVELS.include?(level)
+
+        { "language" => lang, "level" => level }
+      end.uniq { |h| h["language"] }
+    end
 
     def normalize_techs(arr)
       Array(arr).filter_map do |t|

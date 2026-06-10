@@ -16,7 +16,8 @@ export default function OffersPage() {
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
-    selectedEnglishLevels,
+    filterLanguage,
+    maxLanguageLevel,
     seenField,
     datePreset,
     sortBy,
@@ -43,6 +44,7 @@ export default function OffersPage() {
     providerLoading,
     technologyKeys,
     technologiesLoading,
+    languageCodes,
     sourcingStatus,
     isSourcingActive,
     commuteMaxMinutes,
@@ -89,7 +91,9 @@ export default function OffersPage() {
         selectedTechnologies={selectedTechnologies}
         selectedSources={selectedSources}
         selectedLocationModes={selectedLocationModes}
-        selectedEnglishLevels={selectedEnglishLevels}
+        languageCodes={languageCodes}
+        filterLanguage={filterLanguage}
+        maxLanguageLevel={maxLanguageLevel}
         seenField={seenField}
         datePreset={datePreset}
         onlyWithinCommute={onlyWithinCommute}
@@ -114,10 +118,11 @@ export default function OffersPage() {
             locationModes: items.length > 0 ? items.join(',') : null,
           })
         }}
-        onChangeEnglishLevels={(items) => {
+        onChangeLanguageFilter={(language, level) => {
           updateSearchParams({
             page: null,
-            englishLevels: items.length > 0 ? items.join(',') : null,
+            lang: language,
+            langLevel: level,
           })
         }}
         onChangeSeenField={(value) => {

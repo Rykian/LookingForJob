@@ -110,6 +110,60 @@ RSpec.describe "GraphQL query jobOffers", type: :request do
     expect(result.dig("data", "jobOffers", "nodes").first["id"]).to eq(in_range.id.to_s)
   end
 
+  it "filters offers by language and max level" do
+    no_requirement = create(:job_offer, languages: [])
+    basic = create(:job_offer, languages: [{ "language" => "en", "level" => "basic" }])
+    fluent = create(:job_offer, languages: [
+      { "language" => "en", "level" => "fluent" },
+      { "language" => "fr", "level" => "not_required" },
+    ])
+
+    query = <<~GRAPHQL
+      query JobOffers($page: Int!, $perPage: Int!, $language: String, $maxLanguageLevel: LanguageLevelEnum) {
+        jobOffers(page: $page, perPage: $perPage, language: $language, maxLanguageLevel: $maxLanguageLevel) {
+          nodes {
+            id
+            languages {
+              language
+              level
+            }
+          }
+        }
+      }
+    GRAPHQL
+
+    result = post_graphql(
+      query: query,
+      variables: { page: 1, perPage: 25, language: "en", maxLanguageLevel: "BASIC" }
+    )
+
+    expect(result["errors"]).to be_nil
+    ids = result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }
+    expect(ids).to contain_exactly(no_requirement.id.to_s, basic.id.to_s)
+
+    result = post_graphql(
+      query: query,
+      variables: { page: 1, perPage: 25, language: "en", maxLanguageLevel: "FLUENT" }
+    )
+
+    nodes = result.dig("data", "jobOffers", "nodes")
+    expect(nodes.map { |n| n["id"] }).to contain_exactly(no_requirement.id.to_s, basic.id.to_s, fluent.id.to_s)
+    fluent_node = nodes.find { |n| n["id"] == fluent.id.to_s }
+    expect(fluent_node["languages"]).to contain_exactly(
+      { "language" => "en", "level" => "FLUENT" },
+      { "language" => "fr", "level" => "NOT_REQUIRED" }
+    )
+  end
+
+  it "lists known language codes" do
+    create(:job_offer, languages: [{ "language" => "de", "level" => "professional" }])
+
+    result = post_graphql(query: "{ jobOfferLanguageCodes }")
+
+    expect(result["errors"]).to be_nil
+    expect(result.dig("data", "jobOfferLanguageCodes")).to include("de")
+  end
+
   it "sorts offers by score in descending order" do
     low = create(:job_offer, :with_score, value: 10, last_seen_at: 2.days.ago)
     high = create(:job_offer, :with_score, value: 90, last_seen_at: 1.day.ago)

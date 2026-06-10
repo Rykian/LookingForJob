@@ -37,14 +37,6 @@ RSpec.describe JobOffer, type: :model do
         .without_scopes
         .backed_by_column_of_type(:string)
     end
-
-    it do
-      is_expected.to define_enum_for(:english_level_required)
-        .with_values(described_class::ENGLISH_LEVELS)
-        .without_instance_methods
-        .without_scopes
-        .backed_by_column_of_type(:string)
-    end
   end
 
   describe "validators" do
@@ -121,6 +113,79 @@ RSpec.describe JobOffer, type: :model do
 
       expect(job_offer).not_to be_valid
       expect(job_offer.errors[:steps_details]).to include("step discovery has an invalid version")
+    end
+  end
+
+  describe "languages validation" do
+    it "defaults to an empty array" do
+      expect(described_class.new.languages).to eq([])
+    end
+
+    it "accepts valid language entries" do
+      job_offer = build_job_offer(languages: [
+        { "language" => "en", "level" => "professional" },
+        { "language" => "fr", "level" => "not_required" },
+      ])
+
+      expect(job_offer).to be_valid
+    end
+
+    it "rejects non-array values" do
+      job_offer = build_job_offer(languages: { "language" => "en", "level" => "basic" })
+
+      expect(job_offer).not_to be_valid
+      expect(job_offer.errors[:languages]).to include("must be an array")
+    end
+
+    it "rejects entries missing keys" do
+      job_offer = build_job_offer(languages: [{ "language" => "en" }])
+
+      expect(job_offer).not_to be_valid
+      expect(job_offer.errors[:languages]).to include("entries must be hashes with language and level keys")
+    end
+
+    it "rejects invalid language codes" do
+      job_offer = build_job_offer(languages: [{ "language" => "xx", "level" => "basic" }])
+
+      expect(job_offer).not_to be_valid
+      expect(job_offer.errors[:languages]).to include("has invalid language code xx")
+    end
+
+    it "rejects invalid levels" do
+      job_offer = build_job_offer(languages: [{ "language" => "en", "level" => "native" }])
+
+      expect(job_offer).not_to be_valid
+      expect(job_offer.errors[:languages]).to include("has invalid level native")
+    end
+
+    it "rejects duplicate languages" do
+      job_offer = build_job_offer(languages: [
+        { "language" => "en", "level" => "basic" },
+        { "language" => "en", "level" => "fluent" },
+      ])
+
+      expect(job_offer).not_to be_valid
+      expect(job_offer.errors[:languages]).to include("contains duplicate language en")
+    end
+  end
+
+  describe "known language codes cache" do
+    around do |example|
+      original_cache = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      example.run
+    ensure
+      Rails.cache = original_cache
+    end
+
+    it "registers new codes when languages change" do
+      create(:job_offer, languages: [{ "language" => "en", "level" => "professional" }])
+
+      expect(described_class.known_language_codes).to include("en")
+
+      create(:job_offer, languages: [{ "language" => "de", "level" => "basic" }])
+
+      expect(described_class.known_language_codes).to include("de", "en")
     end
   end
 end

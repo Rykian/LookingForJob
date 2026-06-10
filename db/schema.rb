@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_03_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -79,9 +79,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_000001) do
     t.text "description_html"
     t.boolean "disabled", default: false, null: false
     t.string "employment_type"
-    t.string "english_level_required"
     t.integer "hybrid_remote_days_min_per_week"
     t.string "keywords", default: [], null: false, array: true
+    t.jsonb "languages", default: [], null: false
     t.datetime "last_seen_at", null: false
     t.string "location_mode"
     t.string "normalized_seniority"
@@ -106,6 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_000001) do
     t.index ["city"], name: "index_job_offers_on_city"
     t.index ["commute_city_id"], name: "index_job_offers_on_commute_city_id"
     t.index ["content_fingerprint"], name: "index_job_offers_on_content_fingerprint"
+    t.index ["languages"], name: "index_job_offers_on_languages", using: :gin
     t.index ["last_seen_at"], name: "index_job_offers_on_last_seen_at"
     t.index ["location_mode"], name: "index_job_offers_on_location_mode"
     t.index ["score"], name: "index_job_offers_on_score"

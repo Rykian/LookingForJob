@@ -12,7 +12,7 @@ module Types
     field :employment_type, String, null: true
     field :normalized_seniority, String, null: true
     field :offer_language, String, null: true
-    field :english_level_required, String, null: true
+    field :languages, [Types::LanguageRequirementType], null: false
     field :hybrid_remote_days_min_per_week, Integer, null: true
     field :score, Integer, null: true
     field :score_breakdown, GraphQL::Types::JSON, null: true

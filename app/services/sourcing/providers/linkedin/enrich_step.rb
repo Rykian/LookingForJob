@@ -11,7 +11,7 @@ module Sourcing
       # normalized seniority, English level. Mirrors the cadremploi enrich schema
       # for consistency across providers.
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 2
+        VERSION = 3
 
         # LinkedIn guest pages don't expose location_mode, so we infer it here in addition
         # to the default enriched attributes. EnrichJob reads this constant when slicing
@@ -23,7 +23,7 @@ module Sourcing
           secondary_technologies
           offer_language
           normalized_seniority
-          english_level_required
+          languages
         ].freeze
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
@@ -62,10 +62,7 @@ module Sourcing
                 type: ["string", "null"],
                 enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
-              english_level_required: {
-                type: ["string", "null"],
-                enum: ["none", "basic", "professional", "fluent", nil],
-              },
+              languages: LANGUAGES_SCHEMA,
             },
             required: %w[
               location_mode
@@ -74,7 +71,7 @@ module Sourcing
               secondary_technologies
               offer_language
               normalized_seniority
-              english_level_required
+              languages
             ],
             additionalProperties: false,
           },
@@ -109,6 +106,7 @@ module Sourcing
             Job description text:
             #{plain_description}
 
+            #{LANGUAGES_PROMPT}
             #{tech_prompt}
           PROMPT
         end
@@ -125,7 +123,7 @@ module Sourcing
             secondary_technologies:          normalize_techs(data[:secondary_technologies]),
             offer_language:                  data[:offer_language],
             normalized_seniority:            data[:normalized_seniority],
-            english_level_required:          data[:english_level_required],
+            languages:                       normalize_languages(data[:languages]),
           }
         end
       end

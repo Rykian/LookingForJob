@@ -9,7 +9,7 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
       secondary_technologies: ["Redis"],
       offer_language: "fr",
       normalized_seniority: "junior",
-      english_level_required: "professional",
+      languages: [{ "language" => "en", "level" => "professional" }],
     }
   end
 
@@ -36,7 +36,7 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
     expect(result[:secondary_technologies]).to eq(["Redis"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("junior")
-    expect(result[:english_level_required]).to eq("professional")
+    expect(result[:languages]).to eq([{ "language" => "en", "level" => "professional" }])
   end
 
   it "falls back to LLM-inferred location_mode when metadata is missing" do

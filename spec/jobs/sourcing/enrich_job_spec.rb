@@ -11,7 +11,7 @@ class MockEnrichStep
     secondary_technologies
     offer_language
     normalized_seniority
-    english_level_required
+    languages
   ].freeze
 
   def call(source:, url:, url_hash:, html_content:, extracted:)
@@ -23,7 +23,7 @@ class MockEnrichStep
       secondary_technologies: ["Redis"],
       offer_language: "en",
       normalized_seniority: "senior",
-      english_level_required: "professional",
+      languages: [{ "language" => "en", "level" => "professional" }],
     }
   end
 end
@@ -84,6 +84,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect(offer.hybrid_remote_days_min_per_week).to eq(3)
     expect(offer.primary_technologies).to eq(["Ruby on Rails"])
     expect(offer.normalized_seniority).to eq("senior")
+    expect(offer.languages).to eq([{ "language" => "en", "level" => "professional" }])
     expect(offer.steps_details["enrich"]).to include("version" => 1)
     expect(offer.steps_details.dig("enrich", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 

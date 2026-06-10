@@ -10,7 +10,7 @@ RSpec.describe Sourcing::Providers::Apec::EnrichStep do
           secondary_technologies: ["PostgreSQL"],
           offer_language: "fr",
           normalized_seniority: "senior",
-          english_level_required: "professional",
+          languages: [{ "language" => "en", "level" => "professional" }],
         }
       end
     }.new
@@ -34,11 +34,30 @@ RSpec.describe Sourcing::Providers::Apec::EnrichStep do
     expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("fr")
     expect(result[:normalized_seniority]).to eq("senior")
-    expect(result[:english_level_required]).to eq("professional")
+    expect(result[:languages]).to eq([{ "language" => "en", "level" => "professional" }])
   end
 
   it "sets remote days to nil when not hybrid" do
     result = step.call(extracted: { description_html: description_html, location_mode: "remote" })
     expect(result[:hybrid_remote_days_min_per_week]).to be_nil
+  end
+
+  it "strips invalid language entries" do
+    generator = Class.new {
+      def call(**)
+        {
+          languages: [
+            { "language" => "EN ", "level" => "fluent" },
+            { "language" => "xx", "level" => "basic" },
+            { "language" => "fr", "level" => "native" },
+            { "language" => "en", "level" => "basic" },
+            "not a hash",
+          ],
+        }
+      end
+    }.new
+    result = described_class.new(generator: generator).call(extracted: { description_html: description_html })
+
+    expect(result[:languages]).to eq([{ "language" => "en", "level" => "fluent" }])
   end
 end

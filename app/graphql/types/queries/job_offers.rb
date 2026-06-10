@@ -30,8 +30,10 @@ module Types
             description: "Sort direction: asc or desc."
           argument :technologies, [String], required: false,
             description: "Filter offers by matching any of these technologies (primary or secondary)."
-          argument :english_levels_required, [String], required: false,
-            description: "Filter by required English level (none, basic, professional, fluent)."
+          argument :language, String, required: false,
+            description: "ISO 639-1 code; paired with max_language_level."
+          argument :max_language_level, Types::LanguageLevelEnum, required: false,
+            description: "Maximum level you can handle; offers requiring more are excluded."
           argument :min_commute_minutes, Integer, required: false,
             description: "Only return offers with a commute duration >= this value (uses profile origin and mode)."
           argument :max_commute_minutes, Integer, required: false,
@@ -43,9 +45,16 @@ module Types
           argument :search, String, required: false,
             description: "Fuzzy full-text search across title, company, city, technologies and description_html."
         end
+
+        field :job_offer_language_codes, [String], null: false,
+          description: "ISO 639-1 codes present in job offer language requirements (cache-backed)."
       end
 
-      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, english_levels_required: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil, exclude_duplicates: true, search: nil)
+      def job_offer_language_codes
+        ::JobOffer.known_language_codes
+      end
+
+      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, language: nil, max_language_level: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil, exclude_duplicates: true, search: nil)
         scope = ::JobOffer.where(rejected: false, disabled: false)
         scope = scope.canonical if exclude_duplicates
 
@@ -72,7 +81,13 @@ module Types
         scope = scope.where("last_seen_at >= ?", last_seen_after) if last_seen_after.present?
         scope = scope.where("last_seen_at <= ?", last_seen_before) if last_seen_before.present?
 
-        scope = scope.where(english_level_required: english_levels_required) if english_levels_required.present?
+        if language.present? && max_language_level.present?
+          allowed = ::JobOffer::LANGUAGE_LEVELS.take(::JobOffer::LANGUAGE_LEVELS.index(max_language_level) + 1)
+          clauses = ["NOT (languages @> ?)"] + allowed.map { "languages @> ?" }
+          binds = [[{ language: language }].to_json] +
+                  allowed.map { |level| [{ language: language, level: level }].to_json }
+          scope = scope.where(clauses.join(" OR "), *binds)
+        end
 
         if min_commute_minutes.present? || max_commute_minutes.present?
           cfg = context[:scoring_profile]&.dig(:location, :commute)

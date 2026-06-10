@@ -7,7 +7,7 @@ module Sourcing
   module Providers
     module Indeed
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 1
+        VERSION = 2
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for Indeed job offers.
@@ -41,10 +41,7 @@ module Sourcing
                 type: ["string", "null"],
                 enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
-              english_level_required: {
-                type: ["string", "null"],
-                enum: ["none", "basic", "professional", "fluent", nil],
-              },
+              languages: LANGUAGES_SCHEMA,
             },
             required: %w[
               hybrid_remote_days_min_per_week
@@ -52,7 +49,7 @@ module Sourcing
               secondary_technologies
               offer_language
               normalized_seniority
-              english_level_required
+              languages
             ],
             additionalProperties: false,
           },
@@ -86,6 +83,7 @@ module Sourcing
             Job description text:
             #{description_html_to_text(extracted[:description_html])}
 
+            #{LANGUAGES_PROMPT}
             #{tech_prompt}
           PROMPT
         end
@@ -99,7 +97,7 @@ module Sourcing
             secondary_technologies: normalize_techs(data[:secondary_technologies]),
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
-            english_level_required: data[:english_level_required],
+            languages: normalize_languages(data[:languages]),
           }
         end
       end

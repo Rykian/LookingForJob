@@ -24,6 +24,7 @@ gem "playwright-ruby-client"
 gem "faraday-cookie_jar"
 gem "ruby_llm"
 gem "dry-schema"
+gem "iso-639"
 gem "aws-sdk-s3", require: false
 
 # Reduces boot times through caching; required in config/boot.rb

@@ -9,7 +9,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
       secondary_technologies: ["PostgreSQL"],
       offer_language: "en",
       normalized_seniority: "mid",
-      english_level_required: "fluent",
+      languages: [{ "language" => "en", "level" => "fluent" }],
     }.merge(overrides)
     Class.new { define_method(:call) { |**| payload } }.new
   end
@@ -36,7 +36,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
     expect(result[:secondary_technologies]).to eq(["PostgreSQL"])
     expect(result[:offer_language]).to eq("en")
     expect(result[:normalized_seniority]).to eq("mid")
-    expect(result[:english_level_required]).to eq("fluent")
+    expect(result[:languages]).to eq([{ "language" => "en", "level" => "fluent" }])
   end
 
   it "uses LLM output for location_mode, not analyze's extracted value" do

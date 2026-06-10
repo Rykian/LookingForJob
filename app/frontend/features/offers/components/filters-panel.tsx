@@ -13,9 +13,10 @@ import {
   ComboboxValue,
 } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
-import type { DatePreset, EnglishLevel, SeenField } from '@/features/offers/hooks/use-filters'
-import { englishLevelValues, locationModeValues } from '@/features/offers/hooks/use-filters'
+import type { DatePreset, SeenField } from '@/features/offers/hooks/use-filters'
+import { languageLevelValues, locationModeValues } from '@/features/offers/hooks/use-filters'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
+import type { LanguageLevelEnum } from '@/graphql/generated'
 
 interface FiltersPanelProps {
   providerKeys: string[]
@@ -25,7 +26,9 @@ interface FiltersPanelProps {
   selectedTechnologies: string[]
   selectedSources: string[]
   selectedLocationModes: string[]
-  selectedEnglishLevels: EnglishLevel[]
+  languageCodes: string[]
+  filterLanguage: string | null
+  maxLanguageLevel: LanguageLevelEnum | null
   seenField: SeenField
   datePreset: DatePreset
   onlyWithinCommute: boolean
@@ -35,7 +38,7 @@ interface FiltersPanelProps {
   onChangeTechnologies: (items: string[]) => void
   onChangeSources: (items: string[]) => void
   onChangeLocationModes: (items: string[]) => void
-  onChangeEnglishLevels: (items: EnglishLevel[]) => void
+  onChangeLanguageFilter: (language: string | null, level: string | null) => void
   onChangeSeenField: (value: string) => void
   onChangeDatePreset: (value: string) => void
   onChangeOnlyWithinCommute: (checked: boolean) => void
@@ -59,7 +62,9 @@ export function FiltersPanel({
   selectedTechnologies,
   selectedSources,
   selectedLocationModes,
-  selectedEnglishLevels,
+  languageCodes,
+  filterLanguage,
+  maxLanguageLevel,
   seenField,
   datePreset,
   onlyWithinCommute,
@@ -69,7 +74,7 @@ export function FiltersPanel({
   onChangeTechnologies,
   onChangeSources,
   onChangeLocationModes,
-  onChangeEnglishLevels,
+  onChangeLanguageFilter,
   onChangeSeenField,
   onChangeDatePreset,
   onChangeOnlyWithinCommute,
@@ -185,27 +190,36 @@ export function FiltersPanel({
             </ComboboxContent>
           </Combobox>
 
-          <Combobox multiple items={englishLevelValues} onValueChange={onChangeEnglishLevels}>
-            <ComboboxChips>
-              <ComboboxValue>
-                {selectedEnglishLevels.map((item) => (
-                  <ComboboxChip key={item}>{item}</ComboboxChip>
-                ))}
-              </ComboboxValue>
-              <ComboboxChipsInput placeholder="Filter by English level..." />
-            </ComboboxChips>
-
-            <ComboboxContent>
-              <ComboboxEmpty>All English levels</ComboboxEmpty>
-              <ComboboxList>
-                {(item) => (
-                  <ComboboxItem key={item} value={item}>
-                    {item}
-                  </ComboboxItem>
-                )}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
+          <div className="flex gap-2">
+            <select
+              className="h-10 w-1/2 rounded-md border bg-background px-3 text-sm"
+              value={filterLanguage ?? ''}
+              onChange={(event) =>
+                onChangeLanguageFilter(event.target.value || null, maxLanguageLevel)
+              }
+            >
+              <option value="">Any language</option>
+              {languageCodes.map((code) => (
+                <option key={code} value={code}>
+                  {code.toUpperCase()}
+                </option>
+              ))}
+            </select>
+            <select
+              className="h-10 w-1/2 rounded-md border bg-background px-3 text-sm"
+              value={maxLanguageLevel ?? ''}
+              onChange={(event) =>
+                onChangeLanguageFilter(filterLanguage, event.target.value || null)
+              }
+            >
+              <option value="">Max level</option>
+              {languageLevelValues.map((level) => (
+                <option key={level} value={level}>
+                  {level.toLowerCase().replace('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <select
             className="h-10 rounded-md border bg-background px-3 text-sm"

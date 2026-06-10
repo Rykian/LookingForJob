@@ -2,6 +2,7 @@ import { useQuery, useSubscription } from '@apollo/client/react'
 import { useEffect, useRef } from 'react'
 import { SCORING_PROFILE_QUERY } from '@/features/profile/queries/documents'
 import type {
+  JobOfferLanguageCodesQuery,
   JobOffersQuery,
   JobOffersQueryVariables,
   ProvidersQuery,
@@ -11,6 +12,7 @@ import type {
 } from '@/graphql/generated'
 import {
   ACTIVE_SOURCING_POLL_INTERVAL_MS,
+  JOB_OFFER_LANGUAGE_CODES_QUERY,
   JOB_OFFERS_QUERY,
   PROVIDERS_QUERY,
   SOURCING_STATUS_SUBSCRIPTION,
@@ -28,6 +30,11 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
   const { data: technologiesData, loading: technologiesLoading } =
     useQuery<TechnologiesQuery>(TECHNOLOGIES_QUERY)
   const technologyKeys = technologiesData?.technologies || []
+
+  const { data: languageCodesData } = useQuery<JobOfferLanguageCodesQuery>(
+    JOB_OFFER_LANGUAGE_CODES_QUERY,
+  )
+  const languageCodes = languageCodesData?.jobOfferLanguageCodes || []
 
   const { data: sourcingStatusData } = useSubscription<SourcingStatusSubscription>(
     SOURCING_STATUS_SUBSCRIPTION,
@@ -64,6 +71,7 @@ export function useJobOffersData({ variables }: UseJobOffersDataParams) {
     providerLoading,
     technologyKeys,
     technologiesLoading,
+    languageCodes,
     sourcingStatus,
     isSourcingActive,
     commuteMaxMinutes,
