@@ -62,3 +62,6 @@ storybook-static/
 
 # SimpleCov output
 /coverage/
+
+# Ignore worktrees
+.claude/worktrees/
