@@ -1,5 +1,5 @@
 module Sourcing
-  class DeduplicateService
+  class DeduplicateOffersService
     SOURCE_PRIORITY = %w[linkedin wttj indeed apec france_travail cadremploi hellowork].freeze
 
     def self.normalize_text(raw)

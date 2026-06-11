@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "GraphQL query technologies", type: :request do
-  # Common technologies live in Redis (written by DedupTechnologiesJob); stub
+  # Common technologies live in Redis (written by CanonicalizeTechnologiesJob); stub
   # the store so these tests don't depend on a populated Redis.
   before do
     allow(Sourcing::TechnologyStore).to receive(:read_common_technologies)

@@ -1,11 +1,11 @@
 module Sourcing
-  class DeduplicateJob < ApplicationJob
+  class DeduplicateOffersJob < ApplicationJob
     include Sidekiq::Throttled::Job
 
     sidekiq_throttle(concurrency: { limit: 1, ttl: 1.hour.to_i })
 
     def perform
-      Sourcing::DeduplicateService.new.call
+      Sourcing::DeduplicateOffersService.new.call
     end
   end
 end

@@ -56,7 +56,7 @@ module Sourcing
       ))
 
       identify_duplicate(offer)
-      Sourcing::DeduplicateJob.perform_later
+      Sourcing::DeduplicateOffersJob.perform_later
 
       return if offer.duplicate?
 
@@ -66,7 +66,7 @@ module Sourcing
     private
 
     def identify_duplicate(offer)
-      fp = Sourcing::DeduplicateService.compute_content_fingerprint(offer.company, offer.title, offer.city)
+      fp = Sourcing::DeduplicateOffersService.compute_content_fingerprint(offer.company, offer.title, offer.city)
       return unless fp
 
       offer.update_column(:content_fingerprint, fp)

@@ -37,9 +37,9 @@ bundle exec rspec spec/services/sourcing/
 
 ## Technology canonicalization
 
-Technologies extracted by the enrich step are stored as-is on first ingestion. A background job (`DedupTechnologiesJob`) periodically normalizes them to canonical names ("Node.js", "PostgreSQL", etc.) using an LLM.
+Technologies extracted by the enrich step are stored as-is on first ingestion. A background job (`CanonicalizeTechnologiesJob`) periodically normalizes them to canonical names ("Node.js", "PostgreSQL", etc.) using an LLM.
 
-### DedupTechnologiesJob
+### CanonicalizeTechnologiesJob
 
 - **Schedule**: every Monday at 3am (`config/sidekiq.yml`).
 - **What it does**: collects all distinct `primary_technologies` from active offers, sends them to the LLM in batches of 500, builds a raw→canonical alias map, rewrites every offer's technologies, updates `data/scoring_profile.json`, and writes the top-120 canonical names to Redis.
@@ -50,8 +50,8 @@ Technologies extracted by the enrich step are stored as-is on first ingestion. A
 
 ### Bootstrap dependency
 
-Until the first `DedupTechnologiesJob` run completes, `TechnologyStore` returns empty structures (`{}` / `[]`). The enrich step silently omits the technology hint from its prompt in that state — extraction still works, just without canonical guidance. Run the job once after initial data ingestion:
+Until the first `CanonicalizeTechnologiesJob` run completes, `TechnologyStore` returns empty structures (`{}` / `[]`). The enrich step silently omits the technology hint from its prompt in that state — extraction still works, just without canonical guidance. Run the job once after initial data ingestion:
 
 ```bash
-bin/rails runner "Sourcing::DedupTechnologiesJob.perform_later"
+bin/rails runner "Sourcing::CanonicalizeTechnologiesJob.perform_later"
 ```

@@ -1,8 +1,8 @@
 module Sourcing
-  # Deduplicates job offer technologies using ActiveJob::Continuation so the
+  # Canonicalizes job offer technologies using ActiveJob::Continuation so the
   # long-running work (many LLM calls + a full offer rewrite) is checkpointed
   # and resumes from the last batch / last offer after an interruption.
-  class DedupTechnologiesJob < ApplicationJob
+  class CanonicalizeTechnologiesJob < ApplicationJob
     include ActiveJob::Continuable
     include Sidekiq::Throttled::Job
 
@@ -16,11 +16,11 @@ module Sourcing
     # Redis key holding the frozen work list. Shared across workers so a resume
     # on a different host can still read it. TTL guards against orphaned keys if
     # the job dies permanently mid-run (resume happens well within this window).
-    SNAPSHOT_KEY = "dedup_technologies:snapshot".freeze
+    SNAPSHOT_KEY = "canonicalize_technologies:snapshot".freeze
     SNAPSHOT_TTL = 1.day.to_i
 
     def perform
-      @service = DedupTechnologiesService.new
+      @service = CanonicalizeTechnologiesService.new
 
       # Freeze the work list so batch boundaries stay stable across resumes.
       step :snapshot_technologies do
@@ -78,9 +78,9 @@ module Sourcing
 
     def snapshot_batches
       raw = Sidekiq.redis { |r| r.get(SNAPSHOT_KEY) }
-      raise "dedup snapshot missing from Redis (#{SNAPSHOT_KEY}); restart the job" if raw.nil?
+      raise "technologies snapshot missing from Redis (#{SNAPSHOT_KEY}); restart the job" if raw.nil?
 
-      JSON.parse(raw).each_slice(DedupTechnologiesService::BATCH_SIZE).to_a
+      JSON.parse(raw).each_slice(CanonicalizeTechnologiesService::BATCH_SIZE).to_a
     end
 
     def load_alias_map

@@ -1,7 +1,7 @@
 require "rails_helper"
 require "active_job/continuation/test_helper"
 
-RSpec.describe Sourcing::DedupTechnologiesJob, type: :job do
+RSpec.describe Sourcing::CanonicalizeTechnologiesJob, type: :job do
   include ActiveJob::Continuation::TestHelper
 
   # Hash-backed fake so set→get→del round-trips across continuation steps.
@@ -53,7 +53,7 @@ RSpec.describe Sourcing::DedupTechnologiesJob, type: :job do
     # Avoid LLM credential setup and the network entirely.
     llm_config = instance_double(Sourcing::LlmConfig, configure!: nil, model: "stub", provider: "stub")
     allow(Sourcing::LlmConfig).to receive(:from_env).and_return(llm_config)
-    allow_any_instance_of(Sourcing::DedupTechnologiesService)
+    allow_any_instance_of(Sourcing::CanonicalizeTechnologiesService)
       .to receive(:batch_alias_map).and_return(alias_map)
     stub_const("Sourcing::ScoringProfile::PROFILE_PATH", profile_tmp.path)
     allow(Sourcing::ScoringProfile).to receive(:reload!)

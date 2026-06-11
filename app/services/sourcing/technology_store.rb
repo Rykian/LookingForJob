@@ -2,7 +2,7 @@ require "json"
 
 module Sourcing
   # Redis-backed storage for the technology canonicalization artifacts produced
-  # by DedupTechnologiesJob: the raw->canonical alias map and the list of the
+  # by CanonicalizeTechnologiesJob: the raw->canonical alias map and the list of the
   # most-used technologies. Stored in Redis (not the filesystem) so they are
   # visible to every process — the job writes them on one worker, while the
   # enrich step and GraphQL API read them from the web/other worker processes.

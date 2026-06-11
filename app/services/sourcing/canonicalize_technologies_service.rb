@@ -1,5 +1,5 @@
 module Sourcing
-  class DedupTechnologiesService
+  class CanonicalizeTechnologiesService
     require "ruby_llm"
 
     BATCH_SIZE = 500
