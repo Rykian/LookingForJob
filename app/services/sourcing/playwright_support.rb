@@ -16,10 +16,26 @@ module Sourcing
         viewport: DEFAULT_VIEWPORT,
         locale: locale,
         timezoneId: DEFAULT_TIMEZONE_ID,
-        userAgent: DEFAULT_USER_AGENT,
+        userAgent: session_user_agent(storage_state),
       }
-      options[:storageState] = storage_state if storage_state
+      options[:storageState] = playwright_storage_state(storage_state) if storage_state
       options
+    end
+
+    # Cloudflare/AWS WAF bind anti-bot clearance cookies to the User-Agent that
+    # earned them. When a harvested session carries the originating UA, replay it
+    # so the clearance stays valid; otherwise fall back to the default UA.
+    def session_user_agent(storage_state)
+      ua = storage_state.is_a?(Hash) ? storage_state["userAgent"] : nil
+      ua.presence || DEFAULT_USER_AGENT
+    end
+
+    # Playwright's storageState schema only accepts cookies/origins; strip the
+    # sidecar userAgent key before handing the state to the driver.
+    def playwright_storage_state(storage_state)
+      return storage_state unless storage_state.is_a?(Hash)
+
+      storage_state.slice("cookies", "origins")
     end
 
     def with_playwright_page(url:, locale:, storage_state: nil)

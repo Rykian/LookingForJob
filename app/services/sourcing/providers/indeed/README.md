@@ -75,7 +75,7 @@ Without strict mode the provider runs logged-out and picks up the session file i
 
 ### Caveats
 
-- The `cf_clearance` cookie is bound to user-agent and IP. Discovery/fetch must run from the same machine as the Chrome that harvested it, and the Playwright user-agent (`Sourcing::PlaywrightSupport::DEFAULT_USER_AGENT`) should roughly match the Chrome version that did the harvest - if you upgrade Chrome significantly, re-harvest.
+- The `cf_clearance` cookie is bound to user-agent and IP. Discovery/fetch must run from the same machine as the Chrome that harvested it. The harvester now captures the originating browser user-agent into the session file (`userAgent` key) and the steps replay it, so the UA always matches the cookie automatically - re-run `bin/rails indeed:login` after a major Chrome upgrade so the stored UA tracks the new clearance. Sessions harvested before this change lack the `userAgent` key and fall back to `Sourcing::PlaywrightSupport::DEFAULT_USER_AGENT`; re-harvest them once.
 - Sessions expire. If discovery starts hitting challenge pages again, repeat the harvest.
 
 ## Session storage path

@@ -70,8 +70,13 @@ module Sourcing
 
           page = pick_page(context)
           cookies = collect_cookies(context, page)
+          user_agent = page.evaluate("() => navigator.userAgent")
 
-          @session_manager.save("cookies" => cookies.map { |c| normalize_cookie(c) }, "origins" => [])
+          @session_manager.save(
+            "cookies" => cookies.map { |c| normalize_cookie(c) },
+            "origins" => [],
+            "userAgent" => user_agent
+          )
           report(cookies)
         end
       end
