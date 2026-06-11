@@ -3,7 +3,7 @@ module Sourcing
     include Sourcing::Concerns::OfferJobArguments
     include Sidekiq::Throttled::Job
 
-    SERIALIZED_SOURCES = %w[linkedin wttj].freeze
+    SERIALIZED_SOURCES = %w[linkedin wttj free_work].freeze
 
     sidekiq_throttle(
       concurrency: {

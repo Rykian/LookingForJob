@@ -209,6 +209,8 @@ export enum ProviderEnum {
   CollectiveWork = 'collective_work',
   /** Provider: france_travail */
   FranceTravail = 'france_travail',
+  /** Provider: free_work */
+  FreeWork = 'free_work',
   /** Provider: hellowork */
   Hellowork = 'hellowork',
   /** Provider: indeed */

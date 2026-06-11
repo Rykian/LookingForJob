@@ -96,6 +96,16 @@ module Sourcing
             )
           )
 
+          registry.register(
+            "free_work",
+            Provider.new(
+              discovery_step: Sourcing::Providers::FreeWork::DiscoveryStep.new,
+              fetch_step:     Sourcing::Providers::FreeWork::FetchStep.new,
+              analyze_step:   Sourcing::Providers::FreeWork::AnalyzeStep.new,
+              enrich_step:    Sourcing::Providers::FreeWork::EnrichStep.new
+            )
+          )
+
         registry
       end
     end

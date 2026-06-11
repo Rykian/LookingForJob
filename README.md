@@ -53,18 +53,21 @@ and re-runnable independently of the rest of the pipeline.
 
 ## Sources
 
-Seven providers behind a uniform four-step contract
+Ten providers behind a uniform four-step contract
 (`Sourcing::DiscoveryStep / FetchStep / AnalyzeStep / EnrichStep`):
 
 | Provider                                                                          | Notes                                            |
 |-----------------------------------------------------------------------------------|--------------------------------------------------|
 | [APEC](app/services/sourcing/providers/apec/README.md)                            | French executive job board                       |
 | [Cadremploi](app/services/sourcing/providers/cadremploi/README.md)                | French job board, session-based crawling         |
+| [Collective.work](app/services/sourcing/providers/collective_work/README.md)      | Freelance marketplace, plain HTTP (no Playwright) |
 | [France Travail](app/services/sourcing/providers/france_travail/README.md)        | French public employment service                 |
+| [Free-Work](app/services/sourcing/providers/free_work/README.md)                  | French IT board, open JSON API (no Playwright)   |
 | [Hellowork](app/services/sourcing/providers/hellowork/README.md)                  | General French job board                         |
 | [Indeed](app/services/sourcing/providers/indeed/README.md)                        | Aggregator, Cloudflare-protected, optional session |
 | [LinkedIn](app/services/sourcing/providers/linkedin/README.md)                    | Public guest endpoints over plain HTTP (no auth) |
 | [Welcome to the Jungle](app/services/sourcing/providers/wttj/README.md)           | Tech-leaning French board                        |
+| [WeLoveDevs](app/services/sourcing/providers/welovedevs/README.md)                | French dev board, JSON-LD extraction             |
 
 Adding a new provider = drop four files under `app/services/sourcing/providers/<name>/`
 and register the key in [Sourcing::Providers](app/services/sourcing/providers.rb).
