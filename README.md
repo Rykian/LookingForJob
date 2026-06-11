@@ -39,7 +39,7 @@ and re-runnable independently of the rest of the pipeline.
 | Layer       | Tech                                                         |
 |-------------|--------------------------------------------------------------|
 | Backend     | Rails 8.1 (API-only) + GraphQL-Ruby 2.3 + Sidekiq 8          |
-| Database    | PostgreSQL 16                                                |
+| Database    | PostgreSQL 16 + Meilisearch                                  |
 | LLM         | RubyLLM (provider-agnostic; OpenAI by default)               |
 | Scraping    | Playwright (Ruby client) for JS-rendered providers           |
 | Storage     | ActiveStorage on RustFS (S3-compatible, self-hosted)         |
@@ -92,12 +92,12 @@ Current scoring axes:
 Prerequisites:
 
 - [mise](https://mise.jdx.dev/) (pins Ruby 4.0 + Node 22 — see [mise.toml](mise.toml))
-- Docker + Docker Compose (for Postgres, Redis, RustFS)
+- Docker + Docker Compose (for Postgres, Redis, RustFS, Meilisearch)
 - An OpenAI-compatible API key (`OPENAI_API_KEY` or `LLM_API_KEY`)
 
 ```bash
 # infra services
-docker compose up -d postgres redis rustfs
+docker compose up -d
 
 # Ruby + Node deps
 bundle install
