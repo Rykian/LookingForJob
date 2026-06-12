@@ -43,7 +43,7 @@ RSpec.describe Sourcing::Providers::Indeed::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:title]).to eq("Senior Ruby Developer")
-    expect(result[:company]).to eq("ExampleCorp")
+    expect(result[:company_name]).to eq("ExampleCorp")
     expect(result[:city]).to eq("Paris")
     expect(result[:employment_type]).to eq("FULL_TIME")
     expect(result[:salary_min_minor]).to eq(50_000)
@@ -70,7 +70,7 @@ RSpec.describe Sourcing::Providers::Indeed::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:title]).to eq("Developpeur Full-Stack")
-    expect(result[:company]).to eq("Acme")
+    expect(result[:company_name]).to eq("Acme")
     expect(result[:city]).to eq("Lyon")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:location_mode]).to eq("hybrid")
@@ -109,7 +109,7 @@ RSpec.describe Sourcing::Providers::Indeed::AnalyzeStep do
     result = step.call(html_content: "<html><body><h1>Just a title</h1></body></html>")
 
     expect(result[:title]).to eq("Just a title")
-    expect(result[:company]).to be_nil
+    expect(result[:company_name]).to be_nil
     expect(result[:salary_min_minor]).to be_nil
     expect(result[:location_mode]).to be_nil
     expect(result[:description_html]).to be_nil

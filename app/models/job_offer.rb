@@ -4,10 +4,10 @@ class JobOffer < ApplicationRecord
   include MeiliSearch::Rails
 
   meilisearch enqueue: true do
-    searchable_attributes [:title, :company, :city, :keywords, :primary_technologies, :secondary_technologies, :description_html]
+    searchable_attributes [:title, :company_name, :city, :keywords, :primary_technologies, :secondary_technologies, :description_html]
   end
 
-  STEPS_DETAIL_KEYS = %w[discovery fetch analyze enrich commute score].freeze
+  STEPS_DETAIL_KEYS = %w[discovery fetch analyze enrich commute score company].freeze
   ISO8601_TIMESTAMP_REGEX = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})\z/.freeze
 
   STEP_PAYLOAD_SCHEMA = Dry::Schema.Params do
@@ -26,6 +26,7 @@ class JobOffer < ApplicationRecord
     optional(:enrich).hash(STEP_PAYLOAD_SCHEMA)
     optional(:commute).hash(STEP_PAYLOAD_SCHEMA)
     optional(:score).hash(STEP_PAYLOAD_SCHEMA)
+    optional(:company).hash(STEP_PAYLOAD_SCHEMA)
   end
 
   LOCATION_MODE_VALUES = {
@@ -69,6 +70,8 @@ class JobOffer < ApplicationRecord
 
   belongs_to :commute_city, class_name: "Commute::City", optional: true, inverse_of: :job_offers
   belongs_to :canonical_offer, class_name: "JobOffer", foreign_key: :canonical_id, optional: true, inverse_of: :duplicate_offers
+  belongs_to :company, optional: true, inverse_of: :job_offers
+  belongs_to :final_company, class_name: "Company", optional: true, inverse_of: :final_client_offers
 
   has_many :run_job_offers, dependent: :delete_all
   has_many :runs, through: :run_job_offers
@@ -102,6 +105,7 @@ class JobOffer < ApplicationRecord
 
   validate :steps_details_must_be_valid
   validate :languages_must_be_valid
+  validate :final_client_guesses_must_be_valid
 
   after_commit :register_language_codes, if: :saved_change_to_languages?
 
@@ -145,6 +149,23 @@ class JobOffer < ApplicationRecord
       errors.add(:languages, "has invalid level #{level}") unless LANGUAGE_LEVELS.include?(level)
       errors.add(:languages, "contains duplicate language #{language}") if seen.include?(language)
       seen << language
+    end
+  end
+
+  def final_client_guesses_must_be_valid
+    return if final_client_guesses == []
+    return errors.add(:final_client_guesses, "must be an array") unless final_client_guesses.is_a?(Array)
+
+    final_client_guesses.each do |entry|
+      unless entry.is_a?(Hash) && entry.keys.sort == %w[confidence name reasons]
+        errors.add(:final_client_guesses, "entries must be hashes with name, confidence and reasons keys")
+        next
+      end
+
+      errors.add(:final_client_guesses, "has invalid name") unless entry["name"].is_a?(String) && entry["name"].present?
+      errors.add(:final_client_guesses, "has invalid reasons") unless entry["reasons"].is_a?(String)
+      confidence = entry["confidence"]
+      errors.add(:final_client_guesses, "has invalid confidence") unless confidence.is_a?(Numeric) && confidence.between?(0, 1)
     end
   end
 

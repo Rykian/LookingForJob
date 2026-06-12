@@ -21,7 +21,7 @@ module Sourcing
 
           {
             title: Parsers::Text.normalize(job_posting["title"] || extract_title(doc)),
-            company: Parsers::Text.normalize(job_posting.dig("hiringOrganization", "name") || extract_company(doc)),
+            company_name: Parsers::Text.normalize(job_posting.dig("hiringOrganization", "name") || extract_company(doc)),
             city: parse_city(job_posting.dig("jobLocation", "address", "addressLocality") || meta_text[:city]),
             employment_type: Parsers::Contract.call(job_posting["employmentType"] || meta_text[:contract]),
             salary_min_minor: salary[:min],

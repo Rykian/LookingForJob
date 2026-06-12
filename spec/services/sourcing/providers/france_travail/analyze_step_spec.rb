@@ -76,7 +76,7 @@ RSpec.describe Sourcing::Providers::FranceTravail::AnalyzeStep do
     result = step.call(html_content: build_html)
 
     expect(result[:title]).to eq("Développeur Ruby (H/F)")
-    expect(result[:company]).to eq("ACME Corp")
+    expect(result[:company_name]).to eq("ACME Corp")
     expect(result[:city]).to eq("Clermont-ferrand")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:salary_min_minor]).to eq(50_000)

@@ -44,6 +44,8 @@ module Types
             description: "When true (default), exclude duplicate offers and only show canonical ones."
           argument :search, String, required: false,
             description: "Fuzzy full-text search across title, company, city, technologies and description_html."
+          argument :company_id, GraphQL::Types::ID, required: false,
+            description: "Filter offers linked to a company, as poster or as final client."
         end
 
         field :job_offer_language_codes, [String], null: false,
@@ -54,9 +56,10 @@ module Types
         ::JobOffer.known_language_codes
       end
 
-      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, language: nil, max_language_level: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil, exclude_duplicates: true, search: nil)
+      def job_offers(page:, per_page:, source: nil, location_modes: nil, first_seen_after: nil, first_seen_before: nil, last_seen_after: nil, last_seen_before: nil, sort_by: "first_seen_at", sort_direction: "desc", technologies: nil, language: nil, max_language_level: nil, min_commute_minutes: nil, max_commute_minutes: nil, run_id: nil, exclude_duplicates: true, search: nil, company_id: nil)
         scope = ::JobOffer.where(rejected: false, disabled: false)
         scope = scope.canonical if exclude_duplicates
+        scope = scope.where("company_id = :id OR final_company_id = :id", id: company_id) if company_id.present?
 
         if search.present?
           raw = MeiliSearch::Rails.client.index("JobOffer").search(search, { limit: 10_000, attributesToRetrieve: ["id"] })
@@ -124,6 +127,7 @@ module Types
         total_count = scope.count
         total_pages = (total_count.to_f / per_page).ceil
         nodes = scope
+          .includes(:company, :final_company)
           # Secondary sort by id to ensure deterministic order when primary sort values are equal.
           .order(Arel.sql("#{sort_column} #{direction} NULLS LAST, id DESC"))
           .offset((page - 1) * per_page)
@@ -143,7 +147,7 @@ module Types
           "first_seen_at" => "(steps_details->'discovery'->>'at')::timestamptz",
           "last_seen_at" => "last_seen_at",
           "score" => "score",
-          "company" => "company",
+          "company" => "company_name",
           "title" => "title",
         }
         allowed.fetch(sort_by.to_s, "(steps_details->'discovery'->>'at')::timestamptz")

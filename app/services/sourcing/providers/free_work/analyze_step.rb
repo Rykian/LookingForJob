@@ -25,7 +25,7 @@ module Sourcing
 
           {
             title: normalize_text(posting["title"]),
-            company: normalize_text(posting.dig("company", "name")),
+            company_name: normalize_text(posting.dig("company", "name")),
             city: normalize_text(posting.dig("location", "locality")),
             employment_type: Parsers::Contract.call(contracts: posting["contracts"]),
             salary_min_minor: salary[:min],

@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Briefcase,
+  Building2,
   ExternalLink,
   History,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils'
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/offers', label: 'Offers', icon: Briefcase, end: false },
+  { to: '/companies', label: 'Companies', icon: Building2, end: false },
   { to: '/runs', label: 'Runs', icon: History, end: false },
   { to: '/errors', label: 'Errors', icon: AlertTriangle, end: false },
   { to: '/sourcing', label: 'Sourcing', icon: Search, end: false },

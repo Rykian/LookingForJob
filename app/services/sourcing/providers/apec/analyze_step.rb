@@ -39,7 +39,7 @@ module Sourcing
 
           {
             title: normalize_text(ld["title"] || text_at(doc, "h1")),
-            company: normalize_text(ld.dig("hiringOrganization", "name") || top_metadata[:company]),
+            company_name: normalize_text(ld.dig("hiringOrganization", "name") || top_metadata[:company_name]),
             city: parse_city(ld.dig("jobLocation", "address", "addressLocality") || top_metadata[:city]),
             employment_type: normalize_contract(ld["employmentType"] || top_metadata[:employment_type]),
             salary_min_minor: parse_salary_min(salary_source),
@@ -55,7 +55,7 @@ module Sourcing
 
         def extract_top_metadata(doc)
           {
-            company: text_at(doc, "apec-offre-metadata .details-offer-list li:first-child"),
+            company_name: text_at(doc, "apec-offre-metadata .details-offer-list li:first-child"),
             employment_type: text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(2) span") ||
               text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(2)"),
             city: text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(3)"),

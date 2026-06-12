@@ -48,7 +48,7 @@ RSpec.describe Sourcing::Providers::Apec::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:title]).to eq("Développeur Ruby F/H")
-    expect(result[:company]).to eq("MATSYS CONNECT")
+    expect(result[:company_name]).to eq("MATSYS CONNECT")
     expect(result[:city]).to eq("Paris 01")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:salary_min_minor]).to eq(50_000)

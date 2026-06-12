@@ -34,6 +34,15 @@ RSpec.describe Sourcing::LlmConfig do
       expect(config.request_timeout).to eq(120)
       expect(config.max_retries).to eq(2)
     end
+
+    it "reads the company model from env with a stronger default" do
+      env = { "LLM_API_KEY" => "test-key" }
+
+      expect(described_class.from_env(env: env).company_model).to eq("gpt-5-mini")
+      expect(
+        described_class.from_env(env: env.merge("LLM_COMPANY_MODEL" => "gpt-5")).company_model
+      ).to eq("gpt-5")
+    end
   end
 
   describe "#configure!" do

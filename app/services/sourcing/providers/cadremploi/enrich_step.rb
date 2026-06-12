@@ -7,7 +7,7 @@ module Sourcing
   module Providers
     module Cadremploi
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 2
+        VERSION = 3
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
           You are a structured data extractor for Cadremploi job offers.
@@ -42,6 +42,7 @@ module Sourcing
                 enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
               languages: LANGUAGES_SCHEMA,
+              posted_by_recruiter: POSTED_BY_RECRUITER_SCHEMA,
             },
             required: %w[
               hybrid_remote_days_min_per_week
@@ -50,6 +51,7 @@ module Sourcing
               offer_language
               normalized_seniority
               languages
+              posted_by_recruiter
             ],
             additionalProperties: false,
           },
@@ -87,6 +89,7 @@ module Sourcing
             Job description text:
             #{plain_description}
 
+            #{POSTED_BY_RECRUITER_PROMPT}
             #{LANGUAGES_PROMPT}
             #{tech_prompt}
           PROMPT
@@ -103,6 +106,7 @@ module Sourcing
             offer_language: data[:offer_language],
             normalized_seniority: data[:normalized_seniority],
             languages: normalize_languages(data[:languages]),
+            posted_by_recruiter: data[:posted_by_recruiter] == true,
           }
         end
       end

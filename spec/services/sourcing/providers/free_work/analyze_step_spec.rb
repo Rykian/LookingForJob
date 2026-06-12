@@ -38,7 +38,7 @@ RSpec.describe Sourcing::Providers::FreeWork::AnalyzeStep do
     end
 
     it "extracts the company" do
-      expect(result[:company]).to eq("CELAD")
+      expect(result[:company_name]).to eq("CELAD")
     end
 
     it "extracts the city from location.locality" do
@@ -167,7 +167,7 @@ RSpec.describe Sourcing::Providers::FreeWork::AnalyzeStep do
     it "returns nils when the payload is not valid JSON, without raising" do
       result = step.call(html_content: "<html>not json</html>")
       expect(result[:title]).to be_nil
-      expect(result[:company]).to be_nil
+      expect(result[:company_name]).to be_nil
       expect(result[:city]).to be_nil
       expect(result[:salary_min_minor]).to be_nil
       expect(result[:location_mode]).to be_nil

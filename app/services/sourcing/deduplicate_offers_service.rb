@@ -29,8 +29,8 @@ module Sourcing
     private
 
     def backfill_fingerprints
-      JobOffer.where(content_fingerprint: nil).where.not(company: nil).where.not(title: nil).find_each do |offer|
-        fp = self.class.compute_content_fingerprint(offer.company, offer.title, offer.city)
+      JobOffer.where(content_fingerprint: nil).where.not(company_name: nil).where.not(title: nil).find_each do |offer|
+        fp = self.class.compute_content_fingerprint(offer.company_name, offer.title, offer.city)
         offer.update_column(:content_fingerprint, fp) if fp
       end
     end

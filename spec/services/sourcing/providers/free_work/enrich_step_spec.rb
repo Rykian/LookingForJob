@@ -11,6 +11,7 @@ RSpec.describe Sourcing::Providers::FreeWork::EnrichStep do
           offer_language: "fr",
           normalized_seniority: "senior",
           languages: [{ "language" => "en", "level" => "professional" }],
+          posted_by_recruiter: false,
         }
       end
     }.new

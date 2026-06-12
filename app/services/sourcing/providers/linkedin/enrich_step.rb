@@ -11,7 +11,7 @@ module Sourcing
       # normalized seniority, English level. Mirrors the cadremploi enrich schema
       # for consistency across providers.
       class EnrichStep < Sourcing::EnrichStep
-        VERSION = 3
+        VERSION = 4
 
         # LinkedIn guest pages don't expose location_mode, so we infer it here in addition
         # to the default enriched attributes. EnrichJob reads this constant when slicing
@@ -24,6 +24,7 @@ module Sourcing
           offer_language
           normalized_seniority
           languages
+          posted_by_recruiter
         ].freeze
 
         SYSTEM_PROMPT = <<~PROMPT.freeze
@@ -63,6 +64,7 @@ module Sourcing
                 enum: ["intern", "junior", "mid", "senior", "staff", nil],
               },
               languages: LANGUAGES_SCHEMA,
+              posted_by_recruiter: POSTED_BY_RECRUITER_SCHEMA,
             },
             required: %w[
               location_mode
@@ -72,6 +74,7 @@ module Sourcing
               offer_language
               normalized_seniority
               languages
+              posted_by_recruiter
             ],
             additionalProperties: false,
           },
@@ -106,6 +109,7 @@ module Sourcing
             Job description text:
             #{plain_description}
 
+            #{POSTED_BY_RECRUITER_PROMPT}
             #{LANGUAGES_PROMPT}
             #{tech_prompt}
           PROMPT
@@ -124,6 +128,7 @@ module Sourcing
             offer_language:                  data[:offer_language],
             normalized_seniority:            data[:normalized_seniority],
             languages:                       normalize_languages(data[:languages]),
+            posted_by_recruiter: data[:posted_by_recruiter] == true,
           }
         end
       end

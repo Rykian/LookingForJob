@@ -10,6 +10,7 @@ module Sourcing
       "Sourcing::EnrichJob"    => "enrich",
       "Sourcing::CommuteJob"   => "commute",
       "Sourcing::ScoringJob"   => "score",
+      "Sourcing::CompanyJob"   => "company",
     }.freeze
 
     around_perform do |_job, block|

@@ -9,6 +9,7 @@ module Sourcing
       offer_language
       normalized_seniority
       languages
+      posted_by_recruiter
     ].freeze
 
     def perform(offer_id, options = {})
@@ -32,7 +33,6 @@ module Sourcing
         html_content: offer.html_file.download,
         extracted: offer.attributes.symbolize_keys.slice(
           :title,
-          :company,
           :employment_type,
           :description_html,
           :topcard_text,
@@ -41,7 +41,7 @@ module Sourcing
           :salary_currency,
           :posted_at,
           :location_mode
-        )
+        ).merge(company: offer.company_name)
       )
 
       now = Time.current

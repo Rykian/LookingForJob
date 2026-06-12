@@ -1,9 +1,10 @@
 import { gql } from '@apollo/client'
 import { useQuery } from '@apollo/client/react'
 import { ExternalLink } from 'lucide-react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FinalClientPicker } from '@/features/offers/components/final-client-picker'
 import { formatLocationMode } from '@/features/offers/utils/location-mode'
 import type { JobOfferQuery, JobOfferQueryVariables } from '@/graphql/generated'
 import { locale } from '@/lib/utils'
@@ -13,7 +14,21 @@ const JOB_OFFER_QUERY = gql`
     jobOffer(id: $id) {
       id
       title
-      company
+      companyName
+      company {
+        id
+        name
+      }
+      postedByRecruiter
+      finalCompany {
+        id
+        name
+      }
+      finalClientGuesses {
+        name
+        confidence
+        reasons
+      }
       source
       url
       city
@@ -75,7 +90,19 @@ export default function OfferDetailPage() {
           </a>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {offer.company || 'Unknown company'} · {offer.source}
+          {offer.company ? (
+            <Link className="text-primary hover:underline" to={`/companies/${offer.company.id}`}>
+              {offer.company.name}
+            </Link>
+          ) : (
+            offer.companyName || 'Unknown company'
+          )}{' '}
+          · {offer.source}
+          {offer.postedByRecruiter ? (
+            <Badge className="ml-2 align-middle" variant="outline">
+              Posted by recruiter
+            </Badge>
+          ) : null}
         </p>
       </div>
 
@@ -112,6 +139,10 @@ export default function OfferDetailPage() {
           </p>
         </CardContent>
       </Card>
+
+      {offer.postedByRecruiter || offer.finalClientGuesses.length > 0 || offer.finalCompany ? (
+        <FinalClientPicker offer={offer} />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

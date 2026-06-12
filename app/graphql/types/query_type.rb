@@ -2,6 +2,7 @@
 
 module Types
   class QueryType < Types::BaseObject
+    include Types::Queries::Companies
     include Types::Queries::DashboardMetrics
     include Types::Queries::JobOffer
     include Types::Queries::JobOffers

@@ -12,6 +12,7 @@ class MockEnrichStep
     offer_language
     normalized_seniority
     languages
+    posted_by_recruiter
   ].freeze
 
   def call(source:, url:, url_hash:, html_content:, extracted:)
@@ -24,6 +25,7 @@ class MockEnrichStep
       offer_language: "en",
       normalized_seniority: "senior",
       languages: [{ "language" => "en", "level" => "professional" }],
+      posted_by_recruiter: true,
     }
   end
 end
@@ -68,7 +70,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
       url_hash: Digest::SHA256.hexdigest("https://example.com/jobs/123"),
       last_seen_at: Time.zone.parse("2026-03-20 10:00:00"),
       title: "Backend Engineer",
-      company: "Acme"
+      company_name: "Acme"
     )
     offer.html_file.attach(
       io: StringIO.new("<html>content</html>"),
@@ -85,6 +87,7 @@ RSpec.describe Sourcing::EnrichJob, type: :job do
     expect(offer.primary_technologies).to eq(["Ruby on Rails"])
     expect(offer.normalized_seniority).to eq("senior")
     expect(offer.languages).to eq([{ "language" => "en", "level" => "professional" }])
+    expect(offer.posted_by_recruiter).to be(true)
     expect(offer.steps_details["enrich"]).to include("version" => 1)
     expect(offer.steps_details.dig("enrich", "at")).to match(/\A\d{4}-\d{2}-\d{2}T/)
 

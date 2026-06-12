@@ -1,5 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import AppShell from '@/components/layout/app-shell'
+import CompanyDetailPage from '@/pages/companies/detail'
+import CompaniesPage from '@/pages/companies/index'
 import DashboardPage from '@/pages/dashboard'
 import ErrorsPage from '@/pages/errors/index'
 import OfferDetailPage from '@/pages/offers/detail'
@@ -16,6 +18,8 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'offers', element: <OffersPage /> },
       { path: 'offers/:id', element: <OfferDetailPage /> },
+      { path: 'companies', element: <CompaniesPage /> },
+      { path: 'companies/:id', element: <CompanyDetailPage /> },
       { path: 'runs', element: <RunsPage /> },
       { path: 'errors', element: <ErrorsPage /> },
       { path: 'sourcing', element: <SourcingPage /> },

@@ -10,6 +10,7 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
       offer_language: "fr",
       normalized_seniority: "junior",
       languages: [{ "language" => "en", "level" => "professional" }],
+      posted_by_recruiter: false,
     }
   end
 
@@ -57,5 +58,19 @@ RSpec.describe Sourcing::Providers::Wttj::EnrichStep do
 
   it "exposes PERSISTED_ATTRIBUTES including location_mode" do
     expect(described_class::PERSISTED_ATTRIBUTES).to include(:location_mode)
+  end
+
+  it "passes posted_by_recruiter through" do
+    result = step.call(extracted: { description_html: description_html, location_mode: "hybrid" })
+    expect(result[:posted_by_recruiter]).to be(false)
+  end
+
+  context "when the LLM flags a recruiting intermediary" do
+    let(:llm_payload) { super().merge(posted_by_recruiter: true) }
+
+    it "returns posted_by_recruiter true" do
+      result = step.call(extracted: { description_html: description_html, location_mode: "hybrid" })
+      expect(result[:posted_by_recruiter]).to be(true)
+    end
   end
 end

@@ -328,4 +328,31 @@ RSpec.describe "GraphQL query jobOffers", type: :request do
     expect(result.dig("data", "jobOffers", "totalCount")).to eq(1)
     expect(result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }).to eq([visible_offer.id.to_s])
   end
+
+  it "filters by company, matching poster and final client roles" do
+    company = Company.find_or_create_by_name!("Acme")
+    posted = create(:job_offer, company: company)
+    placed = create(:job_offer, final_company: company)
+    create(:job_offer)
+
+    query = <<~GRAPHQL
+      query JobOffers($page: Int!, $perPage: Int!, $companyId: ID) {
+        jobOffers(page: $page, perPage: $perPage, companyId: $companyId) {
+          totalCount
+          nodes {
+            id
+            companyName
+            company { id name }
+          }
+        }
+      }
+    GRAPHQL
+
+    result = post_graphql(query: query, variables: { page: 1, perPage: 25, companyId: company.id })
+
+    expect(result["errors"]).to be_nil
+    expect(result.dig("data", "jobOffers", "totalCount")).to eq(2)
+    ids = result.dig("data", "jobOffers", "nodes").map { |n| n["id"] }
+    expect(ids).to contain_exactly(posted.id.to_s, placed.id.to_s)
+  end
 end

@@ -11,6 +11,7 @@ RSpec.describe Sourcing::Providers::Welovedevs::EnrichStep do
           offer_language: "en",
           normalized_seniority: "senior",
           languages: [{ "language" => "en", "level" => "fluent" }],
+          posted_by_recruiter: false,
         }
       end
     }.new

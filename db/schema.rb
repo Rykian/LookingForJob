@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_11_132243) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,6 +66,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
     t.index ["origin_city_id"], name: "index_commute_durations_on_origin_city_id"
   end
 
+  create_table "companies", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.datetime "enriched_at"
+    t.integer "enrichment_version"
+    t.string "name", null: false
+    t.boolean "posts_as_final_client", default: false, null: false
+    t.boolean "posts_as_recruiter", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.string "website"
+  end
+
+  create_table "company_aliases", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "normalized_name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_company_aliases_on_company_id"
+    t.index ["normalized_name"], name: "index_company_aliases_on_normalized_name", unique: true
+  end
+
   create_table "data_migrations", primary_key: "version", id: :string, force: :cascade do |t|
   end
 
@@ -73,20 +95,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
     t.bigint "canonical_id"
     t.string "city"
     t.bigint "commute_city_id"
-    t.string "company"
+    t.bigint "company_id"
+    t.string "company_name"
     t.string "content_fingerprint"
     t.datetime "created_at", null: false
     t.text "description_html"
     t.boolean "disabled", default: false, null: false
     t.string "employment_type"
+    t.jsonb "final_client_guesses", default: [], null: false
+    t.bigint "final_company_id"
     t.integer "hybrid_remote_days_min_per_week"
     t.string "keywords", default: [], null: false, array: true
     t.jsonb "languages", default: [], null: false
     t.datetime "last_seen_at", null: false
     t.string "location_mode"
+    t.string "normalized_company_name"
     t.string "normalized_seniority"
     t.string "offer_language"
     t.datetime "posted_at"
+    t.boolean "posted_by_recruiter"
     t.string "primary_technologies", default: [], null: false, array: true
     t.boolean "rejected", default: false, null: false
     t.string "salary_currency"
@@ -105,10 +132,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
     t.index ["canonical_id"], name: "index_job_offers_on_canonical_id"
     t.index ["city"], name: "index_job_offers_on_city"
     t.index ["commute_city_id"], name: "index_job_offers_on_commute_city_id"
+    t.index ["company_id"], name: "index_job_offers_on_company_id"
     t.index ["content_fingerprint"], name: "index_job_offers_on_content_fingerprint"
+    t.index ["final_company_id"], name: "index_job_offers_on_final_company_id"
     t.index ["languages"], name: "index_job_offers_on_languages", using: :gin
     t.index ["last_seen_at"], name: "index_job_offers_on_last_seen_at"
     t.index ["location_mode"], name: "index_job_offers_on_location_mode"
+    t.index ["normalized_company_name"], name: "index_job_offers_on_normalized_company_name"
     t.index ["score"], name: "index_job_offers_on_score"
     t.index ["source"], name: "index_job_offers_on_source"
     t.index ["url"], name: "index_job_offers_on_url", unique: true
@@ -154,7 +184,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090200) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "commute_durations", "commute_cities", column: "destination_city_id"
   add_foreign_key "commute_durations", "commute_cities", column: "origin_city_id"
+  add_foreign_key "company_aliases", "companies"
   add_foreign_key "job_offers", "commute_cities"
+  add_foreign_key "job_offers", "companies"
+  add_foreign_key "job_offers", "companies", column: "final_company_id"
   add_foreign_key "job_offers", "job_offers", column: "canonical_id", on_delete: :nullify
   add_foreign_key "pipeline_errors", "job_offers"
   add_foreign_key "pipeline_errors", "runs"

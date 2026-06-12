@@ -92,10 +92,26 @@ RSpec.describe Sourcing::Pipeline do
       "enrich" => { "version" => 1, "at" => Time.current.iso8601 },
       "commute" => { "version" => Sourcing::CommuteStep::VERSION, "at" => Time.current.iso8601 },
       "score" => { "version" => 2, "at" => Time.current.iso8601 },
+      "company" => { "version" => Sourcing::CompanyStep::VERSION, "at" => Time.current.iso8601 },
     })
 
     expect(described_class.advance(offer, "test", nil)).to be_nil
     expect(enqueued_jobs).to be_empty
+  end
+
+  it "enqueues CompanyJob after score completes" do
+    offer = build_offer(steps_details: {
+      "fetch" => { "version" => 1, "at" => Time.current.iso8601 },
+      "analyze" => { "version" => 1, "at" => Time.current.iso8601 },
+      "enrich" => { "version" => 1, "at" => Time.current.iso8601 },
+      "commute" => { "version" => Sourcing::CommuteStep::VERSION, "at" => Time.current.iso8601 },
+      "score" => { "version" => 2, "at" => Time.current.iso8601 },
+    })
+
+    expect(described_class.advance(offer, "test", nil)).to eq("company")
+
+    queued = enqueued_jobs.select { |j| j[:job] == Sourcing::CompanyJob }
+    expect(queued.size).to eq(1)
   end
 
   it "forwards force to the enqueued job without changing step selection" do

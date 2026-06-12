@@ -27,7 +27,7 @@ module Sourcing
 
           {
             title: normalize_text(project["name"]),
-            company: normalize_text(project.dig("company", "name")),
+            company_name: normalize_text(project.dig("company", "name")),
             city: city_from(project["location"]),
             employment_type: Parsers::Contract.call(is_permanent_contract: project["isPermanentContract"]),
             salary_min_minor: salary[:min],

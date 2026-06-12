@@ -46,7 +46,7 @@ RSpec.describe Sourcing::Providers::Welovedevs::AnalyzeStep do
     end
 
     it "extracts the company from hiringOrganization.name" do
-      expect(result[:company]).to eq("DataDome")
+      expect(result[:company_name]).to eq("DataDome")
     end
 
     it "extracts the city from jobLocation.address.addressLocality" do
@@ -178,7 +178,7 @@ RSpec.describe Sourcing::Providers::Welovedevs::AnalyzeStep do
     it "returns nil for fields when no JSON-LD is present, without raising" do
       result = step.call(html_content: "<html><body><h1>Some Title</h1></body></html>")
       expect(result[:title]).to eq("Some Title")
-      expect(result[:company]).to be_nil
+      expect(result[:company_name]).to be_nil
       expect(result[:city]).to be_nil
       expect(result[:employment_type]).to be_nil
       expect(result[:salary_min_minor]).to be_nil

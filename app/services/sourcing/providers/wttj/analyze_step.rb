@@ -34,7 +34,7 @@ module Sourcing
           {
             disabled: disabled_offer?(doc),
             title: jsonld["title"] || embedded_job["name"] || extract_first(doc, TITLE_SELECTORS),
-            company: jsonld.dig("hiringOrganization", "name") || embedded_job.dig("organization", "name") || extract_first(doc, COMPANY_SELECTORS),
+            company_name: jsonld.dig("hiringOrganization", "name") || embedded_job.dig("organization", "name") || extract_first(doc, COMPANY_SELECTORS),
             city: jsonld_city(jsonld) || embedded_job.dig("office", "city") || normalize_city(extract_first(doc, LOCATION_SELECTORS)),
             employment_type: normalize_contract_type(jsonld_employment_type(jsonld) || embedded_job["contract_type"] || extract_first(doc, CONTRACT_SELECTORS)),
             salary_min_minor: jsonld_salary_min(jsonld) || embedded_job["salary_min"] || parse_salary_min(salary_text),

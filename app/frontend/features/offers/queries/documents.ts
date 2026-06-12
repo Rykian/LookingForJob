@@ -37,6 +37,7 @@ export const JOB_OFFERS_QUERY = gql`
     $maxCommuteMinutes: Int
     $runId: ID
     $search: String
+    $companyId: ID
   ) {
     jobOffers(
       page: $page
@@ -56,6 +57,7 @@ export const JOB_OFFERS_QUERY = gql`
       maxCommuteMinutes: $maxCommuteMinutes
       runId: $runId
       search: $search
+      companyId: $companyId
     ) {
       totalCount
       totalPages
@@ -63,7 +65,11 @@ export const JOB_OFFERS_QUERY = gql`
         id
         title
         url
-        company
+        companyName
+        company {
+          id
+          name
+        }
         source
         city
         locationMode

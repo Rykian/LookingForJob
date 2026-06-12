@@ -21,7 +21,7 @@ module Sourcing
 
           {
             title: ld["title"] || text_at(doc, "h1"),
-            company: ld.dig("hiringOrganization", "name") || extract_company(doc),
+            company_name: ld.dig("hiringOrganization", "name") || extract_company(doc),
             city: parse_city(ld.dig("jobLocation", "address", "addressLocality") || extract_city(doc)),
             employment_type: Parsers::Contract.call(doc: doc, ld: ld),
             salary_min_minor: salary[:min],

@@ -44,7 +44,7 @@ RSpec.describe Sourcing::Providers::Hellowork::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:title]).to eq("Developpeur Ruby on Rails H/F")
-    expect(result[:company]).to eq("Savane Consulting")
+    expect(result[:company_name]).to eq("Savane Consulting")
     expect(result[:city]).to eq("Rennes")
     expect(result[:employment_type]).to eq("FULL_TIME")
     expect(result[:salary_min_minor]).to eq(45_000)
@@ -105,7 +105,7 @@ RSpec.describe Sourcing::Providers::Hellowork::AnalyzeStep do
     result = step.call(html_content: html)
 
     expect(result[:title]).to eq("Developpeur Ruby H/F CELAD")
-    expect(result[:company]).to eq("CELAD")
+    expect(result[:company_name]).to eq("CELAD")
     expect(result[:city]).to eq("Strasbourg")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:salary_min_minor]).to eq(35_000)

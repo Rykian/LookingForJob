@@ -51,7 +51,7 @@ module Sourcing
 
           {
             title: normalize_text(ld["title"] || text_at(doc, "h1[data-testid='jobsearch-JobInfoHeader-title']") || text_at(doc, "h1")),
-            company: normalize_text(ld.dig("hiringOrganization", "name") || text_at(doc, "[data-testid='inlineHeader-companyName']")),
+            company_name: normalize_text(ld.dig("hiringOrganization", "name") || text_at(doc, "[data-testid='inlineHeader-companyName']")),
             city: parse_city(ld.dig("jobLocation", "address", "addressLocality") || text_at(doc, "[data-testid='inlineHeader-companyLocation']")),
             employment_type: normalize_contract(ld["employmentType"], doc.text),
             salary_min_minor: parse_salary_min(salary_source),

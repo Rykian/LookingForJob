@@ -4,7 +4,7 @@ module Sourcing
 
     DEFAULT_ANALYZED_ATTRIBUTES = %i[
       title
-      company
+      company_name
       location_mode
       city
       employment_type
@@ -48,7 +48,12 @@ module Sourcing
         return
       end
 
-      offer.update!(extracted.slice(*analyzed_attributes(provider)).merge(
+      attrs = extracted.slice(*analyzed_attributes(provider))
+      if attrs.key?(:company_name)
+        attrs[:normalized_company_name] = Company.normalize(attrs[:company_name]).presence
+      end
+
+      offer.update!(attrs.merge(
         steps_details: offer.steps_details.merge("analyze" => {
           "at" => Time.current.iso8601,
           "version" => current_version,
@@ -66,7 +71,7 @@ module Sourcing
     private
 
     def identify_duplicate(offer)
-      fp = Sourcing::DeduplicateOffersService.compute_content_fingerprint(offer.company, offer.title, offer.city)
+      fp = Sourcing::DeduplicateOffersService.compute_content_fingerprint(offer.company_name, offer.title, offer.city)
       return unless fp
 
       offer.update_column(:content_fingerprint, fp)

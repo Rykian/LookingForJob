@@ -45,7 +45,7 @@ RSpec.describe Sourcing::Providers::Cadremploi::AnalyzeStep do
   it "extracts all fields from JSON-LD" do
     result = step.call(html_content: full_html)
     expect(result[:title]).to eq("Développeur Ruby on Rails H/F")
-    expect(result[:company]).to eq("Example Corp")
+    expect(result[:company_name]).to eq("Example Corp")
     expect(result[:city]).to eq("Paris")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:posted_at]).to eq("2026-04-01")

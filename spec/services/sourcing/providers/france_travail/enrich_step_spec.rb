@@ -11,6 +11,7 @@ RSpec.describe Sourcing::Providers::FranceTravail::EnrichStep do
           offer_language:                  "fr",
           normalized_seniority:            "mid",
           languages:                       [{ "language" => "en", "level" => "professional" }],
+          posted_by_recruiter: false,
         }
       end
     }.new

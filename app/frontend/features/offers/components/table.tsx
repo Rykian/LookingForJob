@@ -110,7 +110,18 @@ export function Table({
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">{offer.company || '-'}</td>
+                  <td className="px-3 py-2">
+                    {offer.company ? (
+                      <Link
+                        className="text-primary visited:text-muted-foreground hover:underline"
+                        to={`/companies/${offer.company.id}`}
+                      >
+                        {offer.company.name}
+                      </Link>
+                    ) : (
+                      offer.companyName || '-'
+                    )}
+                  </td>
                   <td className="px-3 py-2">{offer.source}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">

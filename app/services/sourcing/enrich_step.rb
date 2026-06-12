@@ -21,6 +21,23 @@ module Sourcing
       Omit languages not mentioned at all.
     PROMPT
 
+    # Shared JSON-schema fragment for the posted_by_recruiter property of
+    # provider response schemas. Read by Sourcing::CompanyStep to skip the
+    # final-client guessing call for direct-employer offers.
+    POSTED_BY_RECRUITER_SCHEMA = {
+      type: "boolean",
+      description: "true when the posting company is a recruiting intermediary (staffing agency, recruitment firm, ESN/consulting placing consultants at clients) or when the posting name is not a real organization name (salary/remote fragments, generic categories, 'Confidential')",
+    }.freeze
+
+    POSTED_BY_RECRUITER_PROMPT = <<~PROMPT.freeze
+      Set posted_by_recruiter to true when the posting company is a recruiting
+      intermediary (staffing agency, recruitment firm, ESN / consulting company
+      placing consultants at clients) or when the posting name is not a real
+      organization name (salary text, generic category, "Confidential").
+      Set it to false when the poster is the company that will actually employ
+      the candidate.
+    PROMPT
+
     def initialize(llm_config: Sourcing::LlmConfig.from_env, generator: nil)
       @llm_config = llm_config
       @generator = generator || method(:generate_with_ruby_llm)

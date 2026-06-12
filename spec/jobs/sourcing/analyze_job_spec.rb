@@ -5,7 +5,7 @@ class MockAnalyzeStep
   VERSION = 1
   PERSISTED_ATTRIBUTES = %i[
     title
-    company
+    company_name
     employment_type
     description_html
     salary_min_minor
@@ -17,7 +17,7 @@ class MockAnalyzeStep
   def call(source:, url:, url_hash:, html_content:)
     {
       title: "Backend Engineer",
-      company: "Acme",
+      company_name: "Acme",
       location_mode: "hybrid",
       employment_type: "PERMANENT",
       description_html: "<p>desc</p>",
@@ -224,7 +224,7 @@ RSpec.describe Sourcing::AnalyzeJob, type: :job do
     def stub_step_to_be_called_once
       expect_any_instance_of(MockAnalyzeStep).to receive(:call).once.and_return(
         title: "Senior Backend Engineer",
-        company: "NewCorp"
+        company_name: "NewCorp"
       )
     end
 

@@ -45,7 +45,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
   it "extracts and normalizes fields from DOM fallback HTML" do
     result = step.call(html: sample_html)
     expect(result[:title]).to eq("Job Title Example")
-    expect(result[:company]).to eq("Company Name")
+    expect(result[:company_name]).to eq("Company Name")
     expect(result[:city]).to eq("Paris")
     expect(result[:employment_type]).to eq("PERMANENT")
     expect(result[:salary_min_minor]).to eq(50000)
@@ -127,7 +127,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
 
     result = step.call(html: html)
     expect(result[:title]).to eq("Senior Software Engineer RoR")
-    expect(result[:company]).to eq("Bluecoders")
+    expect(result[:company_name]).to eq("Bluecoders")
     expect(result[:city]).to eq("Paris")
     expect(result[:employment_type]).to eq("FULL_TIME")
     expect(result[:salary_min_minor]).to eq(50_000)
@@ -173,7 +173,7 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
 
     result = step.call(html: html)
     expect(result[:title]).to eq("Senior Software Engineer RoR")
-    expect(result[:company]).to eq("Bluecoders")
+    expect(result[:company_name]).to eq("Bluecoders")
     expect(result[:city]).to eq("Paris")
     expect(result[:employment_type]).to eq("FULL_TIME")
     expect(result[:salary_min_minor]).to eq(1)

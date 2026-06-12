@@ -29,6 +29,11 @@ module Sourcing
         job: Sourcing::ScoringJob,
         version: ->(_provider) { Sourcing::ScoreStep::VERSION },
       },
+      {
+        name: "company",
+        job: Sourcing::CompanyJob,
+        version: ->(_provider) { Sourcing::CompanyStep::VERSION },
+      },
     ].freeze
 
     module_function

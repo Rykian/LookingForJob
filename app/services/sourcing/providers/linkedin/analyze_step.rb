@@ -34,7 +34,7 @@ module Sourcing
 
           {
             title:            text_at(doc, "h2.top-card-layout__title, h1.top-card-layout__title"),
-            company:          text_at(doc, "a.topcard__org-name-link, span.topcard__flavor"),
+            company_name:     text_at(doc, "a.topcard__org-name-link, span.topcard__flavor"),
             city:             parse_city(text_at(doc, "span.topcard__flavor.topcard__flavor--bullet")),
             employment_type:  normalize_employment_type(criteria["Employment type"]),
             salary_min_minor: nil,

@@ -10,6 +10,7 @@ RSpec.describe Sourcing::Providers::Linkedin::EnrichStep do
       offer_language: "en",
       normalized_seniority: "mid",
       languages: [{ "language" => "en", "level" => "fluent" }],
+      posted_by_recruiter: false,
     }.merge(overrides)
     Class.new { define_method(:call) { |**| payload } }.new
   end

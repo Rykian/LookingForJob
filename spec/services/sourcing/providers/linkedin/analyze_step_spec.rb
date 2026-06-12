@@ -49,7 +49,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
     end
 
     it "extracts company from topcard__org-name-link" do
-      expect(result[:company]).to eq("Cozycozy")
+      expect(result[:company_name]).to eq("Cozycozy")
     end
 
     it "extracts only the city segment from the bulleted location" do
@@ -86,7 +86,7 @@ RSpec.describe Sourcing::Providers::Linkedin::AnalyzeStep do
     it "returns nil for missing fields without raising" do
       result = step.call(html_content: "<div>nothing</div>")
       expect(result[:title]).to be_nil
-      expect(result[:company]).to be_nil
+      expect(result[:company_name]).to be_nil
       expect(result[:city]).to be_nil
       expect(result[:employment_type]).to be_nil
       expect(result[:posted_at]).to be_nil

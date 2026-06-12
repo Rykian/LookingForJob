@@ -37,7 +37,7 @@ RSpec.describe Sourcing::Providers::CollectiveWork::AnalyzeStep do
     end
 
     it "extracts the company" do
-      expect(result[:company]).to eq("Fynd Recrutement")
+      expect(result[:company_name]).to eq("Fynd Recrutement")
     end
 
     it "extracts the city (first component of fullNameFrench)" do
@@ -160,7 +160,7 @@ RSpec.describe Sourcing::Providers::CollectiveWork::AnalyzeStep do
     it "returns nils when __NEXT_DATA__ is absent, without raising" do
       result = step.call(html_content: "<html><body><h1>X</h1></body></html>")
       expect(result[:title]).to be_nil
-      expect(result[:company]).to be_nil
+      expect(result[:company_name]).to be_nil
       expect(result[:city]).to be_nil
       expect(result[:salary_min_minor]).to be_nil
       expect(result[:location_mode]).to be_nil

@@ -26,7 +26,7 @@ module Sourcing
 
           {
             title:            extract_attr(doc, "span[itemprop='title']"),
-            company:          extract_attr(doc, "[itemprop='hiringOrganization'] [itemprop='name']", attr: "content"),
+            company_name:     extract_attr(doc, "[itemprop='hiringOrganization'] [itemprop='name']", attr: "content"),
             city:             parse_city(extract_attr(doc, "p[itemprop='jobLocation'] [itemprop='name']")),
             employment_type:  parse_contract(extract_dl_field(doc, "Type de contrat")),
             salary_min_minor: parse_salary_schema(doc, "minValue"),
