@@ -36,6 +36,7 @@ export const JOB_OFFERS_QUERY = gql`
     $minCommuteMinutes: Int
     $maxCommuteMinutes: Int
     $runId: ID
+    $newOnly: Boolean
     $search: String
     $companyId: ID
   ) {
@@ -56,6 +57,7 @@ export const JOB_OFFERS_QUERY = gql`
       minCommuteMinutes: $minCommuteMinutes
       maxCommuteMinutes: $maxCommuteMinutes
       runId: $runId
+      newOnly: $newOnly
       search: $search
       companyId: $companyId
     ) {

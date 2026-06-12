@@ -4,6 +4,7 @@ import {
   LanguageLevelEnum,
   LocationModeEnum,
 } from '@/graphql/generated'
+import { isOneOf, parsePage, useUrlParams } from '@/lib/url-params'
 
 const LOCATION_MODE_VALUES = Object.values(LocationModeEnum)
 const SEEN_FIELD_VALUES = ['first_seen_at', 'last_seen_at'] as const
@@ -23,10 +24,6 @@ export type SeenField = (typeof SEEN_FIELD_VALUES)[number]
 export type DatePreset = (typeof DATE_PRESET_VALUES)[number]
 export type SortBy = (typeof SORT_BY_VALUES)[number]
 export type SortDirection = (typeof SORT_DIRECTION_VALUES)[number]
-
-function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
-  return values.includes(value)
-}
 
 function getPresetRange(preset: DatePreset): { after?: string; before?: string } {
   const now = new Date()
@@ -77,11 +74,15 @@ interface UseJobOffersFiltersParams {
 }
 
 export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOffersFiltersParams) {
+  const { update: updateSearchParams, reset: resetSearchParams } = useUrlParams(
+    searchParams,
+    setSearchParams,
+  )
+
   const techParam = searchParams.get('technologies') || ''
   const selectedTechnologies = techParam ? techParam.split(',').filter(Boolean) : []
 
-  const pageParam = Number.parseInt(searchParams.get('page') ?? '1', 10)
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+  const page = parsePage(searchParams)
 
   const sourceParam = searchParams.get('source') || ''
   const selectedSources = sourceParam ? sourceParam.split(',').filter(Boolean) : []
@@ -114,6 +115,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     seenFieldParam && isOneOf(seenFieldParam, SEEN_FIELD_VALUES) ? seenFieldParam : 'first_seen_at'
 
   const runId = searchParams.get('runId') || null
+  const newOnly = runId ? searchParams.get('newOnly') !== 'false' : false
   const search = searchParams.get('search') ?? ''
 
   const datePresetParam = searchParams.get('datePreset')
@@ -153,24 +155,6 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     }
   }, [datePreset, seenField])
 
-  const updateSearchParams = (updates: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams)
-
-    Object.entries(updates).forEach(([key, value]) => {
-      if (!value) {
-        next.delete(key)
-      } else {
-        next.set(key, value)
-      }
-    })
-
-    setSearchParams(next, { preventScrollReset: true })
-  }
-
-  const resetSearchParams = () => {
-    setSearchParams(new URLSearchParams())
-  }
-
   const variables: JobOffersQueryVariables = {
     page,
     perPage: 25,
@@ -184,6 +168,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     ...(minCommuteMinutes !== null ? { minCommuteMinutes } : {}),
     ...(maxCommuteMinutes !== null ? { maxCommuteMinutes } : {}),
     ...(runId ? { runId } : {}),
+    ...(newOnly ? { newOnly } : {}),
     ...(search ? { search } : {}),
   }
 
@@ -191,6 +176,7 @@ export function useJobOffersFilters({ searchParams, setSearchParams }: UseJobOff
     page,
     variables,
     runId,
+    newOnly,
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,

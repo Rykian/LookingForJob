@@ -1,14 +1,11 @@
 import type { PipelineErrorsQueryVariables } from '@/graphql/generated'
+import { isOneOf, parsePage, useUrlParams } from '@/lib/url-params'
 
 const STEP_VALUES = ['discovery', 'fetch', 'analyze', 'enrich', 'commute', 'score'] as const
 const RESOLVED_VALUES = ['all', 'unresolved', 'resolved'] as const
 
 export type Step = (typeof STEP_VALUES)[number]
 export type ResolvedFilter = (typeof RESOLVED_VALUES)[number]
-
-function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
-  return values.includes(value)
-}
 
 interface UsePipelineErrorsFiltersParams {
   searchParams: URLSearchParams
@@ -19,8 +16,12 @@ export function usePipelineErrorsFilters({
   searchParams,
   setSearchParams,
 }: UsePipelineErrorsFiltersParams) {
-  const pageParam = Number.parseInt(searchParams.get('page') ?? '1', 10)
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+  const { update: updateSearchParams, reset: resetSearchParams } = useUrlParams(
+    searchParams,
+    setSearchParams,
+  )
+
+  const page = parsePage(searchParams)
 
   const resolvedParam = searchParams.get('resolved')
   const resolved: ResolvedFilter =
@@ -38,24 +39,6 @@ export function usePipelineErrorsFilters({
 
   const runId = searchParams.get('runId') || null
   const jobOfferId = searchParams.get('jobOfferId') || null
-
-  const updateSearchParams = (updates: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams)
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (!value) {
-        next.delete(key)
-      } else {
-        next.set(key, value)
-      }
-    }
-
-    setSearchParams(next)
-  }
-
-  const resetSearchParams = () => {
-    setSearchParams(new URLSearchParams())
-  }
 
   const resolvedVariable = resolved === 'all' ? undefined : resolved === 'resolved'
 

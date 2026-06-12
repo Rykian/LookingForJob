@@ -13,6 +13,7 @@ export default function OffersPage() {
     page,
     variables,
     runId,
+    newOnly,
     selectedTechnologies,
     selectedSources,
     selectedLocationModes,
@@ -72,10 +73,20 @@ export default function OffersPage() {
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
           <span className="text-muted-foreground">Filtered by run</span>
           <span className="font-medium">#{runId}</span>
+          <label className="ml-4 flex cursor-pointer items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={newOnly}
+              onChange={(e) =>
+                updateSearchParams({ page: null, newOnly: e.target.checked ? null : 'false' })
+              }
+            />
+            New only
+          </label>
           <button
             type="button"
             className="ml-auto rounded p-0.5 hover:bg-muted"
-            onClick={() => updateSearchParams({ runId: null })}
+            onClick={() => updateSearchParams({ runId: null, newOnly: null })}
             aria-label="Clear run filter"
           >
             <X className="h-3.5 w-3.5 text-muted-foreground" />
