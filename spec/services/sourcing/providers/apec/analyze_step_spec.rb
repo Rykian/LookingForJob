@@ -63,6 +63,53 @@ RSpec.describe Sourcing::Providers::Apec::AnalyzeStep do
     expect(result[:description_html]).not_to include("class=")
   end
 
+  it "extracts partner name from logo src on anonymized offers" do
+    html = <<~HTML
+      <html>
+        <body>
+          <h1>Développeur Senior IA R&amp;D F/H</h1>
+          <apec-offre-metadata>
+            <div class="card-offer__logo detail">
+              <figure><img src="/files/live/mounts/images/media_entreprise/806375/logo_Hellowork_806375_1205852.jpg" alt="uuid"></figure>
+            </div>
+            <ul class="details-offer-list">
+              <li> 1 <span> CDI </span></li>
+              <li>Villeurbanne - 69</li>
+            </ul>
+          </apec-offre-metadata>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:company_name]).to eq("Hellowork")
+    expect(result[:employment_type]).to eq("PERMANENT")
+    expect(result[:city]).to eq("Villeurbanne")
+  end
+
+  it "leaves company_name nil on anonymized offers with no logo either" do
+    html = <<~HTML
+      <html>
+        <body>
+          <h1>Développeur Senior IA R&amp;D F/H</h1>
+          <apec-offre-metadata>
+            <ul class="details-offer-list">
+              <li> 1 <span> CDI </span></li>
+              <li>Villeurbanne - 69</li>
+            </ul>
+          </apec-offre-metadata>
+        </body>
+      </html>
+    HTML
+
+    result = step.call(html_content: html)
+
+    expect(result[:company_name]).to be_nil
+    expect(result[:employment_type]).to eq("PERMANENT")
+    expect(result[:city]).to eq("Villeurbanne")
+  end
+
   it "keeps nil for unavailable values" do
     html = <<~HTML
       <html>

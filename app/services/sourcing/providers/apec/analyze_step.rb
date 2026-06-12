@@ -8,7 +8,7 @@ module Sourcing
   module Providers
     module Apec
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 1
+        VERSION = 2
 
         CONTRACT_PATTERNS = [
           [/\bCDI\b/i,                                        "PERMANENT"],
@@ -53,14 +53,34 @@ module Sourcing
 
         private
 
+        # The metadata list drops the company <li> on anonymized offers, so
+        # items are identified by shape instead of position: contract is
+        # "<count> <type>", city ends with a department number, company is
+        # whatever remains.
         def extract_top_metadata(doc)
+          items = doc.css("apec-offre-metadata .details-offer-list li")
+          contract_li = items.find do |li|
+            text = normalize_text(li.text)
+            text&.match?(/\A\d+\s/) && normalize_contract(text)
+          end
+          city_li = items.find do |li|
+            li != contract_li && normalize_text(li.text)&.match?(/\s-\s*\d{2,3}\z/)
+          end
+          company_li = items.find { |li| li != contract_li && li != city_li }
+
           {
-            company_name: text_at(doc, "apec-offre-metadata .details-offer-list li:first-child"),
-            employment_type: text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(2) span") ||
-              text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(2)"),
-            city: text_at(doc, "apec-offre-metadata .details-offer-list li:nth-child(3)"),
+            company_name: normalize_text(company_li&.text) || extract_partner_name(doc),
+            employment_type: normalize_text(contract_li&.at_css("span")&.text) ||
+              normalize_text(contract_li&.text),
+            city: normalize_text(city_li&.text),
             posted_at: text_at(doc, "apec-offre-metadata .date-offre"),
           }
+        end
+
+        def extract_partner_name(doc)
+          src = doc.at_css("apec-offre-metadata .card-offer__logo img")&.attr("src").to_s
+          match = src.match(%r{/logo_([^_/]+)_\d+_})
+          match ? match[1].strip.presence : nil
         end
 
         def extract_detail_values(doc)
