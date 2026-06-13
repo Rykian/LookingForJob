@@ -153,6 +153,8 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
               "remote" => "partial",
               "published_at" => "2026-03-03T11:19:08Z",
               "description" => "<p>Backend job description</p>",
+              "profile" => "<p>Profil recherché content</p>",
+              "recruitment_process" => "<p>Informations supplémentaires content</p>",
               "office" => { "city" => "Paris" },
               "organization" => { "name" => "Bluecoders" },
             },
@@ -182,5 +184,71 @@ RSpec.describe Sourcing::Providers::Wttj::AnalyzeStep do
     expect(result[:location_mode]).to eq("hybrid")
     expect(result[:posted_at]).to eq("last month")
     expect(result[:description_html]).to include("Backend job description")
+    expect(result[:description_html]).to include("Profil recherché content")
+    expect(result[:description_html]).to include("Informations supplémentaires content")
+  end
+
+  it "combines description + profile + recruitment_process from embedded data" do
+    payload = {
+      "queries" => [
+        {
+          "queryKey" => ["job", "fr", "acme", "dev-ruby_paris"],
+          "state" => {
+            "data" => {
+              "name" => "Dev Ruby",
+              "contract_type" => "full_time",
+              "remote" => "partial",
+              "published_at" => "2026-01-01T00:00:00Z",
+              "description" => "<p>Description section</p>",
+              "profile" => "<p>Profile section</p>",
+              "recruitment_process" => "<p>Process section</p>",
+              "office" => { "city" => "Paris" },
+              "organization" => { "name" => "Acme" },
+            },
+          },
+        },
+      ],
+    }.to_json.to_json
+
+    html = <<~HTML
+      <html><body>
+        <script>window.__INITIAL_DATA__ = #{payload}</script>
+      </body></html>
+    HTML
+
+    result = step.call(html: html)
+    expect(result[:description_html]).to include("Description section")
+    expect(result[:description_html]).to include("Profile section")
+    expect(result[:description_html]).to include("Process section")
+  end
+
+  it "skips nil/empty sections in combine_sections" do
+    payload = {
+      "queries" => [
+        {
+          "queryKey" => ["job", "fr", "acme", "dev-ruby_paris"],
+          "state" => {
+            "data" => {
+              "name" => "Dev Ruby",
+              "contract_type" => "full_time",
+              "remote" => "partial",
+              "published_at" => "2026-01-01T00:00:00Z",
+              "description" => "<p>Only description</p>",
+              "office" => { "city" => "Paris" },
+              "organization" => { "name" => "Acme" },
+            },
+          },
+        },
+      ],
+    }.to_json.to_json
+
+    html = <<~HTML
+      <html><body>
+        <script>window.__INITIAL_DATA__ = #{payload}</script>
+      </body></html>
+    HTML
+
+    result = step.call(html: html)
+    expect(result[:description_html]).to eq("<p>Only description</p>")
   end
 end

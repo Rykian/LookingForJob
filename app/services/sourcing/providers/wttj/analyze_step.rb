@@ -6,7 +6,7 @@ module Sourcing
   module Providers
     module Wttj
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 3
+        VERSION = 4
 
         # WTTJ renders this banner inline once an offer is taken down. Detecting
         # it lets the pipeline flag the offer as disabled and stop processing it.
@@ -42,11 +42,22 @@ module Sourcing
             salary_currency: jsonld_salary_currency(jsonld) || embedded_job["salary_currency"] || parse_salary_currency(salary_text),
             location_mode: normalize_remote_policy(jsonld["jobLocationType"] || embedded_job["remote"] || extract_labeled_text(doc, REMOTE_LABELS)),
             posted_at: jsonld["datePosted"] || extract_relative_posted_at(doc) || parse_posted_at(extract_first(doc, POSTED_AT_SELECTORS)) || embedded_job["published_at"],
-            description_html: jsonld["description"] || extract_first_html(doc, DESCRIPTION_SELECTORS) || embedded_job["description"],
+            description_html: combine_sections(
+              jsonld["description"] || embedded_job["description"],
+              embedded_job["profile"],
+              embedded_job["recruitment_process"]
+            ) || extract_first_html(doc, DESCRIPTION_SELECTORS),
           }
         end
 
         private
+
+        def combine_sections(*sections)
+          parts = sections.map(&:to_s).map(&:strip).reject(&:empty?)
+          return nil if parts.empty?
+
+          parts.join
+        end
 
         def disabled_offer?(doc)
           doc.text.match?(DISABLED_BANNER_PATTERN)
