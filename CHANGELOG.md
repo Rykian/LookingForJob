@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.2.1](https://github.com/Rykian/LookingForJob/compare/v0.2.0..v0.2.1) - 2026-06-19
+
+### Bug Fixes
+
+- **(ci)** add buildx setup for gha cache export - ([ab6fa8b](https://github.com/Rykian/LookingForJob/commit/ab6fa8b934f3c81d55ba9cf5d1759f134751a8a8)) - Thibault Lacroux
+
+---
 ## [0.2.0](https://github.com/Rykian/LookingForJob/compare/v0.1.0..v0.2.0) - 2026-06-19
 
 ### Bug Fixes
@@ -65,6 +72,7 @@ All notable changes to this project will be documented in this file. See [conven
 - update dependencies - ([482c057](https://github.com/Rykian/LookingForJob/commit/482c057dc0d7155d56fad680f83ceb6ee93003a9)) - Thibault Lacroux
 - configure worktree - ([a06d505](https://github.com/Rykian/LookingForJob/commit/a06d505ae5960bf04f5d686477cceb8498bbbed2)) - Thibault Lacroux
 - upgrading backend dependencies - ([89cc77c](https://github.com/Rykian/LookingForJob/commit/89cc77cfd14678ecf42b9e2a3d8a1e8e8ce862e1)) - Thibault Lacroux
+- release v0.2.0 - ([13ca4ee](https://github.com/Rykian/LookingForJob/commit/13ca4ee789a09bc299a4f70049c1755df2eb6199)) - Thibault Lacroux
 
 ### Refactoring
 
