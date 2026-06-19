@@ -1,56 +1,70 @@
 # frozen_string_literal: true
 
+require "json"
+require "uri"
+
 module Sourcing
   module Providers
     module Welovedevs
-      # Fetches a single WeLoveDevs job offer detail page with Playwright.
+      # Fetches a single WeLoveDevs offer as JSON from the public Algolia index.
       #
-      # Detail pages are server-rendered and always embed a JSON-LD JobPosting block,
-      # which is the marker of a valid offer. A removed/invalid offer renders without it,
-      # so its absence is treated as a gone offer (OfferGoneError → FetchJob disables it).
+      # Discovery encodes the Algolia objectID in the URL as `?jobId=<objectID>`, which
+      # maps directly to one get-object call — the hit carries the entire offer, so no
+      # detail-page render is needed (and no Playwright). The raw JSON body is stored as
+      # the offer payload (AnalyzeStep parses it structurally). A missing object (404)
+      # raises OfferGoneError (→ FetchJob disables it).
+      #
+      # Legacy `/app/job/<seoAlias>` URLs from the previous (Playwright) implementation no
+      # longer resolve on the site; they carry no jobId and are retired as gone offers.
       class FetchStep < Sourcing::FetchStep
-        VERSION = 1
+        VERSION = 2
 
-        # The JSON-LD JobPosting is the authoritative "this is a real offer" marker;
-        # h1 is a softer fallback used to distinguish "nothing loaded" from "loaded but
-        # not an offer".
-        MAIN_CONTENT_SELECTORS = [
-          "script[type='application/ld+json']",
-          "h1",
-        ].freeze
-
-        JOB_POSTING_MARKER = "JobPosting"
-
-        COOKIE_CONSENT_SELECTORS = [
-          "#axeptio_btn_acceptAll",
-          "button[aria-label*='accept' i]",
-          "button[aria-label*='accepter' i]",
-        ].freeze
+        def initialize(client: nil, fetcher: nil)
+          super(fetcher: fetcher)
+          @client = client
+        end
 
         protected
 
         def fetch_page(url:)
-          with_playwright_page(url: url, locale: "fr-FR") do |page_obj|
-            click_first_selector(page_obj: page_obj, selectors: COOKIE_CONSENT_SELECTORS)
-
-            found = wait_for_any_selector(
-              page_obj: page_obj,
-              selectors: MAIN_CONTENT_SELECTORS,
-              timeout_ms: 10_000
-            )
-
-            html = page_obj.content
-            ensure_basic_html_content!(provider_name: "WeLoveDevs", url: url, html: html)
-
-            return html if html.include?(JOB_POSTING_MARKER)
-
-            unless found
-              raise Sourcing::OfferGoneError,
-                    "WeLoveDevs: offer page has no JobPosting content (removed or unavailable) for url=#{url}"
-            end
-
-            raise "WeLoveDevs: page loaded without a JobPosting JSON-LD block (possible selector drift or non-offer page) for url=#{url}"
+          object_id = extract_object_id(url)
+          unless object_id
+            raise Sourcing::OfferGoneError,
+                  "WeLoveDevs: legacy URL without jobId (offer superseded) for url=#{url}"
           end
+
+          body = client.get_object(object_id)
+          raise Sourcing::OfferGoneError, "WeLoveDevs: offer not found (HTTP 404) for url=#{url}" if body.nil?
+
+          ensure_offer_payload!(url: url, body: body)
+          body
+        end
+
+        private
+
+        def extract_object_id(url)
+          query = URI.parse(url.to_s).query
+          return nil if query.nil?
+
+          value = URI.decode_www_form(query).to_h["jobId"]
+          value.to_s.strip.presence
+        rescue URI::InvalidURIError
+          nil
+        end
+
+        # The Algolia object must carry at least an objectID and a title. Anything else
+        # means the offer is gone or the index shape drifted — fail loudly with context.
+        def ensure_offer_payload!(url:, body:)
+          data = JSON.parse(body)
+          return if data.is_a?(Hash) && data["objectID"].present? && data["title"].to_s.strip.present?
+
+          raise "WeLoveDevs: Algolia response is not a job payload for url=#{url}"
+        rescue JSON::ParserError => e
+          raise "WeLoveDevs: Algolia response is not valid JSON for url=#{url}: #{e.message}"
+        end
+
+        def client
+          @client ||= AlgoliaClient.new
         end
       end
     end

@@ -11,82 +11,67 @@ RSpec.describe Sourcing::Providers::Welovedevs::DiscoveryStep do
     expect(step.supports_work_mode_filter?).to be(false)
   end
 
-  describe "with stub crawler" do
-    let(:stub_urls) do
-      [
-        "https://www.welovedevs.com/app/job/backend-engineer-wm-datadome",
-        "https://www.welovedevs.com/app/job/frontend-developer-acme",
-      ]
+  # Minimal AlgoliaClient stand-in: returns canned search pages keyed by Algolia page index.
+  def fake_client(pages)
+    client = instance_double(Sourcing::Providers::Welovedevs::AlgoliaClient)
+    allow(client).to receive(:search) do |query:, page:, hits_per_page:|
+      pages.fetch(page, { "hits" => [], "nbHits" => 0, "nbPages" => pages.size })
     end
-
-    let(:crawler) do
-      lambda do |input:, runtime:, page:|
-        { discovered_urls: stub_urls, has_next_page: false }
-      end
-    end
-
-    subject(:step) { described_class.new(crawler: crawler) }
-
-    it "returns discovered URLs from the crawler stub" do
-      result = step.call(source: "welovedevs", keyword: "ruby", work_mode: nil, force: false)
-      expect(result[:discovered_urls]).to match_array(stub_urls)
-    end
+    client
   end
 
-  describe "#build_search_url" do
-    it "encodes the keyword into the Algolia search query param" do
-      expect(step.send(:build_search_url, "ruby on rails"))
-        .to eq("https://www.welovedevs.com/app/jobs?query=ruby+on+rails")
-    end
-
-    it "returns the bare jobs URL when no keyword is given" do
-      expect(step.send(:build_search_url, "")).to eq("https://www.welovedevs.com/app/jobs")
-      expect(step.send(:build_search_url, nil)).to eq("https://www.welovedevs.com/app/jobs")
-    end
-  end
-
-  describe "#offer_url" do
-    it "builds the canonical detail URL from an Algolia seoAlias slug" do
-      expect(step.send(:offer_url, "backend-engineer-wm-datadome"))
-        .to eq("https://www.welovedevs.com/app/job/backend-engineer-wm-datadome")
-    end
-  end
-
-  describe "#collect_slugs" do
-    let(:algolia_body) do
+  describe "#call" do
+    let(:page0) do
       {
-        results: [
-          { hits: [
-            { "seoAlias" => "backend-engineer-wm-datadome", "title" => "Backend Engineer" },
-            { "seoAlias" => "frontend-developer-acme", "title" => "Frontend Developer" },
-            { "title" => "No slug here" },
-          ] },
+        "nbHits" => 3,
+        "nbPages" => 2,
+        "hits" => [
+          { "objectID" => "greenhouse+5967999002", "type" => "company_job" },
+          { "objectID" => "-M9J77TzRX3uWXM7lQJ7", "type" => "company_job" },
+          { "objectID" => "iEfXYJ", "type" => "spontaneous_application" }, # skipped
         ],
-      }.to_json
+      }
     end
 
-    let(:response) do
-      instance_double("Playwright::Response", url: "https://g9s2j15g1n-dsn.algolia.net/1/indexes/*/queries", body: algolia_body)
+    let(:page1) do
+      {
+        "nbHits" => 3,
+        "nbPages" => 2,
+        "hits" => [
+          { "objectID" => "-O24k59jt-evRg", "type" => "company_job" },
+          { "type" => "company_job" }, # no objectID, skipped
+        ],
+      }
     end
 
-    it "collects non-empty seoAlias slugs from an Algolia response" do
-      slugs = Set.new
-      step.send(:collect_slugs, response, slugs)
-      expect(slugs.to_a).to match_array(%w[backend-engineer-wm-datadome frontend-developer-acme])
+    subject(:step) { described_class.new(client: fake_client(0 => page0, 1 => page1)) }
+
+    it "paginates all Algolia pages and builds jobId URLs, encoding the objectID" do
+      result = step.call(source: "welovedevs", keyword: "ruby", work_mode: nil, page: 1)
+
+      expect(result[:discovered_urls]).to eq([
+        "https://www.welovedevs.com/app/jobs?jobId=greenhouse%2B5967999002",
+        "https://www.welovedevs.com/app/jobs?jobId=-M9J77TzRX3uWXM7lQJ7",
+        "https://www.welovedevs.com/app/jobs?jobId=-O24k59jt-evRg",
+      ])
     end
 
-    it "ignores non-Algolia responses" do
-      other = instance_double("Playwright::Response", url: "https://www.welovedevs.com/_next/data.json", body: algolia_body)
-      slugs = Set.new
-      step.send(:collect_slugs, other, slugs)
-      expect(slugs).to be_empty
+    it "skips spontaneous-application entries and hits without an objectID" do
+      urls = step.call(source: "welovedevs", keyword: "ruby", work_mode: nil, page: 1)[:discovered_urls]
+      expect(urls).not_to include(a_string_matching(/jobId=iEfXYJ/))
+      expect(urls.size).to eq(3)
     end
+  end
 
-    it "does not raise on non-JSON bodies" do
-      bad = instance_double("Playwright::Response", url: "https://algolia.net/x", body: "<html>not json</html>")
-      slugs = Set.new
-      expect { step.send(:collect_slugs, bad, slugs) }.not_to raise_error
-      expect(slugs).to be_empty
+  describe "#crawl_page pagination flag" do
+    it "reports has_next_page until the last Algolia page" do
+      client = fake_client({})
+      allow(client).to receive(:search).and_return({ "hits" => [], "nbHits" => 0, "nbPages" => 3 })
+      step = described_class.new(client: client)
+
+      runtime = step.setup(input: {})
+      expect(step.crawl_page(input: { keyword: "x" }, runtime: runtime, page: 1)[:has_next_page]).to be(true)
+      expect(step.crawl_page(input: { keyword: "x" }, runtime: runtime, page: 3)[:has_next_page]).to be(false)
     end
   end
 end

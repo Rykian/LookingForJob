@@ -25,6 +25,7 @@ gem "faraday-cookie_jar"
 gem "ruby_llm"
 gem "dry-schema"
 gem "iso-639"
+gem "kramdown" # render WeLoveDevs markdown job descriptions to HTML
 gem "aws-sdk-s3", require: false
 
 # Reduces boot times through caching; required in config/boot.rb
