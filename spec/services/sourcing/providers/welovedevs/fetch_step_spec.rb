@@ -7,67 +7,48 @@ RSpec.describe Sourcing::Providers::Welovedevs::FetchStep do
     expect(step).to be_a(Sourcing::FetchStep)
   end
 
-  describe "with stub fetcher" do
-    let(:stub_html) { "<html><body><h1>Backend Engineer</h1></body></html>" }
-    subject(:step) { described_class.new(fetcher: ->(**) { stub_html }) }
+  let(:payload) { { "objectID" => "greenhouse+5967999002", "title" => "Backend Engineer" }.to_json }
+  let(:url) { "https://www.welovedevs.com/app/jobs?jobId=greenhouse%2B5967999002" }
 
-    it "calls the fetcher with the provided URL" do
-      result = step.call(url: "https://www.welovedevs.com/app/job/backend-engineer-wm-datadome")
-      expect(result).to eq(stub_html)
+  def fake_client(object_id: "greenhouse+5967999002", body: payload)
+    client = instance_double(Sourcing::Providers::Welovedevs::AlgoliaClient)
+    allow(client).to receive(:get_object).with(object_id).and_return(body)
+    client
+  end
+
+  describe "#fetch_page" do
+    it "decodes the jobId from the URL and returns the raw Algolia JSON body" do
+      step = described_class.new(client: fake_client)
+      expect(step.call(url: url)).to eq(payload)
+    end
+
+    it "raises OfferGoneError when the object is missing (404 → nil body)" do
+      step = described_class.new(client: fake_client(body: nil))
+      expect { step.call(url: url) }.to raise_error(Sourcing::OfferGoneError, /not found/)
+    end
+
+    it "retires a legacy /app/job/<slug> URL (no jobId) as a gone offer" do
+      step = described_class.new(client: fake_client)
+      legacy = "https://www.welovedevs.com/app/job/backend-engineer-wm-datadome"
+      expect { step.call(url: legacy) }.to raise_error(Sourcing::OfferGoneError, /legacy URL/)
+    end
+
+    it "raises a loud error when the payload is not a job object" do
+      step = described_class.new(client: fake_client(body: { "objectID" => "x" }.to_json))
+      expect { step.call(url: url) }.to raise_error(StandardError, /not a job payload/)
+    end
+
+    it "raises a loud error when the body is not valid JSON" do
+      step = described_class.new(client: fake_client(body: "<html>nope</html>"))
+      expect { step.call(url: url) }.to raise_error(StandardError, /not valid JSON/)
     end
   end
 
-  describe "#fetch_page content validation" do
-    # Minimal Playwright page stand-in: `ready` controls whether selectors resolve.
-    let(:fake_page_class) do
-      Class.new do
-        def initialize(html:, ready:)
-          @html = html
-          @ready = ready
-        end
+  describe "with stub fetcher" do
+    subject(:step) { described_class.new(fetcher: ->(**) { payload }) }
 
-        def query_selector(selector)
-          return :node if @ready && ["script[type='application/ld+json']", "h1"].include?(selector)
-
-          nil
-        end
-
-        def wait_for_selector(_combined, **)
-          raise "timeout" unless @ready
-
-          :ok
-        end
-
-        def content
-          @html
-        end
-      end
-    end
-
-    let(:url) { "https://www.welovedevs.com/app/job/backend-engineer-wm-datadome" }
-
-    def stub_page(html:, ready:)
-      page = fake_page_class.new(html: html, ready: ready)
-      allow(step).to receive(:with_playwright_page) { |**_kwargs, &blk| blk.call(page) }
-    end
-
-    it "returns the HTML when a JobPosting JSON-LD block is present" do
-      html = %(<html><body><h1>Job</h1><script type="application/ld+json">{"@type":"JobPosting"}</script></body></html>)
-      stub_page(html: html, ready: true)
-
-      expect(step.call(url: url)).to eq(html)
-    end
-
-    it "raises OfferGoneError when nothing loads and no JobPosting is present" do
-      stub_page(html: "<html><body><h1>Page introuvable</h1></body></html>", ready: false)
-
-      expect { step.call(url: url) }.to raise_error(Sourcing::OfferGoneError, /removed or unavailable/)
-    end
-
-    it "raises a loud error when content loads but no JobPosting is present (selector drift)" do
-      stub_page(html: "<html><body><h1>Some non-offer page</h1></body></html>", ready: true)
-
-      expect { step.call(url: url) }.to raise_error(StandardError, /selector drift|without a JobPosting/)
+    it "calls the injected fetcher with the provided URL" do
+      expect(step.call(url: url)).to eq(payload)
     end
   end
 end

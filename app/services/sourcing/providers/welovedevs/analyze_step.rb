@@ -1,77 +1,71 @@
 # frozen_string_literal: true
 
-require "nokogiri"
 require "json"
+require "time"
+require "nokogiri"
+require "kramdown"
 
 module Sourcing
   module Providers
     module Welovedevs
-      # Parses the stored HTML from FetchStep (WeLoveDevs offer detail page).
+      # Parses the stored JSON from FetchStep (a WeLoveDevs Algolia `public_jobs` object).
       #
-      # WeLoveDevs embeds a complete JSON-LD JobPosting on every offer page, so extraction
-      # is JSON-LD first. The templated meta description is used as a secondary text signal
-      # for contract type and remote granularity that the JSON-LD flattens. Per-field
-      # parsers live in ./parsers/.
+      # The hit carries the entire offer, so extraction is fully structural — no HTML
+      # scraping, no JSON-LD. The description is markdown (`mdDescription`), rendered to
+      # the minimal HTML the pipeline expects. Per-field parsers live in ./parsers/.
       class AnalyzeStep < Sourcing::AnalyzeStep
-        VERSION = 1
+        VERSION = 2
 
         def call(input)
-          html = input[:html_content] || input[:html] || ""
-          doc  = Nokogiri::HTML(html)
-          ld   = extract_json_ld(doc)
-          meta = meta_description(doc)
+          hit = extract_hit(input[:html_content] || input[:html])
+          details = hit["details"].is_a?(Hash) ? hit["details"] : {}
 
-          salary = Parsers::Salary.call(ld: ld, text: meta)
+          salary = Parsers::Salary.call(salary: details["salary"])
 
           {
-            title: normalize_text(ld["title"]) || text_at(doc, "h1"),
-            company_name: normalize_text(ld.dig("hiringOrganization", "name")),
-            city: normalize_text(ld.dig("jobLocation", "address", "addressLocality")),
-            employment_type: Parsers::Contract.call(ld: ld, text: meta),
+            title: normalize_text(hit["title"]),
+            company_name: normalize_text(hit.dig("smallCompany", "companyName")),
+            city: normalize_text(Array(hit["formattedPlaces"]).first),
+            employment_type: Parsers::Contract.call(contract_types: hit["contractTypes"]),
             salary_min_minor: salary[:min],
             salary_max_minor: salary[:max],
             salary_currency: salary[:currency],
-            location_mode: Parsers::LocationMode.call(doc: doc, ld: ld, text: meta, html: html),
-            posted_at: normalize_text(ld["datePosted"]),
-            description_html: sanitize_description(ld["description"].presence || dom_description(doc)),
+            location_mode: Parsers::LocationMode.call(remote_policy: details["remotePolicy"]),
+            posted_at: posted_at(hit),
+            description_html: sanitize_description(hit["mdDescription"]),
           }
         end
 
         private
 
-        def extract_json_ld(doc)
-          doc.css("script[type='application/ld+json']").each do |script|
-            data = JSON.parse(script.text.strip)
-            nodes = data.is_a?(Array) ? data : [data]
-            candidate = nodes.find { |n| n.is_a?(Hash) && n["@type"].to_s =~ /JobPosting/i }
-            return candidate if candidate
-          rescue JSON::ParserError
-            next
-          end
+        # Returns the hit hash or `{}` when the payload is malformed. Callers receive
+        # `nil` for every field rather than a hard failure — gone-offer detection is
+        # FetchStep's responsibility, not analyze's.
+        def extract_hit(body)
+          data = JSON.parse(body.to_s)
+          data.is_a?(Hash) ? data : {}
+        rescue JSON::ParserError
           {}
         end
 
-        def meta_description(doc)
-          doc.at_css("meta[name='description']")&.[]("content").to_s
+        # WeLoveDevs timestamps are epoch milliseconds. `publishDate` is the offer's
+        # publication; `createdAt` is the fallback for older records that predate it.
+        def posted_at(hit)
+          ms = hit["publishDate"] || hit["createdAt"]
+          return nil unless ms.is_a?(Numeric) && ms.positive?
+
+          Time.at(ms / 1000.0).utc.iso8601
         end
 
-        def dom_description(doc)
-          node = doc.at_css("article") || doc.at_css("[class*='description']")
-          node&.inner_html&.strip&.presence
-        end
+        # Renders the markdown description to HTML, then strips presentational attributes
+        # via the inherited clean_attributes for token-efficient enrich.
+        def sanitize_description(markdown)
+          return nil if markdown.nil? || markdown.to_s.strip.empty?
 
-        # Strips script/style nodes, then removes style/class attributes via the inherited
-        # clean_attributes, keeping the smallest meaningful HTML for token-efficient enrich.
-        def sanitize_description(html)
-          return nil if html.nil? || html.to_s.strip.empty?
-
+          html = Kramdown::Document.new(markdown.to_s).to_html
           fragment = Nokogiri::HTML.fragment(html)
           fragment.css("script, style").each(&:remove)
-          clean_attributes(fragment.to_html)
-        end
-
-        def text_at(doc, selector)
-          doc.at_css(selector)&.text&.strip&.presence
+          clean_attributes(fragment.to_html).presence
         end
 
         def normalize_text(value)
