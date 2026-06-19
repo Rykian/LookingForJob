@@ -4,15 +4,18 @@ globs:
 alwaysApply: false
 ---
 
-# Models (6)
+# Models (8)
 
 Check here first for scopes, constants, associations. Read model files for business logic/methods.
 
 - Commute::City (3 associations, table: commute_cities)
 - Commute::Duration (2 associations, table: commute_durations)
   scopes: fresh
-- JobOffer (8 associations, table: job_offers)
-  scopes: canonical, duplicates | STEPS_DETAIL_KEYS: discovery, fetch, analyze, enrich, commute, score
+- Company (3 associations, table: companies)
+  LEGAL_SUFFIXES: sasu, sarl, sas, sa, gmbh, ltd, inc, group, groupe
+- CompanyAlias (1 associations, table: company_aliases)
+- JobOffer (10 associations, table: job_offers)
+  scopes: canonical, duplicates | STEPS_DETAIL_KEYS: discovery, fetch, analyze, enrich, commute, score, company | LANGUAGE_LEVELS: not_required, basic, professional, fluent
 - PipelineError (2 associations, table: pipeline_errors)
   scopes: unresolved, for_step
 - Run (2 associations, table: runs)

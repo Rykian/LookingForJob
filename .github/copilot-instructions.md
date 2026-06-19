@@ -1,16 +1,16 @@
 <!-- BEGIN rails-ai-context -->
-# LookingForJob — Copilot Context
+# LookingForJob - Copilot Context
 
 Rails 8.1.3 | Ruby 4.0.2
 
 ## Stack
-- Database: PostgreSQL — 10 tables
-- Models: 6
+- Database: PostgreSQL - 12 tables
+- Models: 8
 - Routes: 21 across 12 controllers
 - API: API-only, GraphQL
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
-- Performance: 3 issues detected
+- Performance: 4 issues detected
 - jobs: sidekiq
 - api: graphql
 - database: pg, redis, solid_cache, solid_cable
@@ -22,13 +22,15 @@ Rails 8.1.3 | Ruby 4.0.2
 - validation: dry-types
 - utilities: nokogiri, httparty, faraday
 
-## Models (6)
-- **Commute::City** — has_many :outbound_durations, has_many :inbound_durations, has_many :job_offers
-- **Commute::Duration** — belongs_to :origin_city, belongs_to :destination_city
-- **JobOffer** — has_one :html_file_attachment, has_one :html_file_blob, belongs_to :commute_city, belongs_to :canonical_offer, has_many :run_job_offers, has_many :runs, has_many :pipeline_errors, has_many :duplicate_offers
-- **PipelineError** — belongs_to :job_offer, belongs_to :run
-- **Run** — has_many :run_job_offers, has_many :job_offers
-- **RunJobOffer** — belongs_to :run, belongs_to :job_offer
+## Models (8)
+- **Commute::City** - has_many :outbound_durations, has_many :inbound_durations, has_many :job_offers
+- **Commute::Duration** - belongs_to :origin_city, belongs_to :destination_city
+- **Company** - has_many :aliases, has_many :job_offers, has_many :final_client_offers
+- **CompanyAlias** - belongs_to :company
+- **JobOffer** - has_one :html_file_attachment, has_one :html_file_blob, belongs_to :commute_city, belongs_to :canonical_offer, belongs_to :company, belongs_to :final_company, has_many :run_job_offers, has_many :runs, has_many :pipeline_errors, has_many :duplicate_offers
+- **PipelineError** - belongs_to :job_offer, belongs_to :run
+- **Run** - has_many :run_job_offers, has_many :job_offers
+- **RunJobOffer** - belongs_to :run, belongs_to :job_offer
 
 ## Architecture
 - API-only mode (no views/assets)
@@ -44,15 +46,15 @@ Rails 8.1.3 | Ruby 4.0.2
 - dry_rb
 - zeitwerk
 
-## Tools (38) — MANDATORY, Use Before Read
+## Tools (38) - MANDATORY, Use Before Read
 
 This project has 38 MCP tools via `rails ai:serve`.
-**MANDATORY — use these instead of reading files.** They return ground truth from the running app:
-real schema, real associations, real filters — not guesses from file reads.
+**MANDATORY - use these instead of reading files.** They return ground truth from the running app:
+real schema, real associations, real filters - not guesses from file reads.
 Read files ONLY when you are about to Edit them.
 If MCP tools are not connected, use CLI fallback: `rails 'ai:tool[TOOL_NAME]' param=value`
 
-### Anti-Hallucination Protocol — Verify Before You Write
+### Anti-Hallucination Protocol - Verify Before You Write
 
 AI assistants produce confident-wrong code when statistical priors from training
 data override observed facts in the current project. These 6 rules force
@@ -62,27 +64,27 @@ verification at the exact moments hallucination is most likely.
 2. **Mark every assumption.** If you must proceed without verification, prefix the relevant output with `[ASSUMPTION]` and state what you're assuming and why. Silent assumptions are forbidden. "I'd need to check X first" is a valid and preferred answer.
 3. **Training data describes average Rails. This app isn't average.** When something feels "obviously" like standard Rails, query anyway. Factories vs fixtures? Pundit vs CanCan? Devise vs has_secure_password? Check `rails_get_conventions` and `rails_get_gems` BEFORE scaffolding anything.
 4. **Check the inheritance chain before every edit.** Before writing a controller action: inherited `before_action` filters and ancestor classes. Before writing a model method: concerns, includes, STI parents. Inheritance is never flat.
-5. **Empty tool output is information, not permission.** "0 callers found," "no validations," or a missing model is a signal to investigate or confirm with the user — not a license to proceed on guesses. Follow `_Next:` hints.
+5. **Empty tool output is information, not permission.** "0 callers found," "no validations," or a missing model is a signal to investigate or confirm with the user - not a license to proceed on guesses. Follow `_Next:` hints.
 6. **Stale context lies. Re-query after writes.** After any edit, tool output from earlier in this turn may be wrong. Re-query the affected tool before the next write.
 
-### detail parameter — ALWAYS start with summary
+### detail parameter - ALWAYS start with summary
 
 Individual lookup tools accept `detail:"summary"`. Use the right level:
-- **summary** — first call, orient yourself (table list, model names, route overview)
-- **standard** — working detail (columns with types, associations, action source) — DEFAULT
-- **full** — only when you need indexes, foreign keys, code snippets, or complete content
+- **summary** - first call, orient yourself (table list, model names, route overview)
+- **standard** - working detail (columns with types, associations, action source) - DEFAULT
+- **full** - only when you need indexes, foreign keys, code snippets, or complete content
 
 Pattern: summary to find the target → standard to understand it → full only if needed.
 
-**Do NOT pass `detail` to composite tools** — `rails_get_context` and `rails_analyze_feature` do not accept it and will return an error.
+**Do NOT pass `detail` to composite tools** - `rails_get_context` and `rails_analyze_feature` do not accept it and will return an error.
 
-### Start here — composite tools save multiple calls
+### Start here - composite tools save multiple calls
 
 **New to this project?** Get a full walkthrough first:
 → MCP: `rails_onboard(detail:"standard")`
 → CLI: `rails 'ai:tool[onboard]' detail=standard`
 
-**`get_context` is your power tool** — bundles schema + model + controller + routes + views in ONE call:
+**`get_context` is your power tool** - bundles schema + model + controller + routes + views in ONE call:
 → MCP: `rails_get_context(controller:"PostsController", action:"create")`
 → CLI: `rails 'ai:tool[context]' controller=PostsController action=create`
 → MCP: `rails_get_context(model:"Post")`
@@ -90,7 +92,7 @@ Pattern: summary to find the target → standard to understand it → full only 
 → MCP: `rails_get_context(feature:"post")`
 → CLI: `rails 'ai:tool[context]' feature=post`
 
-**`analyze_feature` for broad discovery** — scans all layers (models, controllers, routes, services, jobs, views, tests):
+**`analyze_feature` for broad discovery** - scans all layers (models, controllers, routes, services, jobs, views, tests):
 → MCP: `rails_analyze_feature(feature:"authentication")`
 → CLI: `rails 'ai:tool[analyze_feature]' feature=authentication`
 
@@ -99,21 +101,21 @@ Use individual tools only when you need deeper detail on a specific layer.
 ### Step-by-step workflows (follow this order)
 
 **Modify a model** (add field, change validation, add scope):
-1. `rails_get_context(model:"Post")` or `rails 'ai:tool[context]' model=Post` — schema + associations + validations in one call
+1. `rails_get_context(model:"Post")` or `rails 'ai:tool[context]' model=Post` - schema + associations + validations in one call
 2. Read the model file, make your edit
-3. `rails_migration_advisor(action:"add_column", table:"posts", column:"rating", type:"integer")` or `rails 'ai:tool[migration_advisor]' action=add_column table=posts column=rating type=integer` — if schema change needed
-4. `rails_validate(files:["app/models/post.rb"], level:"rails")` or `rails 'ai:tool[validate]' files=app/models/post.rb level=rails` — EVERY time after editing
-5. `rails_generate_test(model:"Post")` or `rails 'ai:tool[generate_test]' model=Post` — generate tests matching project patterns
+3. `rails_migration_advisor(action:"add_column", table:"posts", column:"rating", type:"integer")` or `rails 'ai:tool[migration_advisor]' action=add_column table=posts column=rating type=integer` - if schema change needed
+4. `rails_validate(files:["app/models/post.rb"], level:"rails")` or `rails 'ai:tool[validate]' files=app/models/post.rb level=rails` - EVERY time after editing
+5. `rails_generate_test(model:"Post")` or `rails 'ai:tool[generate_test]' model=Post` - generate tests matching project patterns
 
 **Fix a controller bug:**
-1. `rails_get_context(controller:"PostsController", action:"create")` or `rails 'ai:tool[context]' controller=PostsController action=create` — action source + routes + views + model
+1. `rails_get_context(controller:"PostsController", action:"create")` or `rails 'ai:tool[context]' controller=PostsController action=create` - action source + routes + views + model
 2. Read the controller file, make your fix
 3. `rails_validate(files:["app/controllers/posts_controller.rb"], level:"rails")` or `rails 'ai:tool[validate]' files=app/controllers/posts_controller.rb level=rails`
 
 **Build or modify a view:**
-1. `rails_get_view(controller:"posts")` or `rails 'ai:tool[view]' controller=posts` — existing templates, partials, Stimulus refs
-2. `rails_get_partial_interface(partial:"shared/status_badge")` or `rails 'ai:tool[partial_interface]' partial=shared/status_badge` — partial locals contract
-3. `rails_get_component_catalog(component:"Button")` or `rails 'ai:tool[component_catalog]' component=Button` — ViewComponent/Phlex props, slots, previews
+1. `rails_get_view(controller:"posts")` or `rails 'ai:tool[view]' controller=posts` - existing templates, partials, Stimulus refs
+2. `rails_get_partial_interface(partial:"shared/status_badge")` or `rails 'ai:tool[partial_interface]' partial=shared/status_badge` - partial locals contract
+3. `rails_get_component_catalog(component:"Button")` or `rails 'ai:tool[component_catalog]' component=Button` - ViewComponent/Phlex props, slots, previews
 4. Read the view file, make your edit
 5. `rails_validate(files:["app/views/posts/index.html.erb"])` or `rails 'ai:tool[validate]' files=app/views/posts/index.html.erb`
 
@@ -121,7 +123,7 @@ Use individual tools only when you need deeper detail on a specific layer.
 → MCP: `rails_search_code(pattern:"publishable?", match_type:"trace")`
 → CLI: `rails 'ai:tool[search_code]' pattern="publishable?" match_type=trace`
 
-**Debug an error (one call — gathers context + git + logs + fix):**
+**Debug an error (one call - gathers context + git + logs + fix):**
 → MCP: `rails_diagnose(error:"NoMethodError: undefined method `foo` for nil", file:"app/models/post.rb")`
 → CLI: `rails 'ai:tool[diagnose]' error="NoMethodError: undefined method foo" file=app/models/post.rb`
 
@@ -133,31 +135,31 @@ Use individual tools only when you need deeper detail on a specific layer.
 → MCP: `rails_generate_test(model:"Post")`
 → CLI: `rails 'ai:tool[generate_test]' model=Post`
 
-### Common mistakes — avoid these
+### Common mistakes - avoid these
 
-- **Don't read db/schema.rb** — use `get_schema`. It adds [indexed]/[unique] hints you'd miss.
-- **Don't read model files for reference** — use `get_model_details`. It resolves concerns, inherited methods, and implicit belongs_to validations.
+- **Don't read db/schema.rb** - use `get_schema`. It adds [indexed]/[unique] hints you'd miss.
+- **Don't read model files for reference** - use `get_model_details`. It resolves concerns, inherited methods, and implicit belongs_to validations.
 - **Prefer `rails_search_code` over Grep** for method tracing and cross-layer search. It excludes sensitive files, supports `match_type:"trace"`, and paginates.
-- **Don't call tools without a target** — `get_model_details()` without `model:` returns a paginated list, not an error. Always specify what you want.
-- **Don't skip validation** — run `rails_validate` after EVERY edit. It catches syntax errors AND Rails-specific issues (missing partials, bad column refs).
-- **Don't ignore cross-references** — tool responses include `_Next:` hints suggesting the best follow-up call. Follow them.
-- **Don't call `detail:"full"` first** — start with `summary` to find your target, then drill in. Full responses bury the signal.
+- **Don't call tools without a target** - `get_model_details()` without `model:` returns a paginated list, not an error. Always specify what you want.
+- **Don't skip validation** - run `rails_validate` after EVERY edit. It catches syntax errors AND Rails-specific issues (missing partials, bad column refs).
+- **Don't ignore cross-references** - tool responses include `_Next:` hints suggesting the best follow-up call. Follow them.
+- **Don't call `detail:"full"` first** - start with `summary` to find your target, then drill in. Full responses bury the signal.
 
 ### Rules
 
-1. **Use composite tools first** — `rails_get_context` and `rails_analyze_feature` before individual tools
-2. **NEVER read reference files** — db/schema.rb, config/routes.rb, model files, test files — tools are better
-3. **Prefer `rails_search_code`** for tracing and cross-layer search — standard search tools are fine for simple targeted lookups
-4. **Read files ONLY to Edit them** — not for reference
-5. **Validate EVERY edit** — `rails_validate(files:[...], level:"rails")`
-6. **Follow _Next:_ hints** — tool responses suggest the best follow-up call
+1. **Use composite tools first** - `rails_get_context` and `rails_analyze_feature` before individual tools
+2. **NEVER read reference files** - db/schema.rb, config/routes.rb, model files, test files - tools are better
+3. **Prefer `rails_search_code`** for tracing and cross-layer search - standard search tools are fine for simple targeted lookups
+4. **Read files ONLY to Edit them** - not for reference
+5. **Validate EVERY edit** - `rails_validate(files:[...], level:"rails")`
+6. **Follow _Next:_ hints** - tool responses suggest the best follow-up call
 7. If MCP tools are not connected, use CLI: `rails 'ai:tool[TOOL_NAME]' param=value`
 
 ### All 38 Tools
 
 | MCP | CLI | What it does |
 |-----|-----|-------------|
-| `rails_get_context(model:"X")` | `rails 'ai:tool[context]' model=X` | **START HERE** — schema + model + controller + routes + views in one call |
+| `rails_get_context(model:"X")` | `rails 'ai:tool[context]' model=X` | **START HERE** - schema + model + controller + routes + views in one call |
 | `rails_analyze_feature(feature:"X")` | `rails 'ai:tool[analyze_feature]' feature=X` | Full-stack: models + controllers + routes + services + jobs + views + tests |
 | `rails_search_code(pattern:"X", match_type:"trace")` | `rails 'ai:tool[search_code]' pattern=X match_type=trace` | Search + trace: definition, source, callers, test coverage. Also: `match_type:"any"` for regex search |
 | `rails_get_controllers(controller:"X", action:"Y")` | `rails 'ai:tool[controllers]' controller=X action=Y` | Action source + inherited filters + render map + private methods |

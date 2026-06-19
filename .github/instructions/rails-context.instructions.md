@@ -4,12 +4,12 @@ name: "Rails Project Overview"
 description: "Rails version, database, models, routes, gems, architecture patterns"
 ---
 
-# LookingForJob — Overview
+# LookingForJob - Overview
 
 Rails 8.1.3 | Ruby 4.0.2
 
-- Database: PostgreSQL — 10 tables
-- Models: 6
+- Database: PostgreSQL - 12 tables
+- Models: 8
 - Routes: 21
 - jobs: sidekiq
 - api: graphql
@@ -25,6 +25,6 @@ Rails 8.1.3 | Ruby 4.0.2
 - API: API-only, GraphQL
 - Storage: ActiveStorage (1 models with attachments)
 - Assets: none, vite, tailwindcss
-- Performance: 3 issues detected
+- Performance: 4 issues detected
 
 Use MCP tools for detailed data. Start with `detail:"summary"`.
