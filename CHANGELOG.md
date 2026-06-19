@@ -3,6 +3,102 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.2.0](https://github.com/Rykian/LookingForJob/compare/v0.1.0..v0.2.0) - 2026-06-19
+
+### Bug Fixes
+
+- **(ci)** add redis to test_backend - ([3fb38fd](https://github.com/Rykian/LookingForJob/commit/3fb38fd0eac754bc98299c69f2c00e08e760aedd)) - Thibault Lacroux
+- **(ci)** update meilisearch master key to be longer as requested - ([3590111](https://github.com/Rykian/LookingForJob/commit/359011163b31bf951fd09dc33018da2c925f382d)) - Thibault Lacroux
+- **(ci)** disable meilisearch during tests - ([b13deb5](https://github.com/Rykian/LookingForJob/commit/b13deb5ea95c1e590ac541ac11cab44057465afa)) - Thibault Lacroux
+- **(frontend)** new offers on /offers aren't added during sourcing - ([6218fb7](https://github.com/Rykian/LookingForJob/commit/6218fb7d49e34cd7c9d13551b3996921754b2545)) - Thibault Lacroux
+- **(frontend)** use canonical tailwind classes instead of arbitrary values - ([f56a20c](https://github.com/Rykian/LookingForJob/commit/f56a20ce28d0a2ed847d3af573745b306bba4799)) - Thibault Lacroux
+- **(frontend)** scroll not restored when hitting history back - ([c1c3562](https://github.com/Rykian/LookingForJob/commit/c1c3562a3514c6f7f3ec9c7e5ce0db7678890b35)) - Thibault Lacroux
+- **(frontend)** assert aria-label instead of title attribute on tech icon SVGs - ([5c3c49f](https://github.com/Rykian/LookingForJob/commit/5c3c49fe30f010c4f2b95c09bb636e454a694bda)) - Thibault Lacroux
+- **(frontend)** scroll keeps resetting on /offers - ([1514fa1](https://github.com/Rykian/LookingForJob/commit/1514fa1102c126f9b2469836d547b6b2ba554a61)) - Thibault Lacroux
+- **(frontend)** added search field was missing in the filter panel story - ([ebe07e5](https://github.com/Rykian/LookingForJob/commit/ebe07e584d24ecf271e937a0b7d01ddb5432b3bf)) - Thibault Lacroux
+- **(graphql)** add secondary sort by id for stable offer pagination - ([ff81ab2](https://github.com/Rykian/LookingForJob/commit/ff81ab24edf9cd383f6850085af1126ec625ae2f)) - Thibault Lacroux
+- **(indeed)** 404 handling - ([fa56f7d](https://github.com/Rykian/LookingForJob/commit/fa56f7d99b9250c278328274ece0de89869e230d)) - Thibault Lacroux
+- **(infra)** skip biome check when all files are ignored - ([f0386d2](https://github.com/Rykian/LookingForJob/commit/f0386d2997dc2b3c3330d32a876d80cd04c122af)) - Thibault Lacroux
+- **(infra)** playwright version mismatch - ([10d4b32](https://github.com/Rykian/LookingForJob/commit/10d4b3220169d39d972e0dc49fc9697c6c9f9145)) - Thibault Lacroux
+- **(infra)** pin playwright browser install to gem version - ([d5a8214](https://github.com/Rykian/LookingForJob/commit/d5a82148129651d8c5957ad2e6854d2acd526e0a)) - Thibault Lacroux
+- **(infra)** adding meilisearch for backend tests - ([40da980](https://github.com/Rykian/LookingForJob/commit/40da9809180ddcc7f735753d041e1071826e9b09)) - Thibault Lacroux
+- **(sourcing/indeed)** save user agent on session harvesting to avoid turnstile - ([052aeb7](https://github.com/Rykian/LookingForJob/commit/052aeb756bf9fece8775d4287ecffe47362dfbac)) - Thibault Lacroux
+- **(sourcing/welovedevs)** rewrite provider on Algolia REST after site contract break - ([1e1ecef](https://github.com/Rykian/LookingForJob/commit/1e1ecef37484a6917e8339a812dc43b9b9b50572)) - Thibault Lacroux
+- **(sourcing/wttj)** description is missing some sections - ([96def9f](https://github.com/Rykian/LookingForJob/commit/96def9f4028236e096058bf62f2f125fa78d25bd)) - Thibault Lacroux
+
+### Documentation
+
+- updating sourcing-provider-creation skill to reflect latest provider developments - ([772d9bb](https://github.com/Rykian/LookingForJob/commit/772d9bbbae5c3b48d4f79aa8a99f207c47a19bdb)) - Thibault Lacroux
+- mentioning Meilisearch in README - ([803122f](https://github.com/Rykian/LookingForJob/commit/803122faee40036b6e2a16ccd72ffd7625e3e3a0)) - Thibault Lacroux
+
+### Features
+
+- **(frontend)** add filters for commute time - ([862c3a2](https://github.com/Rykian/LookingForJob/commit/862c3a21ab969a9b8283e111ddfca2ec94a205ee)) - Thibault Lacroux
+- **(frontend)** display new vs updated offer counts on runs page - ([fed458a](https://github.com/Rykian/LookingForJob/commit/fed458a44d93cfbc52bbd2f9c8316752e624efce)) - Thibault Lacroux
+- **(frontend)** request only primary technologies for discovery launch - ([ba30055](https://github.com/Rykian/LookingForJob/commit/ba30055ce052e7501c843533605c88339e1c8c5a)) - Thibault Lacroux
+- **(frontend)** replace prev/next with clickable page numbers - ([6fc43ac](https://github.com/Rykian/LookingForJob/commit/6fc43ac6b564420e9b6335d130bac004b8f8a0ca)) - Thibault Lacroux
+- **(graphql)** extend technologies query args and exact-match tech filter - ([b5be92b](https://github.com/Rykian/LookingForJob/commit/b5be92b069cc9ba463e52faf6c8273a1ad769e91)) - Thibault Lacroux
+- **(offers)** add 'newOnly' filter to job offers query and UI - ([3d7d943](https://github.com/Rykian/LookingForJob/commit/3d7d943f6041135f20cc7dbed1a36f2212232e4a)) - Thibault Lacroux
+- **(provider)** update Indeed session manager to use a hardcoded session path - ([409d324](https://github.com/Rykian/LookingForJob/commit/409d324ec28dd217922ba4ad26841b22c00bf447)) - Thibault Lacroux
+- **(sourcing)** add Indeed provider - ([cc723fc](https://github.com/Rykian/LookingForJob/commit/cc723fc16fb265abb24dca00b89180daafeacad3)) - Thibault Lacroux
+- **(sourcing)** customizing Launch Discovery with selectable provider/keyword - ([b13ecc9](https://github.com/Rykian/LookingForJob/commit/b13ecc9dc8314d54a5e96b910629f6caaf8bbadc)) - Thibault Lacroux
+- **(sourcing)** restore WTTJ provider with disabled detection and hardening - ([9768669](https://github.com/Rykian/LookingForJob/commit/97686690932a898e1bfe3aaba66af799c51c914d)) - Thibault Lacroux
+- **(sourcing)** track discovery runs and filter offers by run - ([58a69bc](https://github.com/Rykian/LookingForJob/commit/58a69bc4d4df8025fdff7fe1ada873e53fedeabc)) - Thibault Lacroux
+- **(sourcing)** track pipeline errors with auto-resolve and viewer page - ([e26351c](https://github.com/Rykian/LookingForJob/commit/e26351c16a4f7ec146cb9531b5368bd5522bf6c9)) - Thibault Lacroux
+- **(sourcing)** canonicalize offer technologies with LLM dedup job - ([7a899c4](https://github.com/Rykian/LookingForJob/commit/7a899c41fded3ae0d7cf7dbff5a58b6f69d2d73b)) - Thibault Lacroux
+- **(sourcing)** detect and link duplicate job offers across boards - ([cfb9e2a](https://github.com/Rykian/LookingForJob/commit/cfb9e2a46fc1b9375313f30169b20a2b163a31e4)) - Thibault Lacroux
+- **(sourcing)** replace english level with per-language requirements - ([16be5f4](https://github.com/Rykian/LookingForJob/commit/16be5f476a7d63129cf4bbb16b7a67a214f5b3ab)) - Thibault Lacroux
+- **(sourcing)** introduce company entities and final client classification - ([b44d7e8](https://github.com/Rykian/LookingForJob/commit/b44d7e8faf881f2f5f53825e8dd4dd5df06eb790)) - Thibault Lacroux
+- **(sourcing/apec)** update AnalyzeStep to extract partner name from logo and improve metadata handling - ([cada365](https://github.com/Rykian/LookingForJob/commit/cada3656c0fa60a3463c8fa65dce4ba27220a49f)) - Thibault Lacroux
+- **(sourcing/collective_work)** add Collective.work sourcing provider - ([4d82262](https://github.com/Rykian/LookingForJob/commit/4d82262d8353094efd6beea91b5e98152d3c59d7)) - Thibault Lacroux
+- **(sourcing/free_work)** add Free-Work sourcing provider - ([45645fb](https://github.com/Rykian/LookingForJob/commit/45645fb24e8e3f99d6e6ea1a3aa4ca159395f98a)) - Thibault Lacroux
+- **(sourcing/welovedevs)** add WeLoveDevs sourcing provider - ([bf0a29d](https://github.com/Rykian/LookingForJob/commit/bf0a29db9c5d3aa95576838517405a7852a0e8e2)) - Thibault Lacroux
+- add search on multiple fields on /offers - ([9b9a007](https://github.com/Rykian/LookingForJob/commit/9b9a007acdc57dcf5a2e108b79ae53189a2336f2)) - Thibault Lacroux
+- build Docker image on each release version - ([5e1d20a](https://github.com/Rykian/LookingForJob/commit/5e1d20a4121a8a365d20650a13bf801891087516)) - Thibault Lacroux
+- increasing the number of sidekiq concurrency - ([531720a](https://github.com/Rykian/LookingForJob/commit/531720a400bd27f6272cba1ec512dbd57f3b4218)) - Thibault Lacroux
+
+### Miscellaneous Chores
+
+- **(docs)** standardize conventional commit scopes - ([1b7045a](https://github.com/Rykian/LookingForJob/commit/1b7045ac62f18596e4375ee67d3176c553f0166c)) - Thibault Lacroux
+- **(infra)** add sidekiq-scheduler and weekly technology dedup schedule - ([599fa6b](https://github.com/Rykian/LookingForJob/commit/599fa6bab1a05abb97b9de66221ffceb2f47b1f6)) - Thibault Lacroux
+- generate changelog for v0.1.0 - ([97b96b3](https://github.com/Rykian/LookingForJob/commit/97b96b39b02c96ae880ea5c8c837f1a54c87e70e)) - Thibault Lacroux
+- update dependencies - ([482c057](https://github.com/Rykian/LookingForJob/commit/482c057dc0d7155d56fad680f83ceb6ee93003a9)) - Thibault Lacroux
+- configure worktree - ([a06d505](https://github.com/Rykian/LookingForJob/commit/a06d505ae5960bf04f5d686477cceb8498bbbed2)) - Thibault Lacroux
+- upgrading backend dependencies - ([89cc77c](https://github.com/Rykian/LookingForJob/commit/89cc77cfd14678ecf42b9e2a3d8a1e8e8ce862e1)) - Thibault Lacroux
+
+### Refactoring
+
+- **(sourcing)** consolidate SessionManager logic into shared base module - ([e3e00f2](https://github.com/Rykian/LookingForJob/commit/e3e00f295921683b6bd9da70387d278b28ceb0e9)) - Thibault Lacroux
+- **(sourcing)** auto-derive session path and login command from provider name - ([32c54cc](https://github.com/Rykian/LookingForJob/commit/32c54ccd7b8093fd7c0ec21a1518035ebb8003b0)) - Thibault Lacroux
+- **(sourcing)** rename dedup jobs to DeduplicateOffersJob and CanonicalizeTechnologiesJob - ([d4c4de7](https://github.com/Rykian/LookingForJob/commit/d4c4de79fd4e82d1ecb5ea6d322f9426a108998e)) - Thibault Lacroux
+
+### Style
+
+- **(fronted)** date should be formatted as dd-mm-yyyy - ([24dd8e8](https://github.com/Rykian/LookingForJob/commit/24dd8e8d759aa760229fe9549896248110407733)) - Thibault Lacroux
+
+### Tests
+
+- **(graphql)** split monolithic request spec per query/mutation - ([e13fdf1](https://github.com/Rykian/LookingForJob/commit/e13fdf157c62ca7d30f52d527ebea6c1adecf07f)) - Thibault Lacroux
+- **(sourcing)** include origins key in cadremploi invalid session fixture - ([70793b9](https://github.com/Rykian/LookingForJob/commit/70793b98af27187b05adb0b9a5fb8bf846016aa7)) - Thibault Lacroux
+
+### Build
+
+- **(deps)** bump sidekiq from 8.1.3 to 8.1.6 - ([8dabda1](https://github.com/Rykian/LookingForJob/commit/8dabda12b7c135a675a735b9d2c9deb6e1fb656c)) - dependabot[bot]
+- **(deps)** bump graphql from 2.6.1 to 2.6.3 - ([4e8168f](https://github.com/Rykian/LookingForJob/commit/4e8168f1265e32607b87dad110b4b9f10b9758a7)) - dependabot[bot]
+- **(deps)** bump bootsnap from 1.24.0 to 1.24.5 - ([4a0de1a](https://github.com/Rykian/LookingForJob/commit/4a0de1a371c32dca7f085bfff9d31f19aa49ee1a)) - dependabot[bot]
+- **(deps)** bump aws-sdk-s3 from 1.220.0 to 1.224.0 - ([b816568](https://github.com/Rykian/LookingForJob/commit/b816568675c60d7c851647b553049bfb5f8aed52)) - dependabot[bot]
+- **(deps)** bump actions/upload-artifact from 4 to 7 - ([00935ac](https://github.com/Rykian/LookingForJob/commit/00935ace8271a51557c4ebd90d1b14f98f7f38a5)) - dependabot[bot]
+- **(deps)** bump actions/github-script from 8 to 9 - ([e3a35f6](https://github.com/Rykian/LookingForJob/commit/e3a35f6f1967bcec5ca83f8775902827f8f06609)) - dependabot[bot]
+- **(deps)** bump vite_rails from 3.10.0 to 3.11.0 - ([1bab659](https://github.com/Rykian/LookingForJob/commit/1bab6597319bd4489d7e01a452eedb1b9ac8a9e2)) - dependabot[bot]
+- **(deps)** bump thruster from 0.1.20 to 0.1.21 - ([be82803](https://github.com/Rykian/LookingForJob/commit/be82803da5c6698aedb63d177e1373d6d8adaf91)) - dependabot[bot]
+- **(deps)** bump solid_cable from 3.0.12 to 4.0.0 - ([69ea0c5](https://github.com/Rykian/LookingForJob/commit/69ea0c594bc362020962a91e7453bc178bbc0fc4)) - dependabot[bot]
+- **(deps)** bump playwright-ruby-client from 1.59.0 to 1.60.0 - ([3e69c18](https://github.com/Rykian/LookingForJob/commit/3e69c183c78839572bdbaf29166b3a7ceaf27daf)) - dependabot[bot]
+- **(deps)** bump aws-sdk-s3 from 1.225.1 to 1.226.0 - ([9ea825b](https://github.com/Rykian/LookingForJob/commit/9ea825b8be368b5ca790e1757733cf6aee9c6212)) - dependabot[bot]
+- **(deps)** bump kamal from 2.11.0 to 2.12.0 - ([0bc6871](https://github.com/Rykian/LookingForJob/commit/0bc68717a2b01434f22e529c006920f16b859080)) - dependabot[bot]
+- **(deps-dev)** bump lefthook from 2.1.6 to 2.1.9 - ([3e01d02](https://github.com/Rykian/LookingForJob/commit/3e01d02b3256c95132ed984f7a5bb2c1de5af037)) - dependabot[bot]
+- **(deps-dev)** bump rails-ai-context from 5.11.1 to 5.11.2 - ([a690fd3](https://github.com/Rykian/LookingForJob/commit/a690fd36808d02f5f349b678a2859feff35eed74)) - dependabot[bot]
+
+---
 ## [0.1.0] - 2026-05-24
 
 ### Bug Fixes
